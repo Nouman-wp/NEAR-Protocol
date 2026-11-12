@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { AUTH_RECIPIENT, NearRpc, loginMessage, messageText, nep413Hash, randomBytes, randomKeyPair, sha256Bytes, signHash, toBase64, type IntentMandate } from "@quorum/core";
+import { AUTH_RECIPIENT, NearRpc, signInNetworks, loginMessage, messageText, nep413Hash, randomBytes, randomKeyPair, sha256Bytes, signHash, toBase64, type IntentMandate } from "@quorum/core";
 import { API, FLEET, api } from "./api.ts";
 
 /**
@@ -16,8 +16,12 @@ export interface Session {
   publicKey: string;
   expiresAt: number;
   via: "wallet" | "dev";
+  /** the network the signed-in account lives on (it can differ from the deployment's) */
+  network: string;
   created?: boolean;
 }
+
+export type WalletNetwork = "mainnet" | "testnet";
 
 interface State {
   session: Session | null;
@@ -25,9 +29,12 @@ interface State {
   connected: string | null;
   busy: string | null;
   error: string | null;
+  /** which network's account the wallet should sign in with */
+  walletNetwork: WalletNetwork;
 }
 
 const SESSION_KEY = "quorum-session";
+const NET_KEY = "quorum-wallet-network";
 const DEV_KEY = "quorum-dev-wallet";
 const listeners = new Set<() => void>();
 
@@ -51,7 +58,29 @@ const write = (key: string, v: unknown) => {
 let state: State = { session: (() => {
   const s = read<Session>(SESSION_KEY);
   return s && s.expiresAt > Date.now() ? s : null;
-})(), connected: null, busy: null, error: null };
+})(), connected: null, busy: null, error: null, walletNetwork: (() => {
+  try {
+    return localStorage.getItem(NET_KEY) === "testnet" ? "testnet" : "mainnet";
+  } catch {
+    return "mainnet";
+  }
+})() as WalletNetwork };
+
+/**
+ * Most people's NEAR account is on mainnet. Signing in only proves the account is yours (no
+ * transaction, no fee), so a testnet deployment accepts mainnet accounts too. Switching
+ * network reloads the page, so the wallet libraries start clean on the other network.
+ */
+export function setWalletNetwork(n: WalletNetwork): void {
+  if (n === state.walletNetwork) return;
+  try {
+    localStorage.setItem(NET_KEY, n);
+    localStorage.removeItem("near-wallet-selector:selectedWalletId");
+  } catch {
+    // private mode
+  }
+  window.location.reload();
+}
 
 function set(patch: Partial<State>) {
   state = { ...state, ...patch };
@@ -95,6 +124,8 @@ async function walletKit(): Promise<Kit> {
   kitP ??= (async () => {
     const net = await network();
     if (!walletsSupported(net.key)) throw new Error("NEAR wallets work on testnet and mainnet. On the local sandbox, use the dev wallet.");
+    const allowed = signInNetworks(net.key as "testnet" | "mainnet");
+    const walletNet = (allowed as string[]).includes(state.walletNetwork) ? state.walletNetwork : (allowed[0] as WalletNetwork);
     // the wallet libraries expect a few Node globals in the browser
     const g = globalThis as { Buffer?: unknown; global?: unknown; process?: unknown };
     g.global ??= globalThis;
@@ -109,7 +140,7 @@ async function walletKit(): Promise<Kit> {
       import("@near-wallet-selector/here-wallet"),
     ]);
     await import("@near-wallet-selector/modal-ui/styles.css");
-    const selector = await setupWalletSelector({ network: net.key as "testnet" | "mainnet", modules: [setupMyNearWallet(), setupMeteorWallet(), setupHereWallet()] });
+    const selector = await setupWalletSelector({ network: walletNet, modules: [setupMyNearWallet(), setupMeteorWallet(), setupHereWallet()] });
     const modal = setupModal(selector, { theme: document.documentElement.dataset.theme === "dark" ? "dark" : "light", description: "Connect a NEAR wallet, then sign one short message to prove the account is yours. No transaction, no fee." });
     selector.store.observable.subscribe((s) => {
       const acc = s.accounts.find((a) => a.active)?.accountId ?? s.accounts[0]?.accountId ?? null;
@@ -170,14 +201,15 @@ async function sign(message: string, recipient: string, nonce: Uint8Array, via: 
 
 async function login(accountId: string, via: Session["via"]): Promise<void> {
   const net = await network();
-  const message = loginMessage(accountId, net.key, Date.now());
+  const signNet = via === "dev" ? net.key : state.walletNetwork;
+  const message = loginMessage(accountId, signNet, Date.now());
   const nonce = randomBytes(32);
   const s = await sign(message, AUTH_RECIPIENT, nonce, via);
   const r = await api<{ token: string; expiresAt: number; created: boolean }>("/v1/auth/login", {
     method: "POST",
     body: JSON.stringify({ accountId: s.accountId || accountId, message, recipient: AUTH_RECIPIENT, nonce: toBase64(nonce), callbackUrl: s.callbackUrl, publicKey: s.publicKey, signature: s.signature }),
   });
-  set({ session: { token: r.token, accountId: s.accountId || accountId, publicKey: s.publicKey, expiresAt: r.expiresAt, via, created: r.created }, error: null });
+  set({ session: { token: r.token, accountId: s.accountId || accountId, publicKey: s.publicKey, expiresAt: r.expiresAt, via, network: signNet, created: r.created }, error: null });
 }
 
 async function busy<T>(what: string, fn: () => Promise<T>): Promise<T | undefined> {

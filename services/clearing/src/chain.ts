@@ -1,17 +1,4 @@
-import {
-  NETWORKS,
-  NearAccount,
-  NearError,
-  NearRpc,
-  TGAS,
-  intentsTokenId,
-  type AccountId,
-  type Deployment,
-  type Hex,
-  type NetworkKey,
-  type PublicKey,
-  type TxResult,
-} from "@quorum/core";
+import { NETWORKS, NearAccount, NearError, NearRpc, TGAS, intentsTokenId, type AccountId, type Deployment, type Hex, type NetworkKey, type PublicKey, type TxResult } from "@quorum/core";
 import { log } from "./bus.ts";
 
 export interface VaultAccount {
@@ -254,12 +241,22 @@ export class Chain {
   }
 
   /** Is `publicKey` an access key of `account` right now? Cached for a minute. */
-  /** A key that can sign for the account in full: what a human operator authorises with. */
-  async holdsFullAccessKey(account: AccountId, publicKey: PublicKey): Promise<boolean> {
-    const k = `full|${account}|${publicKey}`;
+  private otherRpc = new Map<NetworkKey, NearRpc>();
+
+  /**
+   * A key that can sign for the account in full: what a human operator authorises with.
+   * People sign in with the account they have, so a testnet deployment also checks mainnet keys.
+   */
+  async holdsFullAccessKey(account: AccountId, publicKey: PublicKey, network: NetworkKey = this.key): Promise<boolean> {
+    const k = `full|${network}|${account}|${publicKey}`;
     const hit = this.keyChecks.get(k);
     if (hit && Date.now() - hit.at < 60_000) return hit.ok;
-    const ok = (await this.rpc.accessKey(account, publicKey))?.fullAccess === true;
+    let rpc = this.rpc;
+    if (network !== this.key) {
+      rpc = this.otherRpc.get(network) ?? new NearRpc(NETWORKS[network].rpcUrl);
+      this.otherRpc.set(network, rpc);
+    }
+    const ok = (await rpc.accessKey(account, publicKey))?.fullAccess === true;
     this.keyChecks.set(k, { at: Date.now(), ok });
     return ok;
   }

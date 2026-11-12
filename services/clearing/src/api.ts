@@ -1,7 +1,7 @@
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
 import websocket from "@fastify/websocket";
-import { AUTH_RECIPIENT, formatUnits, issueSession, parseLoginMessage, readSession, sessionSecret, verifyWalletSignature, type AgentSummary, type Hex, type IntentMandate, type LiveEvent, type QuorumDomain, type Signature, type SignedIntent, type WalletSignature } from "@quorum/core";
+import { AUTH_RECIPIENT, formatUnits, signInNetworks, type NetworkKey, issueSession, parseLoginMessage, readSession, sessionSecret, verifyWalletSignature, type AgentSummary, type Hex, type IntentMandate, type LiveEvent, type QuorumDomain, type Signature, type SignedIntent, type WalletSignature } from "@quorum/core";
 import type { Config } from "./config.ts";
 import type { Db } from "./db.ts";
 import type { Chain } from "./chain.ts";
@@ -606,26 +606,29 @@ export async function buildApi(ctx: Ctx): Promise<FastifyInstance> {
     created_at: number;
     last_login_at: number;
     logins: number;
+    network: string | null;
   }
-  const userView = (u: UserRow) => ({ accountId: u.account_id, displayName: u.display_name, createdAt: u.created_at, lastLoginAt: u.last_login_at, logins: u.logins });
+  const userView = (u: UserRow) => ({ accountId: u.account_id, displayName: u.display_name, createdAt: u.created_at, lastLoginAt: u.last_login_at, logins: u.logins, network: u.network ?? chain.key });
   const agentsOf = (account: string) => registry.list().filter((a) => a.operator === account || a.account === account);
 
   app.post("/v1/auth/login", async (req, reply) => {
     const b = req.body as Partial<WalletSignature> & { accountId?: string };
     const parsed = parseLoginMessage(String(b.message ?? ""));
     if (!parsed || parsed.accountId !== b.accountId) return reply.status(400).send({ error: "not a Quorum sign-in message for this account" });
-    if (parsed.network !== chain.key) return reply.status(400).send({ error: `this deployment is on ${chain.key}, the message names ${parsed.network}` });
+    const networks = signInNetworks(chain.key);
+    if (!(networks as string[]).includes(parsed.network)) return reply.status(400).send({ error: `sign in with a ${networks.join(" or ")} account; the message names ${parsed.network}` });
+    const network = parsed.network as NetworkKey;
     if (Math.abs(Date.now() - parsed.issuedAt) > 10 * 60_000) return reply.status(400).send({ error: "the sign-in message is stale; sign a new one" });
     if (b.recipient !== AUTH_RECIPIENT) return reply.status(400).send({ error: `the message must be signed for ${AUTH_RECIPIENT}` });
     const now = Date.now();
     for (const [n, at] of usedNonces) if (now - at > 15 * 60_000) usedNonces.delete(n);
     if (!b.nonce || usedNonces.has(b.nonce)) return reply.status(400).send({ error: "this sign-in was already used" });
     if (!verifyWalletSignature(b as WalletSignature)) return reply.status(401).send({ error: "the signature does not match the message and key" });
-    if (!(await chain.holdsFullAccessKey(parsed.accountId, b.publicKey!))) return reply.status(401).send({ error: `${b.publicKey} is not a full-access key of ${parsed.accountId}` });
+    if (!(await chain.holdsFullAccessKey(parsed.accountId, b.publicKey!, network))) return reply.status(401).send({ error: `${b.publicKey} is not a full-access key of ${parsed.accountId} on ${network}` });
     usedNonces.set(b.nonce, now);
     const existing = db.get<UserRow>("SELECT * FROM users WHERE account_id = ?", parsed.accountId);
-    if (existing) db.run("UPDATE users SET last_login_at = ?, logins = logins + 1 WHERE account_id = ?", now, parsed.accountId);
-    else db.run("INSERT INTO users(account_id, created_at, last_login_at) VALUES (?,?,?)", parsed.accountId, now, now);
+    if (existing) db.run("UPDATE users SET last_login_at = ?, logins = logins + 1, network = ? WHERE account_id = ?", now, network, parsed.accountId);
+    else db.run("INSERT INTO users(account_id, created_at, last_login_at, network) VALUES (?,?,?,?)", parsed.accountId, now, now, network);
     const { token, session } = issueSession(secret, parsed.accountId);
     log("info", "auth", `${parsed.accountId} signed in${existing ? "" : " for the first time"}`);
     return { token, expiresAt: session.expiresAt, created: !existing, user: userView(db.get<UserRow>("SELECT * FROM users WHERE account_id = ?", parsed.accountId)!) };

@@ -59,3 +59,15 @@ describe("sessions", () => {
     expect(readSession(secret, issueSession(secret, "alice.testnet", -1).token)).toBeNull();
   });
 });
+
+describe("which network an account signs in from", () => {
+  it("reads named accounts and lets a testnet deployment accept mainnet accounts", async () => {
+    const { accountNetwork, signInNetworks } = await import("../src/index.ts");
+    expect(accountNetwork("alice.testnet", "testnet")).toBe("testnet");
+    expect(accountNetwork("alice.near", "testnet")).toBe("mainnet");
+    expect(accountNetwork("a".repeat(64), "testnet")).toBe("testnet");
+    expect(signInNetworks("testnet")).toEqual(["mainnet", "testnet"]);
+    expect(signInNetworks("mainnet")).toEqual(["mainnet"]);
+    expect(signInNetworks("local")).toEqual(["local"]);
+  });
+});

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { NearRpc, type AgentSummary, type IntentView, type JobView, type SettlementView } from "@quorum/core";
-import { authed, authoriseSpending, connectWallet, network, signInWithDevWallet, signInWithWallet, signOut, useAccount, walletsSupported } from "../lib/account.ts";
+import { NETWORKS, NearRpc, type AgentSummary, type IntentView, type JobView, type SettlementView } from "@quorum/core";
+import { authed, authoriseSpending, connectWallet, network, setWalletNetwork, signInWithDevWallet, signInWithWallet, signOut, useAccount, walletsSupported } from "../lib/account.ts";
 import { agentName, useLive } from "../lib/api.ts";
 import { ago, usd } from "../lib/format.ts";
 import { Account, AgentChip, Empty, PageHead, Status, Tag, Tx } from "../components/ui.tsx";
@@ -92,16 +92,28 @@ function SignIn({ net }: { net: { key: string; name: string } | null }) {
               ) : (
                 <>
                   <h3 className="h3">Connect a NEAR wallet</h3>
+                  {net?.key === "testnet" && (
+                    <div className="stack" style={{ gap: 8 }}>
+                      <span className="label">Your account is on</span>
+                      <div className="seg" role="radiogroup" aria-label="Account network">
+                        {(["mainnet", "testnet"] as const).map((n) => (
+                          <button key={n} role="radio" aria-checked={acc.walletNetwork === n} className={acc.walletNetwork === n ? "on" : ""} onClick={() => setWalletNetwork(n)}>
+                            NEAR {n}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <p className="muted" style={{ margin: 0 }}>
-                    MyNearWallet, Meteor and HERE work on {net?.name ?? "NEAR testnet"}. New to testnet? Create an account at{" "}
-                    <a className="link" href="https://testnet.mynearwallet.com" target="_blank" rel="noreferrer">
-                      testnet.mynearwallet.com
-                    </a>
-                    .
+                    {net?.key === "testnet" && acc.walletNetwork === "mainnet"
+                      ? "Use the account you already have. Signing in is one signed message: no transaction, no fee, nothing leaves your wallet. The agents you launch trade test USDC on NEAR testnet."
+                      : "Sign in with a NEAR testnet account (a free one takes a minute at testnet.mynearwallet.com, or in Meteor after switching it to Testnet)."}{" "}
+                    MyNearWallet, Meteor and HERE are supported.
                   </p>
                   <button className="btn" style={{ alignSelf: "flex-start" }} disabled={!!acc.busy} onClick={() => void connectWallet()}>
                     Connect wallet
                   </button>
+                  <small className="faint">If your wallet asks you to create or import a wallet, it has no account on the network chosen above: switch it there.</small>
                 </>
               )
             ) : (
@@ -183,7 +195,8 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
 
   useEffect(() => {
     if (!net) return;
-    new NearRpc(net.rpc)
+    const rpc = !session.network || session.network === net.key ? net.rpc : (NETWORKS[session.network as "mainnet" | "testnet"]?.rpcUrl ?? net.rpc);
+    new NearRpc(rpc)
       .account(session.accountId)
       .then((a) => setNear(a ? (Number(a.amount / 10n ** 21n) / 1000).toFixed(3) : "0"))
       .catch(() => setNear(null));
@@ -210,7 +223,7 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
           <div className="card light stat">
             <span className="label">Signed in as</span>
             <strong className="mono" style={{ wordBreak: "break-all" }}>{session.accountId}</strong>
-            <small>{session.via === "dev" ? "dev wallet (local sandbox)" : "NEAR wallet"} · {near !== null ? `${near} NEAR` : "balance unavailable"}</small>
+            <small>{session.via === "dev" ? "dev wallet (local sandbox)" : `NEAR ${session.network ?? ""} account`} · {near !== null ? `${near} NEAR` : "balance unavailable"}</small>
           </div>
           <div className="card stat">
             <span className="label">Agents you operate</span>

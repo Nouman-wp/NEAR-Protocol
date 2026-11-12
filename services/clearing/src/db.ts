@@ -283,6 +283,11 @@ export class Db {
     mkdirSync(dataDir, { recursive: true });
     this.raw = new DatabaseSync(join(dataDir, file));
     this.raw.exec(SCHEMA);
+    // columns added after the first deployments
+    for (const [table, column, ddl] of [["users", "network", "TEXT"]] as const) {
+      const cols = this.raw.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+      if (!cols.some((c) => c.name === column)) this.raw.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
+    }
   }
 
   run(sql: string, ...params: SQLInputValue[]) {

@@ -312,7 +312,7 @@ export function StudioJobPage() {
                   <tr>
                     <th>Role</th>
                     <th>Round</th>
-                    <th>Bids</th>
+                    <th className="hide-sm">Bids</th>
                     <th>Winner</th>
                     <th style={{ textAlign: "right" }}>Paid</th>
                   </tr>
@@ -322,7 +322,7 @@ export function StudioJobPage() {
                     <tr key={t.role}>
                       <td>{t.name}</td>
                       <td>{t.roundId ? <Link to={`/rounds/${t.roundId}`}>#{t.roundId}</Link> : "—"}</td>
-                      <td className="num">{t.bids}</td>
+                      <td className="num hide-sm">{t.bids}</td>
                       <td>{t.winner ? <AgentChip id={t.winner.agentId} /> : <span className="faint">bidding…</span>}</td>
                       <td className="num" style={{ textAlign: "right" }}>
                         {t.price ? usd(t.price, 4) : "—"}
@@ -527,7 +527,7 @@ function Deliverables({ kind, d }: { kind: string; d: Record<string, unknown> })
             <Figure m={d.original as Media} alt="Original" caption={src.url ? <a href={src.url}>Original from Wikimedia</a> : "Original"} />
             <Figure m={d.graded as Media} alt="Retouched and graded" caption={`Retouched (contrast ${st.before.contrast} → ${st.after.contrast}) and graded "${String(d.look)}"`} />
           </div>
-          <div className="grid g3" style={{ gap: 18, alignItems: "start" }}>
+          <div className="crops">
             {Object.entries(crops).map(([k, m]) => (
               <Figure key={k} m={m} alt={`${k} crop`} caption={`${k} ${m.width}×${m.height}`} maxHeight={320} />
             ))}

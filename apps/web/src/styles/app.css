@@ -1488,3 +1488,124 @@ video {
     font-size: 10px;
   }
 }
+
+/* sign-in network choice */
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  padding: 3px;
+  gap: 3px;
+  align-self: flex-start;
+}
+.seg button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.seg button.on {
+  background: var(--solid);
+  color: var(--on-solid);
+}
+
+/* studio photo crops: three across, two on phones */
+.crops {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 640px) {
+  .crops {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .hide-sm {
+    display: none;
+  }
+}
+
+/* a long account name never pushes the header past the edge */
+@media (max-width: 1360px) {
+  .site-header .account-btn .lbl-full {
+    display: none;
+  }
+  .site-header .account-btn .lbl-short {
+    display: inline;
+  }
+}
+
+/* the wallet picker follows the site's theme, not the operating system's */
+:root #near-wallet-selector-modal {
+  --backdrop-bg: rgba(42, 36, 29, 0.38);
+  --heading-color: #2a241d;
+  --text-color: #5f574e;
+  --sidebar-border-color: rgba(42, 36, 29, 0.12);
+  --selected-wallet-bg: #6d2937;
+  --selected-wallet-bg-hover: rgba(109, 41, 55, 0.12);
+  --wallet-option-border-color: rgba(42, 36, 29, 0.14);
+  --wallet-option-bg-hover: rgba(109, 41, 55, 0.08);
+  --wallet-option-outline-color: #6d2937;
+  --content-bg: #f1ebe0;
+  --change-path-bg: #e9e2d5;
+  --home-button-bg: #e9e2d5;
+  --confirm-button-bg: #6d2937;
+  --confirm-button-bg-hover: #8c2c40;
+  --error: #b3261e;
+  --close-button-bg-color: #e9e2d5;
+  --close-button-fill-icon-color: #2a241d;
+  --spinner-color: #6d2937;
+  --bottom-section: #e9e2d5;
+  --mobile-text: #5f574e;
+  --connected-green: #4f6a3f;
+  --get-wallet-option-bg-color: #e9e2d5;
+  --get-wallet-option-bg-color-hover: rgba(109, 41, 55, 0.08);
+  --get-wallet-option-border-color: rgba(42, 36, 29, 0.14);
+  --get-wallet-outline-color: #6d2937;
+  --get-wallet-option-box-shadow: none;
+  --secondary-button-bg-color: #e9e2d5;
+  --secondary-button-border-color: rgba(42, 36, 29, 0.2);
+  --secondary-button-text-color: #2a241d;
+  --what-wallet-icon-color: #6d2937;
+  --option-wallet-bg-color: #e9e2d5;
+  --option-single-wallet-bg-color: #e9e2d5;
+}
+:root[data-theme="dark"] #near-wallet-selector-modal {
+  --backdrop-bg: rgba(0, 0, 0, 0.5);
+  --heading-color: #f3f0e8;
+  --text-color: rgba(243, 240, 232, 0.7);
+  --sidebar-border-color: rgba(243, 240, 232, 0.12);
+  --selected-wallet-bg: #8c2c40;
+  --selected-wallet-bg-hover: rgba(233, 201, 207, 0.1);
+  --wallet-option-border-color: rgba(243, 240, 232, 0.14);
+  --wallet-option-bg-hover: rgba(233, 201, 207, 0.08);
+  --wallet-option-outline-color: #e9c9cf;
+  --content-bg: #260d15;
+  --change-path-bg: #1c0a10;
+  --home-button-bg: #1c0a10;
+  --confirm-button-bg: #c8707f;
+  --confirm-button-bg-hover: #e9c9cf;
+  --error: #ff8a78;
+  --close-button-bg-color: #1c0a10;
+  --close-button-fill-icon-color: #f3f0e8;
+  --spinner-color: #e9c9cf;
+  --bottom-section: #1c0a10;
+  --mobile-text: rgba(243, 240, 232, 0.7);
+  --connected-green: #aab59b;
+  --get-wallet-option-bg-color: #1c0a10;
+  --get-wallet-option-bg-color-hover: rgba(233, 201, 207, 0.08);
+  --get-wallet-option-border-color: rgba(243, 240, 232, 0.14);
+  --get-wallet-outline-color: #e9c9cf;
+  --secondary-button-bg-color: #1c0a10;
+  --secondary-button-border-color: rgba(243, 240, 232, 0.2);
+  --secondary-button-text-color: #f3f0e8;
+  --what-wallet-icon-color: #e9c9cf;
+  --option-wallet-bg-color: #1c0a10;
+  --option-single-wallet-bg-color: #1c0a10;
+}

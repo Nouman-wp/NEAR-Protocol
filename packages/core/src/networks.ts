@@ -62,3 +62,15 @@ export const LOCAL_DEV_SEED = "quorum-local-development-seed";
 export function accountKey(seed: string, name: string): KeyPair {
   return deriveKeyPair(seed, `quorum/account/${name}`);
 }
+
+/** The network a named account lives on (.testnet or .near); implicit accounts fall back to the given one. */
+export function accountNetwork(accountId: string, fallback: NetworkKey): NetworkKey {
+  if (accountId.endsWith(".testnet")) return "testnet";
+  if (accountId.endsWith(".near")) return "mainnet";
+  return fallback;
+}
+
+/** Networks whose accounts may sign in to a deployment: its own, and mainnet next to testnet. */
+export function signInNetworks(deployment: NetworkKey): NetworkKey[] {
+  return deployment === "testnet" ? ["mainnet", "testnet"] : [deployment];
+}
