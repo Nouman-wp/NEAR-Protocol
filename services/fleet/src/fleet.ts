@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { ONE_NEAR, formatUnits, randomKeyPair, type AgentSummary as Summary } from "@quorum/core";
 import { ClearingClient, QuorumAgent, Operator, RoundVoidError, end, serveAgents, type AgentProfile, type ChainRound, type ClearingConfig, type HireResult } from "@quorum/sdk";
@@ -114,6 +115,8 @@ export class Fleet {
   readonly standing = new Map<string, string>();
   readonly briefs: BriefRecord[] = [];
   readonly studioJobs: StudioJob[] = [];
+  private readonly studioFile: string;
+  private studioDirty = false;
   readonly media: MediaStore;
   readonly users: UserAgents;
   readonly activity = new Map<string, number>();
@@ -137,6 +140,8 @@ export class Fleet {
     this.state = { paused: false, background: cfg.background, rogueBadRate: cfg.rogueBadRate, rogueDiscount: false, offline: new Set(), scenario: null };
     this.members = [...(cfg.research ? RESEARCH : []), ...(cfg.market ? marketMembers(cfg.simBuyers, cfg.simSellers, cfg.simSeed) : []), ...(cfg.studios ? studioMembers() : [])];
     this.media = new MediaStore(join(cfg.dataDir, "media"), cfg.publicUrl);
+    this.studioFile = join(cfg.dataDir, `studio-jobs-${cfg.network}.json`);
+    this.loadStudioJobs();
     this.users = new UserAgents(this);
   }
 
@@ -487,6 +492,38 @@ export class Fleet {
   }
 
   // ---------------------------------------------------------------- studios
+
+  /** Commission records (with their deliverables) are kept on disk, so a restart keeps the history. */
+  private loadStudioJobs(): void {
+    try {
+      if (!existsSync(this.studioFile)) return;
+      const jobs = JSON.parse(readFileSync(this.studioFile, "utf8")) as StudioJob[];
+      for (const j of jobs) {
+        if (j.status === "forming" || j.status === "working") {
+          j.status = "failed";
+          j.error = "interrupted by a restart of the swarm";
+          j.finishedAt = j.finishedAt ?? Date.now();
+        }
+      }
+      this.studioJobs.push(...jobs.slice(0, 40));
+    } catch {
+      // a damaged file starts the history afresh
+    }
+  }
+
+  /** Called whenever a commission changes; written to disk at most every couple of seconds. */
+  markStudioJobs(): void {
+    if (this.studioDirty) return;
+    this.studioDirty = true;
+    setTimeout(() => {
+      this.studioDirty = false;
+      try {
+        writeFileSync(this.studioFile, JSON.stringify(this.studioJobs));
+      } catch (err) {
+        this.log("studios", `could not save commissions: ${(err as Error).message}`);
+      }
+    }, 2_000);
+  }
 
   /** The founder commissions a studio; the studio's lead forms its team and does the work. */
   async commission(kind: StudioKind, brief: Record<string, unknown> | null, origin: string): Promise<{ ok: boolean; message: string }> {

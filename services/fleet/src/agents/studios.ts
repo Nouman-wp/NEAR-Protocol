@@ -357,6 +357,7 @@ export async function runStudio(fleet: Fleet, studio: StudioDef, brief: Record<s
   const step = (text: string) => {
     rec.steps.push({ at: Date.now(), text });
     fleet.log(studio.slug, `[${rec.id}] ${text}`);
+    fleet.markStudioJobs();
   };
   if (ctx.buyer) {
     const c = await fleet.agentSummary(ctx.buyer).catch(() => null);
@@ -437,6 +438,7 @@ export async function runStudio(fleet: Fleet, studio: StudioDef, brief: Record<s
     step(`failed: ${rec.error}`);
   } finally {
     rec.finishedAt = Date.now();
+    fleet.markStudioJobs();
   }
   return rec;
 }
