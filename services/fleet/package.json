@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "@quorum/core": "workspace:*",
-    "@quorum/sdk": "workspace:*"
+    "@quorum/sdk": "workspace:*",
+    "gifenc": "1.0.3",
+    "jpeg-js": "0.4.4"
   },
   "devDependencies": {
     "tsx": "4.23.15",
