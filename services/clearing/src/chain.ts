@@ -254,6 +254,16 @@ export class Chain {
   }
 
   /** Is `publicKey` an access key of `account` right now? Cached for a minute. */
+  /** A key that can sign for the account in full: what a human operator authorises with. */
+  async holdsFullAccessKey(account: AccountId, publicKey: PublicKey): Promise<boolean> {
+    const k = `full|${account}|${publicKey}`;
+    const hit = this.keyChecks.get(k);
+    if (hit && Date.now() - hit.at < 60_000) return hit.ok;
+    const ok = (await this.rpc.accessKey(account, publicKey))?.fullAccess === true;
+    this.keyChecks.set(k, { at: Date.now(), ok });
+    return ok;
+  }
+
   async holdsKey(account: AccountId, publicKey: PublicKey): Promise<boolean> {
     const k = `${account}|${publicKey}`;
     const hit = this.keyChecks.get(k);

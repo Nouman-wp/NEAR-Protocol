@@ -20,6 +20,14 @@ CREATE TABLE IF NOT EXISTS meta (
   value TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS users (
+  account_id TEXT PRIMARY KEY,
+  display_name TEXT,
+  created_at INTEGER NOT NULL,
+  last_login_at INTEGER NOT NULL,
+  logins INTEGER NOT NULL DEFAULT 1
+);
+
 CREATE TABLE IF NOT EXISTS agents (
   agent_id INTEGER PRIMARY KEY,
   slug TEXT,

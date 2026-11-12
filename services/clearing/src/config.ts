@@ -66,6 +66,8 @@ const schema = z.object({
 
 export type Config = z.infer<typeof schema> & {
   FLEET_CONTROL_URL: string;
+  /** sessions issued at sign-in are MACed with a secret derived from this */
+  sessionSeed: string;
   network: NetworkKey;
   keepEpochs: number;
   keepRounds: number;
@@ -94,6 +96,7 @@ export function loadConfig(): Config {
   }
   return {
     ...env,
+    sessionSeed: seed ?? env.ADMIN_TOKEN ?? "quorum-local",
     FLEET_CONTROL_URL: (env.FLEET_CONTROL_URL ?? `http://localhost:${env.FLEET_PORT}`).replace(/\/+$/, ""),
     network,
     rpcUrl: env.NEAR_RPC_URL || NETWORKS[network].rpcUrl,

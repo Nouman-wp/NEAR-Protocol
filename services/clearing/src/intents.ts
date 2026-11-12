@@ -1,4 +1,4 @@
-import { intentDigest, verifyMessage, type Hex, type IntentMandate, type IntentView, type QuorumDomain, type Signature } from "@quorum/core";
+import { intentDigest, messageText, nep413Hash, normaliseSignature, verifyHash, verifyMessage, type Hex, type IntentMandate, type IntentView, type QuorumDomain, type Signature } from "@quorum/core";
 import type { Chain } from "./chain.ts";
 import type { Db } from "./db.ts";
 import type { Registry } from "./registry.ts";
@@ -43,14 +43,20 @@ export class Intents {
     private readonly chain: Chain,
   ) {}
 
-  async register(intent: IntentMandate, signature: Signature): Promise<IntentView> {
+  async register(intent: IntentMandate, signature: Signature, callbackUrl?: string): Promise<IntentView> {
     const id = intentDigest(this.domain, intent);
     const existing = this.row(id);
     if (existing) return this.view(existing);
 
-    if (!verifyMessage(this.domain, "IntentMandate", intent, signature, intent.operatorKey)) throw new IntentError("signature does not match the intent's operator key");
-    if (!(await this.chain.holdsKey(intent.operator, intent.operatorKey))) {
-      throw new IntentError(`${intent.operatorKey} is not an access key of ${intent.operator}`);
+    // signed by the operator's own key, or by the operator's wallet (base64, maybe with the callback URL in the payload)
+    const sig = normaliseSignature(signature);
+    const text = messageText("IntentMandate", intent);
+    const signed =
+      verifyMessage(this.domain, "IntentMandate", intent, sig, intent.operatorKey) ||
+      (callbackUrl !== undefined && verifyHash(nep413Hash(text, this.domain.contract, undefined, callbackUrl), sig, intent.operatorKey));
+    if (!signed) throw new IntentError("signature does not match the intent's operator key");
+    if (!(await this.chain.holdsFullAccessKey(intent.operator, intent.operatorKey))) {
+      throw new IntentError(`${intent.operatorKey} is not a full-access key of ${intent.operator}`);
     }
     // a freshly registered agent may not be in the local mirror yet: read it from chain
     const buyer = this.registry.get(intent.buyer) ?? (await this.registry.refresh(intent.buyer).catch(() => undefined));
