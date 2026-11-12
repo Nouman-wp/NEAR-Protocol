@@ -468,7 +468,8 @@ export class QuorumAgent {
         commit_ms: o.commitMs ?? 5_000,
         reveal_ms: o.revealMs ?? 5_000,
       },
-      { gas: 50n * TGAS },
+      // burns about 3 Tgas; prepaid gas is reserved from the balance up front, so ask for little
+      { gas: 15n * TGAS },
     );
     const roundId = r.value;
     // tell the clearing service now rather than at its next poll, and publish what the round is for
@@ -482,13 +483,13 @@ export class QuorumAgent {
 
   /** Add this agent's demand to a group buy. */
   joinRound(roundId: number, quantity: number, maxPrice: bigint): Promise<TxResult> {
-    return this.near.call(this.contract, "join_round", { round_id: roundId, quantity, max_price: maxPrice.toString() }, { gas: 30n * TGAS });
+    return this.near.call(this.contract, "join_round", { round_id: roundId, quantity, max_price: maxPrice.toString() }, { gas: 10n * TGAS });
   }
 
   /** Commit to a hidden unit price. The salt stays with the agent until the reveal. */
   async commitBid(roundId: number, price: bigint): Promise<TxResult> {
     const salt = bytesToHex(randomBytes(32));
-    const r = await this.near.call(this.contract, "commit_bid", { round_id: roundId, commitment: bidCommitment(roundId, this.agentId, price, salt) }, { gas: 30n * TGAS });
+    const r = await this.near.call(this.contract, "commit_bid", { round_id: roundId, commitment: bidCommitment(roundId, this.agentId, price, salt) }, { gas: 10n * TGAS });
     this.sealed.set(roundId, { price, salt, revealed: false });
     return r;
   }
@@ -496,14 +497,14 @@ export class QuorumAgent {
   async revealBid(roundId: number): Promise<TxResult> {
     const bid = this.sealed.get(roundId);
     if (!bid) throw new Error(`no sealed bid for round #${roundId}`);
-    const r = await this.near.call(this.contract, "reveal_bid", { round_id: roundId, price: bid.price.toString(), salt: bid.salt }, { gas: 30n * TGAS });
+    const r = await this.near.call(this.contract, "reveal_bid", { round_id: roundId, price: bid.price.toString(), salt: bid.salt }, { gas: 10n * TGAS });
     bid.revealed = true;
     return r;
   }
 
   /** Anyone may close a round once its windows have passed. The contract decides the result. */
   async closeRound(roundId: number): Promise<ChainRound> {
-    const r = await this.near.call<ChainRound>(this.contract, "close_round", { round_id: roundId }, { gas: 60n * TGAS });
+    const r = await this.near.call<ChainRound>(this.contract, "close_round", { round_id: roundId }, { gas: 25n * TGAS });
     void (async () => {
       await this.client.refreshRound(roundId).catch(() => undefined);
       await this.client.noteRoundTx(roundId, "close", r.hash, this.accountId).catch(() => undefined);

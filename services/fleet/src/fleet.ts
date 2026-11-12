@@ -279,7 +279,11 @@ export class Fleet {
       }
     });
     await agent.ensureIntentsKey();
-    const sent = await this.operator.topUpNear(agent.accountId, (this.cfg.nearTarget * 6n) / 10n).catch(() => 0n);
+    // agents that open and close rounds keep more NEAR: each call reserves its prepaid gas up front
+    const opensRounds = m.slug === "orchestrator" || (m.group === "studios" && m.buys.length > 0);
+    const target = opensRounds ? this.cfg.nearTarget * 4n : this.cfg.nearTarget;
+    const have = (await agent.near.rpc.account(agent.accountId).catch(() => null))?.amount ?? 0n;
+    const sent = have < (target * 6n) / 10n ? await this.operator.topUpNear(agent.accountId, target).catch(() => 0n) : 0n;
     if (sent > 0n) this.log(m.slug, `gas topped up by ${(Number(sent / (ONE_NEAR / 1000n)) / 1000).toFixed(3)} NEAR`);
   }
 

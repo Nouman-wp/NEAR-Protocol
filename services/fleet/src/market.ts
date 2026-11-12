@@ -221,12 +221,21 @@ export class Market {
           const buyer = byId.get(String(a.buyer));
           const intentId = buyer && this.fleet.standing.get(`${buyer.profile!.slug}:main`);
           if (!buyer || !intentId) return false;
-          try {
-            await buyer.hireRoundWinner(round, { hours: a.quantity }, { intentId });
-            return true;
-          } catch (err) {
-            this.fleet.log(buyer.profile!.slug, `could not buy its share of round #${roundId}: ${(err as Error).message}`);
-            return false;
+          // a slow node can time a purchase out after the IOU went through: try again, and
+          // count "already bought" as done
+          for (let attempt = 0; ; attempt++) {
+            try {
+              await buyer.hireRoundWinner(round, { hours: a.quantity }, { intentId });
+              return true;
+            } catch (err) {
+              const msg = (err as Error).message;
+              if (/already bought its allocation/.test(msg)) return true;
+              if (attempt >= 2) {
+                this.fleet.log(buyer.profile!.slug, `could not buy its share of round #${roundId}: ${msg}`);
+                return false;
+              }
+              await new Promise((r) => setTimeout(r, 1_500 * (attempt + 1)));
+            }
           }
         }),
       );
