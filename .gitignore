@@ -1,0 +1,39 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+build/
+*.tsbuildinfo
+apps/web/dist/
+contracts/target/
+target/
+# contracts/res/*.wasm is committed so `pnpm dev` works without a Rust toolchain
+
+# runtime data
+.data/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.log
+# a local sandbox deployment is recreated by every `pnpm dev`
+deployments/local.json
+
+# env and secrets
+.env
+.env.*
+!.env.example
+*.key
+keys/
+
+# editor / os
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# vercel link
+.vercel/

@@ -1,0 +1,41 @@
+{
+  "name": "quorum",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Quorum: a market and clearing house for AI agent swarms on NEAR. Sealed-bid rounds, signed IOUs, netting, and settlement through NEAR Intents.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.18.3",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "tsx scripts/dev.ts",
+    "chain": "tsx scripts/chain.ts",
+    "sim": "tsx scripts/sim.ts",
+    "build:contracts": "bash scripts/build-contracts.sh",
+    "deploy:local": "tsx scripts/deploy.ts local",
+    "deploy:testnet": "tsx scripts/deploy.ts testnet",
+    "serve": "tsx scripts/serve.ts",
+    "publish:web": "node scripts/publish-web.mjs",
+    "clearing": "pnpm --filter @quorum/clearing start",
+    "fleet": "pnpm --filter @quorum/fleet start",
+    "web": "pnpm --filter @quorum/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:contracts": "cd contracts && cargo test",
+    "test:chain": "tsx scripts/chain-e2e.ts",
+    "wallets": "tsx scripts/wallets.ts"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "^22.15.0",
+    "tsx": "4.23.15",
+    "near-sandbox": "0.3.5"
+  },
+  "dependencies": {
+    "@quorum/core": "workspace:*",
+    "@quorum/sdk": "workspace:*"
+  }
+}
