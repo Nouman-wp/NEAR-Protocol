@@ -1,5 +1,6 @@
 # HTTPS (and the live WebSocket feed) for the Quorum backend. Caddy gets the certificate itself.
-# setup.sh writes this to /etc/caddy/Caddyfile with QUORUM_DOMAIN replaced.
+# setup.sh writes this to /etc/caddy/quorum.caddy with QUORUM_DOMAIN (and the port) replaced,
+# and imports it from /etc/caddy/Caddyfile, so other sites on the server keep working.
 QUORUM_DOMAIN {
 	encode gzip
 	reverse_proxy 127.0.0.1:8790

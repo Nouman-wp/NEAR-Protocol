@@ -5,12 +5,17 @@
 #
 #   sudo bash deploy/vm/setup.sh <domain>          e.g. quorum-api.example.org
 #
+# On a server that already runs other sites, set QUORUM_EDGE_PORT to a free port (and EDGE_PORT,
+# PORT, FLEET_PORT in the env file to match). Caddy keeps every site it already serves: Quorum's
+# is added as an import, never by replacing the Caddyfile.
+#
 # Then copy the env file(s) and the ledger over, and start the backend (see docs/DEPLOY.md).
 set -euo pipefail
 
 DOMAIN="${1:-}"
 REPO="${QUORUM_REPO:-https://github.com/Nouman-wp/NEAR-Protocol.git}"
 DIR=/opt/quorum
+EDGE_PORT="${QUORUM_EDGE_PORT:-8790}"
 [ "$(id -u)" -eq 0 ] || { echo "run with sudo"; exit 1; }
 
 echo "── packages"
@@ -67,8 +72,13 @@ if command -v netfilter-persistent >/dev/null; then
 fi
 
 if [ -n "$DOMAIN" ]; then
-  echo "── Caddy for https://$DOMAIN"
-  sed "s/QUORUM_DOMAIN/$DOMAIN/" "$DIR/deploy/vm/Caddyfile" > /etc/caddy/Caddyfile
+  echo "── Caddy for https://$DOMAIN -> 127.0.0.1:$EDGE_PORT"
+  sed -e "s/QUORUM_DOMAIN/$DOMAIN/" -e "s/127.0.0.1:8790/127.0.0.1:$EDGE_PORT/" "$DIR/deploy/vm/Caddyfile" > /etc/caddy/quorum.caddy
+  touch /etc/caddy/Caddyfile
+  grep -qxF 'import /etc/caddy/quorum.caddy' /etc/caddy/Caddyfile || printf '
+import /etc/caddy/quorum.caddy
+' >> /etc/caddy/Caddyfile
+  caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
   systemctl reload caddy || systemctl restart caddy
 fi
 
