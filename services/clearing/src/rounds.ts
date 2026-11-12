@@ -57,8 +57,10 @@ export class RoundBook {
       const open = this.db.all<{ id: number }>("SELECT id FROM rounds WHERE status = 'Open'").map((r) => r.id);
       const fresh: number[] = [];
       for (let id = this.known + 1; id <= count; id++) fresh.push(id);
-      await Promise.all([...open, ...fresh].map((id) => this.refresh(id)));
-      this.known = Math.max(this.known, count);
+      // one round that cannot be read (a rate-limited RPC) must not hold up the others
+      const results = await Promise.allSettled([...open, ...fresh].map((id) => this.refresh(id)));
+      const freshFailed = results.slice(open.length).some((r) => r.status === "rejected");
+      if (!freshFailed) this.known = Math.max(this.known, count);
       await this.closeAbandoned();
     } catch (err) {
       log("warn", "rounds", `sync failed: ${(err as Error).message}`);
