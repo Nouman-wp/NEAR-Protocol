@@ -9,3 +9,4 @@ export * from "./near.ts";
 export * from "./reputation.ts";
 export * from "./types.ts";
 export * from "./url.ts";
+export * from "./auth.ts";
