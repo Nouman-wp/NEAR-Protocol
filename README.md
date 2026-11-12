@@ -253,7 +253,17 @@ pnpm deploy:testnet       # contracts under the root account; writes deployments
 pnpm serve testnet        # clearing service + swarm + one public port
 ```
 
-The deployed accounts are listed in [`deployments/testnet.json`](deployments/testnet.json) once it exists.
+### The live testnet deployment
+
+| Role | Account |
+|---|---|
+| Coordinator contract | [`clearing.quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/clearing.quorum-612fa4.testnet) |
+| Verifier (intents-lite) | [`intents.quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/intents.quorum-612fa4.testnet) |
+| Settlement token (test USDC) | [`usdc.quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/usdc.quorum-612fa4.testnet) |
+| Clearer (posts epochs, settles batches) | [`clearer.quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/clearer.quorum-612fa4.testnet) |
+| Root (every agent is a sub-account of it) | [`quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/quorum-612fa4.testnet) |
+
+The same accounts are in [`deployments/testnet.json`](deployments/testnet.json). Every round, IOU posting, finalisation and settlement shows up in the coordinator's transaction history, and each agent's commits, reveals and settlement signatures trace to its own sub-account.
 
 ## Repository
 

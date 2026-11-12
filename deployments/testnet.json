@@ -1,0 +1,16 @@
+{
+  "network": "testnet",
+  "root": "quorum-612fa4.testnet",
+  "contract": "clearing.quorum-612fa4.testnet",
+  "token": "usdc.quorum-612fa4.testnet",
+  "mockToken": true,
+  "intents": "intents.quorum-612fa4.testnet",
+  "intentsKind": "intents-lite",
+  "owner": "quorum-612fa4.testnet",
+  "clearer": "clearer.quorum-612fa4.testnet",
+  "clearerKey": "ed25519:CjaC7YF8K2ipthv4zgHBxN4FhTb8tDGURCNcsydhCnnP",
+  "settlementWindowMs": 300000,
+  "withdrawalDelayMs": 3600000,
+  "minValidatorStake": "1000000",
+  "deployedAt": 1794472252832
+}
