@@ -45,13 +45,14 @@ pnpm install
 | Do this | You will see |
 |---|---|
 | `pnpm sim` | A local NEAR node starts and the three contracts deploy. Then 20 buyer and 5 seller agents are created, each on its own sub-account, and run 8 sealed-bid group-buy rounds with scripted strategies and no model calls. The report lists every round and epoch, then 8 checks against the chain. Exit code 0 only if all pass. Takes about 3 minutes. |
-| `pnpm dev` | The same node and contracts, then the clearing service (`:8787`), the agent swarm (`:8788`) and the website (http://localhost:5173). The swarm needs about a minute to create and fund its 34 accounts. Then it trades on its own: research briefs with fact checks put out to tender, and group buys of GPU hours. |
+| `pnpm dev` | The same node and contracts, then the clearing service (`:8787`), the agent swarm (`:8788`) and the website (http://localhost:5173). The swarm needs about a minute and a half to create and fund its 49 accounts. Then it trades on its own: research briefs with fact checks put out to tender, group buys of GPU hours, and studio commissions. |
 | On the **Live floor**, click **Run** next to *Swarm minute* | Six group buys and four research briefs in a minute: dozens of sealed bids, then one epoch netted and settled through the verifier. The admin token is `quorum-admin` locally. |
 | Open **Rounds**, then any round | The sealed bids, revealed after bidding closed; the winner and clearing price; each buyer's limit and share; and a recomputation in your browser that matches the contract. |
 | Open **Epochs**, then a sealed epoch | Net positions summing to zero, the settlement plan (debtor → creditor), and the `settle` transaction that executed it through the verifier. |
 | Open **Verify** | Your browser reads the epoch from the chain and checks every signature, the netting and the plan. Expect "Everything matches". |
 | `pnpm test:chain` | The contracts against a real NEAR node with no services. It covers a tender and a group buy, IOUs posted and netted, one NEAR Intents batch settling the epoch, and a default covered from collateral. A forged IOU, a changed bid, an early reveal, an underpaying batch and a replayed payload are all refused. |
 | `pnpm test:contracts` (needs Rust) and `pnpm -r test` | 67 contract unit tests and 82 TypeScript tests. |
+| `pnpm test:forge` (needs Rust) | The contracts the Forge studio delivers, written to a cargo workspace and built as delivered: each template passes its own unit tests and builds to wasm, and each sloppy variant (an access check left out) fails exactly the tests that guard that check. |
 
 On **Windows**, run the node in WSL and everything else in Windows. WSL forwards localhost, so `pnpm dev` finds the node:
 
@@ -62,7 +63,7 @@ pnpm install && pnpm chain
 pnpm install && pnpm dev
 ```
 
-`pnpm sim --seed 7 --rounds 12 --buyers 10 --sellers 3` changes the market. The same seed gives the same demand and the same bids. On our machine, seed 42 produced 8 rounds with 40 sealed bids and 62 IOUs, which netted into 36 transfers in 4 verifier batches; buyers paid $6.48 less than at the reserve price.
+`pnpm sim --seed 7 --rounds 12 --buyers 10 --sellers 3` changes the market. The same seed gives the same demand and the same bids. On a fresh clone, seed 42 produced 8 rounds with 40 sealed bids and 62 IOUs, and buyers paid $6.48 less than at the reserve price. The IOUs netted into 36 to 38 transfers in 4 to 6 verifier batches: the exact split depends on where the epoch boundaries fall.
 
 ## See it
 
@@ -161,7 +162,7 @@ Five studio agents each sell a finished product. When a client agent hires one, 
 | Studio | Sells | Team it tenders | What the team actually produces |
 |---|---|---|---|
 | **Atelier** | Brand kit | palette, type scale, logo | A five-colour palette tuned until every pair the brand uses passes WCAG AA, a modular type scale as CSS, a geometric logo mark as SVG, and a one-page brand sheet |
-| **Forge** | NEAR smart contract | contract code, audit, tests | A near-sdk 5 contract (escrow, capped token or member voting), a static audit that parses the methods and reports access, deposit, callback, arithmetic and storage-prefix problems with line numbers, and a unit-test module with guard coverage |
+| **Forge** | NEAR smart contract | contract code, audit, tests | A near-sdk 5 contract (escrow, capped token or member voting), a static audit that parses the methods and reports access, deposit, callback, arithmetic and storage-prefix problems with line numbers, and a unit-test module with guard coverage. `pnpm test:forge` compiles every template exactly as delivered: each passes its own tests and builds to wasm |
 | **Foundry** | REST API | API spec, database schema, API code | An OpenAPI 3.1 spec, Postgres DDL with checks and indexes, and Fastify handlers with zod validation, cross-checked so every operation has a handler and every field a column |
 | **Darkroom** | Photo edit | retouch, colour grade, reframe | Real pixel work on the lead photo of any Wikipedia article: auto levels, a contrast curve and sharpening, a colour grade (film, noir, teal-orange, vintage, vivid), and crops for square, story and banner around the most detailed region |
 | **Cutroom** | Short video | storyboard, edit, captions | A shot list from a Wikipedia topic, an animated GIF cut frame by frame over the articles' photos (Ken Burns moves and crossfades), and WebVTT captions checked against broadcast limits |
@@ -293,7 +294,7 @@ await agent.settleDebts();
 | Creditors are paid even if a debtor vanishes | Collateral locked at finalisation, paid into the verifier on default | `default_seizes_collateral_and_seals`, e2e |
 | TypeScript and Rust agree byte for byte | Shared vectors | `parity_vectors` (Rust) and "parity with the contract" (TS) |
 
-**67** contract unit tests, **82** TypeScript tests, the chain end-to-end test and the simulation's 8 on-chain checks all run in CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
+**67** contract unit tests, **82** TypeScript tests, the generated-contract check, the chain end-to-end test and the simulation's 8 on-chain checks all run in CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
 
 ## NEAR testnet
 

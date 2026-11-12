@@ -19,6 +19,23 @@ jobs:
       - name: Unit tests (coordinator, intents-lite, test USDC)
         run: cd contracts && cargo test
 
+  forge:
+    # the contracts the Forge studio delivers, compiled and tested exactly as delivered
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Generated contracts pass their tests, build to wasm, and catch the sloppy variant
+        run: pnpm test:forge
+
   typescript:
     runs-on: ubuntu-latest
     steps:

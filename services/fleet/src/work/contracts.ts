@@ -340,16 +340,18 @@ export function writeContract(brief: ContractBrief): ContractCode {
       : template === "token"
         ? token(struct, title, Math.max(1, Math.round(brief.param ?? 1_000_000)))
         : voting(struct, title, Math.max(1, Math.round(brief.param ?? 60)));
+  // the tester delivers src/tests.rs; a normal build skips it
+  const lib = `${src.trimEnd()}\n\n#[cfg(test)]\nmod tests;\n`;
   return {
     template,
     crate,
     struct,
     files: [
       { path: "Cargo.toml", content: CARGO(crate) },
-      { path: "src/lib.rs", content: src },
+      { path: "src/lib.rs", content: lib },
     ],
     methods: parseMethods(src).filter((m) => m.pub).map((m) => m.name),
-    lines: src.split("\n").length,
+    lines: lib.split("\n").length,
   };
 }
 
@@ -406,28 +408,27 @@ export function writeTests(code: ContractCode): TestSuite {
   const cases = SUITES[code.template](code.struct);
   const guards = [...lib.matchAll(/require!\([^"]*"([^"]+)"\)/g)].map((m) => m[1]!);
   const covered = new Set(cases.map((c) => c.panics).filter(Boolean));
-  const extraUse = code.template === "token" ? "use near_sdk::json_types::U128;\n    " : "";
-  const content = `#[cfg(test)]
-mod tests {
-    use super::*;
-    ${extraUse}use near_sdk::test_utils::{accounts, VMContextBuilder};
-    use near_sdk::{testing_env, NearToken};
+  const extraUse = code.template === "token" ? "use near_sdk::json_types::U128;\n" : "";
+  // the module body itself: lib.rs declares `mod tests;`, so `use super::*` reaches the contract
+  const content = `//! Unit tests for ${code.struct}. lib.rs declares this module; run them with \`cargo test\`.
+use super::*;
+${extraUse}use near_sdk::test_utils::{accounts, VMContextBuilder};
+use near_sdk::{testing_env, NearToken};
 
-    fn ctx(predecessor: usize, deposit: u128) {
-        let mut b = VMContextBuilder::new();
-        b.predecessor_account_id(accounts(predecessor)).attached_deposit(NearToken::from_yoctonear(deposit));
-        testing_env!(b.build());
-    }
+fn ctx(predecessor: usize, deposit: u128) {
+    let mut b = VMContextBuilder::new();
+    b.predecessor_account_id(accounts(predecessor)).attached_deposit(NearToken::from_yoctonear(deposit));
+    testing_env!(b.build());
+}
 ${cases
   .map(
     (c) => `
-    #[test]${c.panics ? `\n    #[should_panic(expected = "${c.panics}")]` : ""}
-    fn ${c.name}() {
-        ${c.body}
-    }`,
+#[test]${c.panics ? `\n#[should_panic(expected = "${c.panics}")]` : ""}
+fn ${c.name}() {
+    ${c.body.replace(/\n {8}/g, "\n    ")}
+}`,
   )
   .join("\n")}
-}
 `;
   return { path: "src/tests.rs", content, cases: cases.map((c) => c.name), guards: guards.map((g) => ({ message: g, covered: covered.has(g) })) };
 }

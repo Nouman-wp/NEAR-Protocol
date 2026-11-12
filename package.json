@@ -26,6 +26,7 @@
     "test": "pnpm -r test",
     "test:contracts": "cd contracts && cargo test",
     "test:chain": "tsx scripts/chain-e2e.ts",
+    "test:forge": "tsx scripts/forge-check.ts",
     "wallets": "tsx scripts/wallets.ts"
   },
   "devDependencies": {
