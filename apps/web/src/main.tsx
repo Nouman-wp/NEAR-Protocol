@@ -19,6 +19,8 @@ const JobPage = lazy(() => import("./pages/Job.tsx"));
 const Verify = lazy(() => import("./pages/Verify.tsx"));
 const Disputes = lazy(() => import("./pages/Verify.tsx").then((m) => ({ default: m.Disputes })));
 const Developers = lazy(() => import("./pages/Developers.tsx"));
+const StudiosPage = lazy(() => import("./pages/Studios.tsx").then((m) => ({ default: m.StudiosPage })));
+const StudioJobPage = lazy(() => import("./pages/Studios.tsx").then((m) => ({ default: m.StudioJobPage })));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -42,6 +44,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/floor" element={<Floor />} />
+          <Route path="/studios" element={<StudiosPage />} />
+          <Route path="/studios/:id" element={<StudioJobPage />} />
           <Route path="/rounds" element={<RoundList />} />
           <Route path="/rounds/:id" element={<RoundPage />} />
           <Route path="/epochs" element={<EpochList />} />

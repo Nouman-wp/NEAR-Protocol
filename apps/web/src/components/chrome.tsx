@@ -7,6 +7,7 @@ export const REPO = "https://github.com/Nouman-wp/NEAR-Protocol";
 
 const NAV = [
   ["/floor", "Live floor"],
+  ["/studios", "Studios"],
   ["/rounds", "Rounds"],
   ["/epochs", "Epochs"],
   ["/agents", "Agents"],
