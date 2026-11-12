@@ -1,4 +1,4 @@
-import { hashJson, type Hex, type IOU, type JobSpec, type RoundView } from "@quorum/core";
+import { formatUsd, hashJson, type Hex, type IOU, type JobSpec, type RoundView } from "@quorum/core";
 import type { Db } from "./db.ts";
 import type { Chain, ChainRound } from "./chain.ts";
 import { bus, log } from "./bus.ts";
@@ -149,7 +149,7 @@ export class RoundBook {
         "info",
         "rounds",
         closed
-          ? `round #${id} closed: #${round.winner} wins at ${round.clearing_price} per unit, ${round.total_quantity} unit(s), ${round.bids.length} bid(s)`
+          ? `round #${id} closed: #${round.winner} wins at ${formatUsd(BigInt(round.clearing_price))} per unit, ${round.total_quantity} unit(s), ${round.bids.length} bid(s)`
           : `round #${id} void: ${round.void_reason}`,
       );
     }

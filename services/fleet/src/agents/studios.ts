@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { formatUsd } from "@quorum/core";
 import { RefusedError, type ChainRound, type HireResult, type QuorumAgent } from "@quorum/sdk";
 import type { Fleet, FleetMember } from "../fleet.ts";
 import { seeded, strategy, type StrategyName } from "../strategies.ts";
@@ -401,7 +402,7 @@ export async function runStudio(fleet: Fleet, studio: StudioDef, brief: Record<s
           const w = await fleet.agentSummary(String(round.winner)).catch(() => null);
           s.winner = { agentId: String(round.winner), name: w?.name ?? `Agent #${round.winner}` };
           s.price = round.clearing_price;
-          step(`${def.name}: ${round.bids.length} sealed bid(s) in round #${roundId}, ${s.winner.name} wins at ${round.clearing_price}`);
+          step(`${def.name}: ${round.bids.length} sealed bid(s) in round #${roundId}, ${s.winner.name} wins at ${formatUsd(BigInt(round.clearing_price))}`);
           return round;
         } catch (err) {
           step(`${def.name}: tender failed (${(err as Error).message}); will hire at a posted price`);
@@ -431,7 +432,7 @@ export async function runStudio(fleet: Fleet, studio: StudioDef, brief: Record<s
     // 2. the work, in order
     rec.deliverables = await PLANS[studio.kind]({ fleet, studio, brief, hireRole, step, rec, intentId, refund: (p) => ((spent -= p), (rec.spent = spent.toString())) });
     rec.status = "done";
-    step(`delivered: ${rec.team.length} roles, team cost ${spent} of the ${studio.price} commission`);
+    step(`delivered: ${rec.team.length} roles, team cost ${formatUsd(spent)} of the ${formatUsd(studio.price)} commission`);
   } catch (err) {
     rec.status = "failed";
     rec.error = err instanceof RefusedError ? `refused: ${err.message}` : (err as Error).message;

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { formatUsd } from "@quorum/core";
 import { RefusedError, RoundVoidError, type QuorumAgent, type HireResult } from "@quorum/sdk";
 import type { Fleet } from "../fleet.ts";
 import { FACTCHECK_RESERVE, PRICES, type FactCheck } from "./workers.ts";
@@ -181,7 +182,7 @@ export async function runBrief(
         rec.jobs++;
         spent += t.price;
         rec.spent = spent.toString();
-        step(`tender #${t.round.id}: ${t.round.bids.length} sealed bid(s), ${t.seller.name} wins at ${t.round.clearing_price} per claim`);
+        step(`tender #${t.round.id}: ${t.round.bids.length} sealed bid(s), ${t.seller.name} wins at ${formatUsd(BigInt(t.round.clearing_price))} per claim`);
         const checks = t.result?.checks ?? [];
         const problem = checks.length !== claims.length ? "the delivery does not cover every claim" : (checks.map(badFactCheck).find(Boolean) ?? null);
         if (!problem || (await disputeJob(t, problem)) === false) {

@@ -629,6 +629,19 @@ td.r,
 th.r {
   text-align: right;
 }
+/* tables inside half-width cards */
+table.tight th,
+table.tight td {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+table.tight th:first-child,
+table.tight td:first-child {
+  padding-left: 20px;
+}
+.nowrap {
+  white-space: nowrap;
+}
 tr.click {
   cursor: pointer;
 }

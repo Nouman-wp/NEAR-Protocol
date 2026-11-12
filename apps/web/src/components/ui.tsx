@@ -96,7 +96,7 @@ export function Tx({ hash, label }: { hash: string | null | undefined; label?: s
   const explorer = useLive().stats?.network.explorer ?? null;
   if (!hash) return <span className="faint">—</span>;
   const url = explorerTx(explorer, hash);
-  const text = <span className="mono">{label ?? short(hash, 6)}</span>;
+  const text = <span className="mono nowrap">{label ?? short(hash, 6)}</span>;
   return url ? (
     <a className="link" href={url} target="_blank" rel="noreferrer" title={hash}>
       {text}

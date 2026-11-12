@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { NETWORKS, NearRpc, type AgentSummary, type IntentView, type JobView, type SettlementView } from "@quorum/core";
 import { authed, authoriseSpending, connectWallet, network, setWalletNetwork, signInWithDevWallet, signInWithWallet, signOut, useAccount, walletsSupported } from "../lib/account.ts";
 import { agentName, useLive } from "../lib/api.ts";
-import { ago, usd } from "../lib/format.ts";
+import { ago, score, usd } from "../lib/format.ts";
 import { Account, AgentChip, Empty, PageHead, Status, Tag, Tx } from "../components/ui.tsx";
 
 interface Me {
@@ -354,6 +354,7 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
               </table>
             </div>
           </div>
+          <span className="label" style={{ marginTop: 8 }}>Your settlements</span>
           <div className="card flush">
             <div className="table-wrap">
               <table>
@@ -564,7 +565,7 @@ function AgentCard({ a, hosted, intents, onChange }: { a: AgentSummary; hosted?:
         <dt>Collateral free</dt>
         <dd className="num">{usd(a.collateral.available, 3)}</dd>
         <dt>Reputation</dt>
-        <dd className="num">{a.reputation}</dd>
+        <dd className="num">{score(a.reputation)}</dd>
         <dt>Spending limit</dt>
         <dd>{active ? `${usd(active.spent, 4)} of ${usd(active.budget, 2)} used` : <span className="faint">none signed</span>}</dd>
       </dl>

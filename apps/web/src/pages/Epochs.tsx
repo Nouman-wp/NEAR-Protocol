@@ -121,7 +121,7 @@ export function EpochPage() {
                 <span className="label">sum to zero</span>
               </div>
               <div className="table-wrap">
-                <table>
+                <table className="tight">
                   <thead>
                     <tr>
                       <th>Agent</th>
@@ -155,7 +155,7 @@ export function EpochPage() {
                 <span className="label">debtor → creditor, no pool</span>
               </div>
               <div className="table-wrap">
-                <table>
+                <table className="tight">
                   <thead>
                     <tr>
                       <th>Pays</th>
