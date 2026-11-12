@@ -59,10 +59,37 @@ export class RoundBook {
       for (let id = this.known + 1; id <= count; id++) fresh.push(id);
       await Promise.all([...open, ...fresh].map((id) => this.refresh(id)));
       this.known = Math.max(this.known, count);
+      await this.closeAbandoned();
     } catch (err) {
       log("warn", "rounds", `sync failed: ${(err as Error).message}`);
     } finally {
       this.syncing = false;
+    }
+  }
+
+  private closeTried = new Map<number, number>();
+
+  /**
+   * Anyone may close a round once its reveal window has passed. If the opener never did
+   * (it crashed, or ran out of gas), the clearer closes it a minute later, so a round never
+   * stays "open" for ever and its result, or its void, is on chain.
+   */
+  private async closeAbandoned(): Promise<void> {
+    const now = Date.now();
+    const rows = this.db.all<{ id: number; chain_json: string }>("SELECT id, chain_json FROM rounds WHERE status = 'Open'");
+    for (const r of rows) {
+      const reveal = (JSON.parse(r.chain_json) as { reveal_deadline?: number }).reveal_deadline ?? Infinity;
+      if (now < reveal + 60_000 || now - (this.closeTried.get(r.id) ?? 0) < 5 * 60_000) continue;
+      this.closeTried.set(r.id, now);
+      try {
+        await this.chain.write(`close_round r${r.id}`, "close_round", { round_id: r.id }, 25);
+        log("info", "rounds", `round #${r.id} was left open by its opener; closed it`);
+        await this.refresh(r.id);
+      } catch (err) {
+        if (!/round is closed/.test((err as Error).message)) log("warn", "rounds", `could not close round #${r.id}: ${(err as Error).message}`);
+        await this.refresh(r.id).catch(() => undefined);
+      }
+      return; // one per sync: the clearer's transactions stay in order
     }
   }
 
