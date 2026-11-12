@@ -182,7 +182,9 @@ export class Fleet {
       const agent = this.agents.get(m.slug)!;
       await this.operator.ensureSubAccount(m.slug, agent.publicKey, this.cfg.nearTarget);
       agent.agentId = await agent.lookupAgentId();
-      if (agent.agentId === 0n) await agent.register(`${this.cfg.publicUrl}/agents/${m.slug}/registration.json`, root);
+      const card = `${this.cfg.publicUrl}/agents/${m.slug}/registration.json`;
+      if (agent.agentId === 0n) await agent.register(card, root);
+      else await agent.ensureUri(card);
       this.log(m.slug, `agent #${agent.agentId} is ${agent.accountId}`);
     });
     await this.fund();

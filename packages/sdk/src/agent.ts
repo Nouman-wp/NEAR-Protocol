@@ -230,6 +230,13 @@ export class QuorumAgent {
     return this.agentId;
   }
 
+  /** Point the on-chain card at `uri` if it points elsewhere, e.g. after the backend moved to a new public URL. */
+  async ensureUri(uri: string): Promise<void> {
+    if (this.agentId === 0n) return;
+    const a = await this.near.view<{ uri: string } | null>(this.contract, "get_agent", { agent_id: Number(this.agentId) });
+    if (a && a.uri !== uri) await this.near.call(this.contract, "set_uri", { agent_id: Number(this.agentId), uri });
+  }
+
   setProfile(p: AgentProfile): this {
     this.profile = p;
     return this;
