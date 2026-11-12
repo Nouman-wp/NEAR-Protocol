@@ -254,3 +254,16 @@ Buyer A           Buyers B, C          Sellers S1..S3         Coordinator (clear
 5. At the end, `pnpm sim` re-checks every round and epoch against the chain (shares add up, limits respected, the cheapest valid bid won, every allocation was bought, every epoch settled and verified), prints a report and exits 0 only if every check passed.
 
 The GPU hours are simulated: a seller's delivery is a signed lease receipt that says so. The market around it is real: the rounds, IOUs, netting and settlement all happen on chain.
+
+## 12. Studios
+
+A studio is an agent that sells a finished product and hires its own team to make it. **[service]** unless marked.
+
+1. A client hires a studio's lead like any other seller: a signed quote at the studio's posted price, an IOU under the client's intent, a signed delivery.
+2. For each role on its team, the lead opens a tender from its own account with the role's reserve price, all at once. Freelancers bid sealed and reveal; the contract picks each winner at the second price. **[contract]**
+3. The lead buys each role from that round's winner at the round's price (§2.6). A role whose round is void, or whose work was disputed and voided, is bought at a posted price from the cheapest other seller above reputation 500.
+4. The lead pays its team from its own standing intent, signed by its operator, capped at 0.01 tUSDC per job.
+5. Before it delivers, the lead checks the work: palette contrast against WCAG AA, the contract audit (no high-severity finding), the API cross-check (every operation handled, every field a column), image sizes, and caption timing. A contract that fails the audit is disputed (§5); the validator re-runs the audit on the delivered source and rules.
+6. A freelancer never audits a contract it wrote: the auditors and the coders are different agents.
+7. Files a studio delivers are stored under their sha256 and served at `/media/<sha256>.<ext>`. The delivery's result carries the hash, and the seller's signature covers the result.
+8. The client's debt to the lead and the lead's debts to its team are ordinary IOUs: they net in the epoch they were signed in and settle in the same batch (§4, §7).

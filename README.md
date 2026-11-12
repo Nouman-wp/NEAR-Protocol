@@ -28,6 +28,7 @@
 - **Every job is a signed IOU.** The buyer signs an IOU under NEP-413 for exactly the round's price. Nothing touches the chain per job, and nothing is bought outside the spending limit a human signed.
 - **The contract nets the epoch.** At the close, the coordinator contract verifies every IOU signature with `env::ed25519_verify`, recomputes every position, asserts they sum to zero, locks each debt in collateral and fixes a settlement plan: debtors pay creditors directly, with no pool in between.
 - **One batch settles it, through NEAR Intents.** Each net debtor signs `transfer` intents for exactly its lines of the plan. The contract checks them line by line and forwards the whole batch to the verifier's `execute_intents`, which executes it atomically. A debtor that never signs is covered from its collateral.
+- **Orchestrators hire their own teams.** Five studio agents (design, smart contracts, backend, photo, video) sell finished work. Hired by a client agent, a studio puts each role on its team out to a sealed-bid tender, and the freelancers who win do the work. See [Studios](#studios-hire-an-orchestrator-it-hires-its-team).
 - **Anyone can check it.** The Verify page reads the contract over the NEAR RPC and redoes the signatures, the netting and the plan in your browser. `pnpm sim` does the same from the command line and exits 0 only if everything matches.
 
 ## Run it
@@ -121,7 +122,8 @@ The full rules, with every limit and a step-by-step text diagram of one round, a
 
 | The track asks for | Quorum |
 |---|---|
-| Many agents, one economy | 34 agents in two swarms. The research swarm hires each other (search, fact check, translate, summarise, chart reading, validation). The market swarm is 20 buyers and 5 GPU sellers |
+| Many agents, one economy | 49 agents in three swarms locally (40 on testnet, where the market is smaller). The research swarm hires each other (search, fact check, translate, summarise, chart reading, validation). The market swarm is 20 buyers and 5 GPU sellers. The studios are a client, five orchestrators and nine freelancers |
+| Agents coordinating other agents | Studio orchestrators form their teams in sealed-bid tenders and pay them from the commission; the payment chain nets in one epoch ([Studios](#studios-hire-an-orchestrator-it-hires-its-team)) |
 | Coordination markets, bidding, collective purchasing | Sealed-bid tenders and group buys, run entirely by the contract |
 | Intent-based settlement | Net debts settle as NEP-413-signed `transfer` intents executed in one `execute_intents` batch |
 | Each agent its own sub-account | `register` is called from the agent's own sub-account, and so is every bid, join, reveal, settlement signature and validator verdict |
@@ -129,6 +131,30 @@ The full rules, with every limit and a step-by-step text diagram of one round, a
 | RULES.md before any code | [RULES.md](RULES.md) |
 | Simulation mode: 20 buyers, 5 sellers, scripted, no LLM calls | `pnpm sim` (§11 of RULES.md) |
 | A live page with rounds, bids, clearing price and allocations | `/rounds`, `/rounds/:id` and the live floor |
+
+## Studios: hire an orchestrator, it hires its team
+
+Five studio agents each sell a finished product. When a client agent hires one, the studio's lead does not do the work itself. It puts every role on its team out to a sealed-bid tender on chain, all at once. Nine freelancer agents with overlapping skills bid with scripted strategies, the contract picks each winner, and the winners form the team. The lead hands the work down the line, checks every deliverable, disputes bad work through the validator, and delivers the assembled result.
+
+| Studio | Sells | Team it tenders | What the team actually produces |
+|---|---|---|---|
+| **Atelier** | Brand kit | palette, type scale, logo | A five-colour palette tuned until every pair the brand uses passes WCAG AA, a modular type scale as CSS, a geometric logo mark as SVG, and a one-page brand sheet |
+| **Forge** | NEAR smart contract | contract code, audit, tests | A near-sdk 5 contract (escrow, capped token or member voting), a static audit that parses the methods and reports access, deposit, callback, arithmetic and storage-prefix problems with line numbers, and a unit-test module with guard coverage |
+| **Foundry** | REST API | API spec, database schema, API code | An OpenAPI 3.1 spec, Postgres DDL with checks and indexes, and Fastify handlers with zod validation, cross-checked so every operation has a handler and every field a column |
+| **Darkroom** | Photo edit | retouch, colour grade, reframe | Real pixel work on the lead photo of any Wikipedia article: auto levels, a contrast curve and sharpening, a colour grade (film, noir, teal-orange, vintage, vivid), and crops for square, story and banner around the most detailed region |
+| **Cutroom** | Short video | storyboard, edit, captions | A shot list from a Wikipedia topic, an animated GIF cut frame by frame over the articles' photos (Ken Burns moves and crossfades), and WebVTT captions checked against broadcast limits |
+
+**One commission, step by step:**
+
+1. The Founder agent hires a studio lead at its posted price and signs an IOU under its spending intent.
+2. The lead opens one tender per role from its own account (`open_round`), with the role's reserve price.
+3. Freelancers whose skills match commit sealed bids and reveal them; `close_round` picks each winner at the second price.
+4. The lead buys each role from its round's winner, passing the previous role's output on (palette to logo, contract to audit and tests, spec to schema and code, retouch to grade to crops, storyboard to cut and captions).
+5. The lead checks the work. In Forge, the budget coder (Ledger) sometimes leaves out an access check. The auditor flags it, Forge disputes the job, Arbiter re-runs the audit independently and upholds the dispute, the IOU is voided, and another coder rewrites the contract at its posted price.
+6. The lead delivers. Files (images, the GIF, captions) are stored under their sha256 and the signed delivery covers the hash, so a downloaded file can be checked against what was delivered.
+7. At epoch close, the Founder's debt to the lead and the lead's debts to its team net together and settle in the same NEAR Intents batch as everything else. The lead's margin is what it keeps.
+
+**Try it.** On the [Studios page](https://quorum-ashy.vercel.app/studios), use **All five studios** (the admin token is in `.env.testnet`; locally it is `quorum-admin`), or call `POST /control/commission {"studio": "photo", "brief": {"topic": "Hampi", "look": "vivid"}}`. From Claude, the MCP tool `hire_studio` commissions a studio from the guest agent. Each commission page shows the team, every round, what each member was paid, what the lead kept, the steps and disputes, and the deliverables.
 
 ## Architecture
 
@@ -156,7 +182,7 @@ flowchart LR
 | [`contracts/test-usdc`](contracts/test-usdc) | A six-decimal NEP-141 token with an open, capped faucet, for sandboxes and testnet |
 | [`packages/core`](packages/core) | Shared TypeScript: NEP-413 messages and signing, the netting and settlement plan (parity-tested against the contract), sealed-bid rules, NEAR Intents payloads, reputation, and a small NEAR JSON-RPC client |
 | [`services/clearing`](services/clearing) | The clearing service: epoch engine, IOU intake, intents, disputes, the round book, settlement through the verifier, reputation, REST API and live WebSocket, SQLite ledger with an optional Supabase mirror |
-| [`services/fleet`](services/fleet) | The swarm: the research agents doing real work (Wikipedia, MyMemory translation, extractive summaries), the group-buy market with scripted bidding strategies, the scenario runner and guest agents for MCP clients |
+| [`services/fleet`](services/fleet) | The swarm: the research agents doing real work (Wikipedia, MyMemory translation, extractive summaries), the group-buy market with scripted bidding strategies, the studios (orchestrators, freelancers and the work they produce), the scenario runner and guest agents for MCP clients |
 | [`packages/sdk`](packages/sdk) | `QuorumAgent` (sell, bid, tender, hire, dispute, rule, settle) and `Operator` (sub-accounts, collateral, verifier deposits, intents) |
 | [`packages/mcp`](packages/mcp) | MCP server: `find_agent`, `get_quote`, `hire_agent`, `tender_job`, `list_rounds`, `join_group_buy`, `check_balance`, `get_job` |
 | [`apps/web`](apps/web) | Vite and React website: landing page, live floor with the agent circle, rounds, epochs, agents, the evidence chain of each job, disputes, in-browser verification, developer docs |
@@ -175,7 +201,7 @@ flowchart LR
 }
 ```
 
-On start the server is given a guest agent: a fresh key, its own sub-account, 1 tUSDC of collateral, 1 tUSDC inside the verifier and a capped intent. Then ask: *"Use Quorum to tender a fact check of these three claims, reserve a quarter of a cent each."* The round shows up on `/rounds`, and the guest signs its own settlement at epoch close.
+On start the server is given a guest agent: a fresh key, its own sub-account, 1 tUSDC of collateral, 1 tUSDC inside the verifier and a capped intent. Then ask: *"Use Quorum to tender a fact check of these three claims, reserve a quarter of a cent each."* The round shows up on `/rounds`, and the guest signs its own settlement at epoch close. Or: *"Use Quorum's design studio to make a brand kit for a tea shop called Chai Point, warm vibe."* (`hire_studio`).
 
 ## Build your own agent
 
@@ -215,6 +241,7 @@ await agent.settleDebts();
 - **A NEAR JSON-RPC client** (`packages/core/src/near.ts`) with transaction signing, deduplicated resends and bounded waits.
 - **The clearing service**: the epoch clock and IOU intake rules, netting, the reputation formula, the dispute flow, intents (spending limits), the SQLite ledger with an optional Supabase mirror, and the REST and WebSocket API.
 - **The research agents**, which do real work: Wikipedia search, MyMemory translation, extractive summaries and chart descriptions.
+- **The studios**: five orchestrators that tender their teams on chain, nine freelancers, and the code that produces their work (palettes, type scales, logos, NEAR contracts with audits and tests, OpenAPI specs, SQL and handlers, photo edits, GIF cuts and captions).
 - **The SDK and the MCP server**, to build agents or hire them from Claude.
 - **The website**: the landing page, the agent circle, rounds and epoch pages, and in-browser verification against the NEAR RPC.
 
@@ -227,6 +254,7 @@ await agent.settleDebts();
 | Netting, collateral locks, the settlement plan, settlement and defaults happen on chain | **GPU hours.** The market's sellers deliver a signed lease receipt marked `simulated: true`, not real compute |
 | The research agents do real work: live Wikipedia search, MyMemory translation, extractive summaries, independent re-checks by the validator | **Bidding strategies** are scripted, not models. That is what the track asks for in simulation mode |
 | Every number on the website comes from the ledger and the chain. There are no sample figures | The clearing fee is 0% |
+| Studio work is produced by code: palette maths, contract templates and a real static audit, spec, schema and handler generation, pixel edits on real Wikimedia photos, a frame-by-frame GIF render | **Studio work uses templates and procedural code, not models.** The generated Rust is not compiled or deployed by the studio, and the "video" is a small animated GIF because the server has no video encoder |
 
 ## Guarantees and tests
 
@@ -243,7 +271,7 @@ await agent.settleDebts();
 | Creditors are paid even if a debtor vanishes | Collateral locked at finalisation, paid into the verifier on default | `default_seizes_collateral_and_seals`, e2e |
 | TypeScript and Rust agree byte for byte | Shared vectors | `parity_vectors` (Rust) and "parity with the contract" (TS) |
 
-**67** contract unit tests, **60** TypeScript tests, the chain end-to-end test and the simulation's 8 on-chain checks all run in CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
+**67** contract unit tests, **76** TypeScript tests, the chain end-to-end test and the simulation's 8 on-chain checks all run in CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
 
 ## NEAR testnet
 
@@ -275,7 +303,7 @@ packages/core       protocol primitives shared by everything
 packages/sdk        build or hire agents
 packages/mcp        MCP server
 services/clearing   clearing service
-services/fleet      the agent swarm, the group-buy market and the scenario runner
+services/fleet      the agent swarm, the group-buy market, the studios and the scenario runner
 apps/web            website
 scripts/            dev, sim, chain, deploy, wallets, serve, publish-web, test:chain, db-restore
 deployments/        deployed accounts per network

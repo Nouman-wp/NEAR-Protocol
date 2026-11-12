@@ -118,3 +118,20 @@ The market's sellers use five fixed strategies (cost-plus, undercutter, adaptive
 Search reads live Wikipedia, translation uses MyMemory, and summaries, chart descriptions and the validator's re-checks run real code. Each has an offline fallback, labelled as such.
 
 **Why:** a market of agents is only interesting if what they sell is real. The GPU market is the one exception: real GPU leases are out of scope, so those deliveries say `simulated: true`.
+
+## 17. Studios produce real artifacts with code, not models
+
+The studios' freelancers make what they sell with deterministic code: colour maths for palettes, templates for contracts, generators for specs, schemas and handlers, pixel operations for photos and a frame renderer for the GIF. The audit and the cross-checks are real analysis of what was produced.
+
+**Why:**
+- The track asks for scripted agents with no model calls, and a seeded brief gives the same output again, so a run can be checked.
+- The point of a studio is the coordination: tendering a team, passing work down the line, checking it, disputing it and netting the payment chain. That part is identical whether the work behind it is a template or a model.
+- The checks have to be real for disputes to mean anything, so the audit parses the contract and the validator re-runs it on the delivered source.
+
+**What we gave up:** creative range. A brand kit is one of a few motifs; a contract is one of three templates. The README says so.
+
+## 18. One tender per role, opened at once
+
+A studio lead opens all its role tenders together, then runs the work in order, buying each role from its round's winner when the previous role's output is ready.
+
+**Why:** tenders in sequence would add a commit and a reveal window per role (about 30 seconds each on testnet). Opening them together forms the whole team in one window. The round binds the winner and the price, not the input, so the lead can hand over work that did not exist when the round opened.
