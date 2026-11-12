@@ -14,7 +14,7 @@
 //
 // Needs the Vercel CLI, logged in, and apps/web linked to a project (`vercel link`).
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { ROOT } from "./lib.mjs";
 
@@ -52,6 +52,11 @@ writeFileSync(
   join(web, "dist", "vercel.json"),
   JSON.stringify(
     {
+      // dist/ is already built: no framework preset, no install, no build on Vercel's side
+      framework: null,
+      installCommand: "",
+      buildCommand: "",
+      outputDirectory: ".",
       cleanUrls: false,
       rewrites: [
         ...proxied.map((p) => ({ source: `/${p}/:path*`, destination: `${backend}/${p}/:path*` })),
@@ -83,6 +88,7 @@ const ins = spawnSync("vercel", ["inspect", deployment], { cwd: web, env: vercel
 const aliases = [...`${ins.stdout}${ins.stderr}`.matchAll(/https:\/\/[a-z0-9.-]+\.vercel\.app/g)].map((m) => m[0]).filter((u) => u !== deployment);
 const prod = aliases.sort((x, y) => x.length - y.length)[0];
 if (prod) {
+  mkdirSync(join(ROOT, ".data"), { recursive: true });
   writeFileSync(siteFile, prod);
   console.log(`production ${prod}`);
   if (prod !== site) console.log(`built for ${site || backend}; run again to build against ${prod}`);
