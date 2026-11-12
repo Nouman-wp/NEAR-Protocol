@@ -17,7 +17,7 @@ export function serveAgents(
   const bySlug = new Map(agents.map((a) => [a.profile!.slug, a]));
   const server = createServer(async (req, res) => {
     res.setHeader("access-control-allow-origin", "*");
-    res.setHeader("access-control-allow-headers", "content-type, x-admin-token");
+    res.setHeader("access-control-allow-headers", "content-type, x-admin-token, authorization");
     if (req.method === "OPTIONS") return end(res, 204, null);
     try {
       const url = new URL(req.url ?? "/", "http://x");

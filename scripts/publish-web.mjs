@@ -44,7 +44,7 @@ console.log(`building for ${site || "(site URL not known yet)"} -> backend ${bac
 execFileSync(shell ? "pnpm.cmd" : "pnpm", ["run", "build"], { cwd: web, env, stdio: "inherit", shell });
 
 // 2. routing: backend paths are proxied, everything else is the single-page app
-const proxied = ["v1", "guest", "guests", "control", "media"];
+const proxied = ["v1", "guest", "guests", "control", "media", "users"];
 // agent cards and A2A endpoints live at /agents/<slug>; the site's own agent pages are
 // /agents and /agents/<numeric id>, so only slug paths go to the backend
 const agentSlug = ":slug([a-z][a-z0-9-]*)";

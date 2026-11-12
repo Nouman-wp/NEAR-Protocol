@@ -5,7 +5,7 @@
 import { createServer, request } from "node:http";
 import { connect } from "node:net";
 
-const FLEET_PATHS = /^\/(agents|guests|guest|control|media)(\/|$)/;
+const FLEET_PATHS = /^\/(agents|guests|guest|control|media|users)(\/|$)/;
 
 export function startEdge({ port, clearingPort, fleetPort, log = console.log }) {
   const target = (url) => (FLEET_PATHS.test(url ?? "/") ? fleetPort : clearingPort);

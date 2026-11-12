@@ -9,6 +9,7 @@ import { installLens, installPolyglot, installRogue, installScout, installScribe
 import { Market, marketMembers } from "./market.ts";
 import { FREELANCERS, ROLES, STUDIOS, briefFor, studioMembers, type StudioJob, type StudioKind } from "./agents/studios.ts";
 import { MediaStore } from "./work/media.ts";
+import { UserAgents } from "./agents/users.ts";
 
 export interface FleetMember {
   /** also the name of the agent's sub-account: `<slug>.<root>` */
@@ -114,6 +115,7 @@ export class Fleet {
   readonly briefs: BriefRecord[] = [];
   readonly studioJobs: StudioJob[] = [];
   readonly media: MediaStore;
+  readonly users: UserAgents;
   readonly activity = new Map<string, number>();
   readonly logs: { at: number; slug: string; message: string }[] = [];
   readonly state: FleetState;
@@ -135,6 +137,7 @@ export class Fleet {
     this.state = { paused: false, background: cfg.background, rogueBadRate: cfg.rogueBadRate, rogueDiscount: false, offline: new Set(), scenario: null };
     this.members = [...(cfg.research ? RESEARCH : []), ...(cfg.market ? marketMembers(cfg.simBuyers, cfg.simSellers, cfg.simSeed) : []), ...(cfg.studios ? studioMembers() : [])];
     this.media = new MediaStore(join(cfg.dataDir, "media"), cfg.publicUrl);
+    this.users = new UserAgents(this);
   }
 
   log(slug: string, message: string): void {
@@ -200,6 +203,9 @@ export class Fleet {
     for (const s of ["factcheck", "gpu-hour"]) {
       for (const p of await this.client.roundPrices(s).catch(() => [])) this.notePrice(s, BigInt(p.price));
     }
+
+    // agents users launched from the dashboard
+    await this.users.startAll();
 
     // 4. loops
     const fast = this.cfg.network === "local";
@@ -285,6 +291,16 @@ export class Fleet {
     const have = (await agent.near.rpc.account(agent.accountId).catch(() => null))?.amount ?? 0n;
     const sent = have < (target * 6n) / 10n ? await this.operator.topUpNear(agent.accountId, target).catch(() => 0n) : 0n;
     if (sent > 0n) this.log(m.slug, `gas topped up by ${(Number(sent / (ONE_NEAR / 1000n)) / 1000).toFixed(3)} NEAR`);
+  }
+
+  /** Collateral, spending money inside the verifier and gas for a user's agent, paid by the operator. */
+  async fundUserAgent(agent: QuorumAgent, collateral: bigint, spending: bigint): Promise<void> {
+    await this.withMoneyLock(async () => {
+      await this.ensureTokens(collateral + spending);
+      await this.operator.topUpCollateral(agent.agentId, collateral);
+      await this.operator.topUpIntents(agent.accountId, spending);
+    });
+    await this.operator.topUpNear(agent.accountId, this.cfg.nearTarget).catch(() => 0n);
   }
 
   private moneyLock: Promise<unknown> = Promise.resolve();
@@ -663,6 +679,46 @@ export class Fleet {
         quorum: { slug: name, role: "Guest buyer" },
       });
       return true;
+    }
+    if (p.startsWith("/users/")) {
+      const parts = p.split("/").filter(Boolean); // users, <slug|me>, ...
+      if (parts[1] !== "me" && parts[1] !== "dev-account") {
+        // a user agent's registration file, A2A card and A2A endpoint, as for the built-in agents
+        const agent = this.users.hosted(parts[1]!);
+        const sub = parts.slice(2).join("/");
+        if (!agent) end(res, 404, { error: "unknown agent" });
+        else if (req.method === "GET" && sub === "registration.json") end(res, 200, agent.registration());
+        else if (req.method === "GET" && (sub === "" || sub === ".well-known/agent-card.json" || sub === ".well-known/agent.json")) end(res, 200, agent.card());
+        else if (req.method === "POST" && sub === "a2a") end(res, 200, await agent.handleA2A(body as never));
+        else end(res, 404, { error: "not found" });
+        return true;
+      }
+      if (req.method === "POST" && parts[1] === "dev-account") {
+        try {
+          end(res, 200, await this.users.devAccount(String((body as { publicKey?: string } | null)?.publicKey ?? "")));
+        } catch (err) {
+          end(res, 400, { error: (err as Error).message });
+        }
+        return true;
+      }
+      if (parts[1] === "me") {
+        const s = this.users.session(req.headers.authorization);
+        if (!s) {
+          end(res, 401, { error: "sign in with your NEAR wallet first" });
+          return true;
+        }
+        const b = (body ?? {}) as { name?: string; studio?: string; brief?: Record<string, unknown> };
+        try {
+          if (req.method === "GET" && parts[2] === "agents" && parts.length === 3) end(res, 200, this.users.list(s.accountId));
+          else if (req.method === "POST" && parts[2] === "agents" && parts.length === 3) end(res, 200, await this.users.create(s.accountId, String(b.name ?? "")));
+          else if (req.method === "POST" && parts[2] === "agents" && parts[4] === "hire") end(res, 200, await this.users.hire(s.accountId, parts[3]!, String(b.studio ?? "") as StudioKind, b.brief ?? null));
+          else if (req.method === "GET" && parts[2] === "commissions") end(res, 200, this.users.commissions(s.accountId));
+          else end(res, 404, { error: "not found" });
+        } catch (err) {
+          end(res, 400, { error: (err as Error).message });
+        }
+        return true;
+      }
     }
     if (req.method === "GET" && p === "/control/status") {
       end(res, 200, await this.status());
