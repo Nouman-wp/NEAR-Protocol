@@ -41,7 +41,7 @@
   --glow-1: radial-gradient(circle, rgba(184, 104, 112, 0.22) 0%, rgba(214, 178, 170, 0.2) 34%, transparent 66%);
   --glow-2: radial-gradient(circle, rgba(150, 160, 130, 0.2) 0%, rgba(214, 178, 170, 0.14) 38%, transparent 66%);
   --header-bg: rgba(233, 226, 213, 0.82);
-  --menu-bg: rgba(233, 226, 213, 0.98);
+  --menu-bg: #e9e2d5;
   --btn-bg: linear-gradient(100deg, #6d2937 0%, #7e3043 55%, #8c2c40 100%);
   --btn-fg: #faf8f4;
   --btn-glow: rgba(109, 41, 55, 0.35);
@@ -85,7 +85,7 @@
   --glow-1: radial-gradient(circle, rgba(150, 46, 68, 0.78) 0%, rgba(109, 41, 55, 0.42) 34%, transparent 66%);
   --glow-2: radial-gradient(circle, rgba(125, 42, 62, 0.7) 0%, rgba(76, 22, 36, 0.4) 38%, transparent 66%);
   --header-bg: rgba(40, 12, 20, 0.72);
-  --menu-bg: rgba(28, 10, 16, 0.98);
+  --menu-bg: #1c0a10;
   --btn-bg: linear-gradient(100deg, #f6f1ea 0%, #fbf6f1 45%, #f0cfd5 100%);
   --btn-fg: #2a241d;
   --btn-glow: rgba(233, 201, 207, 0.6);
@@ -1171,6 +1171,7 @@ input::placeholder {
     padding: 10px 32px 22px;
     background: var(--menu-bg);
     border-bottom: 1px solid var(--line);
+    box-shadow: 0 18px 40px -20px var(--shadow);
   }
   .nav.open {
     display: flex;
@@ -1315,4 +1316,175 @@ select {
 .card.light small,
 .stat.light small {
   color: var(--feature-muted);
+}
+
+/* ───────────────────────────────── responsive refinements */
+.lbl-short {
+  display: none;
+}
+.menu-btn svg {
+  display: none;
+  width: 18px;
+  height: 18px;
+}
+.card-head {
+  flex-wrap: wrap;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.job-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) auto;
+  gap: 18px;
+  align-items: center;
+}
+.job-row-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+img,
+video {
+  max-width: 100%;
+}
+
+@media (max-width: 1020px) {
+  .site-header .wrap {
+    gap: 12px;
+  }
+}
+
+/* tablets: layouts that hold tables, detail lists or code read better stacked */
+@media (max-width: 900px) {
+  .g2:has(table),
+  .g2:has(.kv),
+  .g2:has(pre),
+  .split:has(table) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* wide tables scroll sideways instead of squashing words onto several lines */
+  .table-wrap table:has(th:nth-child(6)) {
+    min-width: 680px;
+  }
+  .job-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .job-row-meta {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  /* wrapped footer links: no separator at the start of a line */
+  .site-footer .links {
+    gap: 12px 20px;
+  }
+  .site-footer .links a,
+  .site-footer .links a:first-child {
+    border-left: 0;
+    padding: 0;
+  }
+}
+
+/* phones */
+@media (max-width: 640px) {
+  .site-header .wrap {
+    height: 64px;
+    gap: 8px;
+  }
+  .nav {
+    top: 64px;
+    padding: 6px 16px 18px;
+  }
+  .brand {
+    font-size: 17px;
+    gap: 9px;
+    letter-spacing: 0.1em;
+  }
+  .brand svg {
+    width: 22px;
+    height: 22px;
+  }
+  .lbl-full {
+    display: none;
+  }
+  .lbl-short {
+    display: inline;
+  }
+  .site-header .account-btn {
+    margin-left: 0;
+    padding: 9px 11px;
+    max-width: 150px;
+  }
+  .site-header .theme-btn {
+    width: 34px;
+    height: 34px;
+  }
+  .site-header .menu-btn {
+    margin-left: 0;
+    padding: 7px 9px;
+  }
+  .menu-btn svg {
+    display: block;
+  }
+  .menu-label {
+    display: none;
+  }
+  .page {
+    padding: 36px 0 80px;
+  }
+  .page-head {
+    gap: 18px;
+    margin-bottom: 24px;
+  }
+  .h3 {
+    font-size: 22px;
+  }
+  .chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+    padding-bottom: 6px;
+    scrollbar-width: thin;
+  }
+  .chips .btn {
+    flex: none;
+  }
+  .phases div {
+    font-size: 8.5px;
+    letter-spacing: 0.02em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .site-footer {
+    padding: 64px 0 28px;
+  }
+  .site-footer .top,
+  .site-footer .links {
+    margin-bottom: 44px;
+  }
+  pre {
+    font-size: 11.5px;
+    padding: 14px;
+  }
+  input,
+  select {
+    max-width: 100%;
+  }
+}
+
+/* small phones */
+@media (max-width: 380px) {
+  .brand {
+    font-size: 15px;
+  }
+  .site-header .account-btn {
+    padding: 8px 9px;
+    font-size: 10px;
+  }
 }

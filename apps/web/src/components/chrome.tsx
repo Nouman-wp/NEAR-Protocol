@@ -26,7 +26,8 @@ function AccountButton() {
     return (
       <Link to="/dashboard" className="btn sm account-btn" title={id}>
         <i className="account-dot" aria-hidden="true" />
-        {id.length > 22 ? `${id.slice(0, 10)}…${id.slice(-9)}` : id}
+        <span className="lbl-full">{id.length > 22 ? `${id.slice(0, 10)}…${id.slice(-9)}` : id}</span>
+        <span className="lbl-short">{id.length > 12 ? `${id.slice(0, 10)}…` : id}</span>
       </Link>
     );
   }
@@ -37,7 +38,9 @@ function AccountButton() {
   };
   return (
     <button className="btn sm account-btn" onClick={() => void go()}>
-      {acc.connected ? "Sign in" : "Connect wallet"} <Arrow />
+      <span className="lbl-full">{acc.connected ? "Sign in" : "Connect wallet"}</span>
+      <span className="lbl-short">{acc.connected ? "Sign in" : "Connect"}</span>
+      <Arrow />
     </button>
   );
 }
@@ -80,8 +83,11 @@ export function Header() {
           )}
         </button>
         <AccountButton />
-        <button className="menu-btn label" aria-expanded={open} onClick={() => setOpen(!open)}>
-          Menu
+        <button className="menu-btn label" aria-label="Menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+            {open ? <path d="M4 4l10 10M14 4 4 14" /> : <path d="M2.5 5h13M2.5 9h13M2.5 13h13" />}
+          </svg>
+          <span className="menu-label">Menu</span>
         </button>
       </div>
     </header>

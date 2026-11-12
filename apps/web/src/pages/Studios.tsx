@@ -230,7 +230,7 @@ function StudioCard({ s }: { s: StudioInfo }) {
 
 function JobRow({ j, studio }: { j: StudioJob; studio?: StudioInfo }) {
   return (
-    <Link to={`/studios/${j.id}`} className="card" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 2fr) auto", gap: 18, alignItems: "center" }}>
+    <Link to={`/studios/${j.id}`} className="card job-row">
       <div className="stack" style={{ gap: 6 }}>
         <span className="label">
           {studio?.name ?? j.studio} · {studio?.product ?? ""}
@@ -248,7 +248,7 @@ function JobRow({ j, studio }: { j: StudioJob; studio?: StudioInfo }) {
         ))}
         {j.disputes.length > 0 && <Tag kind="warn">{j.disputes.length} dispute(s)</Tag>}
       </div>
-      <div className="stack" style={{ gap: 6, alignItems: "flex-end" }}>
+      <div className="job-row-meta">
         <Status value={j.status === "done" ? "delivered" : j.status === "failed" ? "failed" : "Open"} />
         <span className="num faint">
           team {usd(j.spent, 4)} / {usd(j.price, 3)}

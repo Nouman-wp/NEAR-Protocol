@@ -170,7 +170,7 @@ export function RoundList() {
           <div className="card" style={{ marginBottom: 14 }}>
             <div className="card-head">
               <h3 className="h3">Clearing price per round · {shown}</h3>
-              <div className="row">
+              <div className="chips">
                 {services.map((sv) => (
                   <button key={sv} className={`btn sm${sv === shown ? "" : " ghost"}`} onClick={() => setService(sv)}>
                     {sv}
