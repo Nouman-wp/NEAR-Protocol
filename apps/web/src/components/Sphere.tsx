@@ -32,7 +32,8 @@ export function Sphere({ count = 3400 }: { count?: number }) {
       seed[i] = ((i * 2654435761) % 4096) / 4096;
       tone[i] = i % 11 === 0 ? 2 : i % 4 === 0 ? 1 : 0;
     }
-    const colours = ["243,240,232", "233,201,207", "170,181,155"];
+    // particle colours per theme: off-white, blush and sage on the dark stage; ink, burgundy and deep sage on paper
+    const palettes = { dark: ["243,240,232", "233,201,207", "170,181,155"], light: ["42,36,29", "140,44,64", "94,104,82"] };
 
     let w = 0;
     let h = 0;
@@ -77,6 +78,7 @@ export function Sphere({ count = 3400 }: { count?: number }) {
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
+      const colours = document.documentElement.dataset.theme === "dark" ? palettes.dark : palettes.light;
       const radius = Math.min(w * 0.36, h * 0.86);
       const cx = w / 2;
       const cy = h * (1.02 - morph * 0.42);

@@ -95,8 +95,8 @@ export function Orbit({ agents, edges, active, centre }: { agents: AgentSummary[
               onKeyDown={(e) => e.key === "Enter" && nav(`/agents/${a.agentId}`)}
             >
               <circle cx={x} cy={y} r={22} fill="transparent" />
-              {hot && <circle cx={x} cy={y} r={r + 7} fill="none" stroke="rgba(233,201,207,.5)" />}
-              <circle cx={x} cy={y} r={r} fill={hue(a.agentId)} stroke="rgba(243,240,232,.75)" strokeWidth={1.2} />
+              {hot && <circle cx={x} cy={y} r={r + 7} fill="none" style={{ stroke: "rgba(var(--blush-rgb), 0.5)" }} />}
+              <circle cx={x} cy={y} r={r} fill={hue(a.agentId)} style={{ stroke: "var(--node-stroke)" }} strokeWidth={1.2} />
               <circle cx={x} cy={y} r={1.6} fill="rgba(42,36,29,.75)" />
               {(!dense || hover === a.agentId) && (
                 <text x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle" fontSize={dense ? 12 : 13}>

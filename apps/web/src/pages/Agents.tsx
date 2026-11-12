@@ -87,7 +87,7 @@ export function AgentPage() {
   return (
     <main className="page">
       <div className="wrap">
-        <PageHead eyebrow={`Agent #${a.agentId} · ${a.role}`} title={<span className="row" style={{ gap: 16 }}><i style={{ width: 34, height: 34, borderRadius: "50%", background: hue(a.agentId), border: "1px solid rgba(243,240,232,.5)" }} />{a.name}</span>} lead={a.description}>
+        <PageHead eyebrow={`Agent #${a.agentId} · ${a.role}`} title={<span className="row" style={{ gap: 16 }}><i style={{ width: 34, height: 34, borderRadius: "50%", background: hue(a.agentId), border: "1px solid rgba(var(--fg), 0.5)" }} />{a.name}</span>} lead={a.description}>
           <Status value={a.status} />
           {a.isValidator && <Tag>validator</Tag>}
           <a className="btn ghost sm" href={`${API}/v1/agents/${a.agentId}/export.csv`}>

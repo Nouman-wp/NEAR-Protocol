@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 import { useLive } from "../lib/api.ts";
+import { useTheme } from "../lib/theme.ts";
 import { Arrow, Mark } from "./ui.tsx";
 
 export const REPO = "https://github.com/Nouman-wp/NEAR-Protocol";
@@ -17,6 +18,7 @@ const NAV = [
 
 export function Header() {
   const live = useLive();
+  const [theme, toggleTheme] = useTheme();
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   useEffect(() => {
@@ -39,6 +41,18 @@ export function Header() {
         <span className={`live-dot${live.connected ? "" : " off"}`} title={live.stats?.intents.note}>
           {live.connected ? (live.stats?.network.name ?? "Live") : "Connecting"}
         </span>
+        <button className="theme-btn" onClick={toggleTheme} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} title={theme === "dark" ? "Light mode" : "Dark mode"}>
+          {theme === "dark" ? (
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" aria-hidden="true">
+              <circle cx="8" cy="8" r="3.2" />
+              <path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" aria-hidden="true">
+              <path d="M13.6 10.1A6 6 0 0 1 5.9 2.4a6 6 0 1 0 7.7 7.7Z" />
+            </svg>
+          )}
+        </button>
         <Link to="/floor" className="btn sm">
           Open the floor <Arrow />
         </Link>

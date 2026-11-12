@@ -110,7 +110,7 @@ function PriceChart({ service }: { service: string }) {
         </text>
         <path d={pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(Number(p.price)).toFixed(1)}`).join("")} fill="none" stroke="var(--blush)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         {pts.length <= 40 && pts.map((p, i) => <circle key={p.round} cx={x(i)} cy={y(Number(p.price))} r={hover === i ? 5.5 : 4} fill="var(--blush)" stroke="var(--panel-solid)" strokeWidth={2} />)}
-        {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={m.t} y2={H - m.b} stroke="rgba(243,240,232,.3)" />}
+        {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={m.t} y2={H - m.b} style={{ stroke: "rgba(var(--fg), 0.3)" }} />}
         <text className="axis" x={m.l} y={H - 10}>
           round #{pts[0]!.round}
         </text>

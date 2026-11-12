@@ -6,7 +6,8 @@ import { useLive } from "../lib/api.ts";
 
 /** A stable colour per agent from the brand's range: burgundy through blush to sage. */
 export function hue(id: string | number): string {
-  const palette = ["#e9c9cf", "#c8707f", "#aab59b", "#f3f0e8", "#8c2c40", "#7b836e", "#d9a8b1", "#cfd6c3"];
+  // mid tones that read on both the off-white and the burgundy ground
+  const palette = ["#c8707f", "#8c2c40", "#7b836e", "#b8956a", "#a35d6c", "#5e6852", "#d9a8b1", "#9aa58a"];
   return palette[Number(id) % palette.length]!;
 }
 
