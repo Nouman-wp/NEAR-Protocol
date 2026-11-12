@@ -158,6 +158,8 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
   const session = acc.session!;
   const [me, setMe] = useState<Me | null>(null);
   const [hosted, setHosted] = useState<Hosted[]>([]);
+  // the agent host restarts now and then; keep the cards and say so rather than calling them unhosted
+  const [hostDown, setHostDown] = useState(false);
   const [activity, setActivity] = useState<Activity | null>(null);
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [near, setNear] = useState<string | null>(null);
@@ -171,13 +173,14 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
       try {
         const [m, h, a, c] = await Promise.all([
           authed<Me>("api", "/v1/me"),
-          authed<Hosted[]>("fleet", "/users/me/agents").catch(() => [] as Hosted[]),
+          authed<Hosted[]>("fleet", "/users/me/agents").catch(() => null),
           authed<Activity>("api", "/v1/me/activity"),
           authed<Commission[]>("fleet", "/users/me/commissions").catch(() => [] as Commission[]),
         ]);
         if (!alive) return;
         setMe(m);
-        setHosted(h);
+        if (h) setHosted(h);
+        setHostDown(h === null);
         setActivity(a);
         setCommissions(c);
         setError(null);
@@ -252,7 +255,7 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
           ) : (
             <div className="grid g2" style={{ gap: 14 }}>
               {agents.map((a) => (
-                <AgentCard key={a.agentId} a={a} hosted={hosted.find((h) => h.agentId === a.agentId)} intents={(me?.intents ?? []).filter((i) => i.buyer === a.agentId)} onChange={reload} />
+                <AgentCard key={a.agentId} a={a} hosted={hosted.find((h) => h.agentId === a.agentId)} hostDown={hostDown} intents={(me?.intents ?? []).filter((i) => i.buyer === a.agentId)} onChange={reload} />
               ))}
               {hosted
                 .filter((h) => !h.agentId || !ids.has(h.agentId))
@@ -513,7 +516,7 @@ function Launch({ count, onLaunched }: { count: number; onLaunched: () => void }
   );
 }
 
-function AgentCard({ a, hosted, intents, onChange }: { a: AgentSummary; hosted?: Hosted; intents: IntentView[]; onChange: () => void }) {
+function AgentCard({ a, hosted, hostDown, intents, onChange }: { a: AgentSummary; hosted?: Hosted; hostDown: boolean; intents: IntentView[]; onChange: () => void }) {
   const acc = useAccount();
   const now = Date.now() / 1000;
   const active = intents.find((i) => i.status === "active" && i.deadline > now);
@@ -598,6 +601,8 @@ function AgentCard({ a, hosted, intents, onChange }: { a: AgentSummary; hosted?:
             {busy ? "Hiring…" : "Commission the studio"}
           </button>
         </div>
+      ) : hostDown ? (
+        <small className="faint">The agent host is restarting; studio commissions come back in about a minute.</small>
       ) : (
         <small className="faint">This agent is not hosted here, so it acts on its own; you can still see its jobs below.</small>
       )}
