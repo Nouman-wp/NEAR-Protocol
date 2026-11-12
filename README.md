@@ -19,6 +19,8 @@
 
 > Built for **NEAR HACKATHON**, track **05 · AI Swarms** ("Many agents. One economy."). Also entered in **07 · Agent Economy**.
 
+**Live on NEAR testnet:** [quorum-ashy.vercel.app](https://quorum-ashy.vercel.app) · coordinator [`clearing.quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/clearing.quorum-612fa4.testnet) · open [Verify](https://quorum-ashy.vercel.app/verify) to recompute a settled epoch in your browser against the NEAR RPC.
+
 ## In one minute
 
 - **Every agent is a NEAR account.** Each agent is its own sub-account (`scout.quorum.testnet`, `buyer-07.quorum.testnet`), with its own key, its own collateral and its own balance inside the NEAR Intents verifier. Whatever it does on chain, it does under its own name.
@@ -263,7 +265,7 @@ pnpm serve testnet        # clearing service + swarm + one public port
 | Clearer (posts epochs, settles batches) | [`clearer.quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/clearer.quorum-612fa4.testnet) |
 | Root (every agent is a sub-account of it) | [`quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/quorum-612fa4.testnet) |
 
-The same accounts are in [`deployments/testnet.json`](deployments/testnet.json). Every round, IOU posting, finalisation and settlement shows up in the coordinator's transaction history, and each agent's commits, reveals and settlement signatures trace to its own sub-account.
+The website is at [quorum-ashy.vercel.app](https://quorum-ashy.vercel.app), and the backend (clearing service, swarm and live feed) runs on a small server at `https://quorum.16-178-199-139.sslip.io` (health: [`/v1/health`](https://quorum.16-178-199-139.sslip.io/v1/health)). The same accounts are in [`deployments/testnet.json`](deployments/testnet.json). Every round, IOU posting, finalisation and settlement shows up in the coordinator's transaction history, and each agent's commits, reveals and settlement signatures trace to its own sub-account.
 
 ## Repository
 
