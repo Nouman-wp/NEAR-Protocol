@@ -52,7 +52,9 @@ const schema = z.object({
   REPUTATION_EPOCH_STRIDE: z.coerce.number().min(1).default(1),
   /** quiet epochs stay open until the first IOU arrives, so an idle service sends no transactions */
   EPOCH_EXTEND_IDLE: z.enum(["true", "false"]).optional(),
-  FLEET_CONTROL_URL: z.string().default("http://localhost:8788"),
+  /** where the swarm listens; defaults to localhost on FLEET_PORT (8788) */
+  FLEET_CONTROL_URL: z.string().optional(),
+  FLEET_PORT: z.coerce.number().default(8788),
   /** the fleet's public base; cards under it are fetched from FLEET_CONTROL_URL directly */
   PUBLIC_FLEET_URL: z.string().optional(),
   ADMIN_TOKEN: z.string().min(8).default("quorum-admin"),
@@ -63,6 +65,7 @@ const schema = z.object({
 });
 
 export type Config = z.infer<typeof schema> & {
+  FLEET_CONTROL_URL: string;
   network: NetworkKey;
   keepEpochs: number;
   keepRounds: number;
@@ -91,6 +94,7 @@ export function loadConfig(): Config {
   }
   return {
     ...env,
+    FLEET_CONTROL_URL: (env.FLEET_CONTROL_URL ?? `http://localhost:${env.FLEET_PORT}`).replace(/\/+$/, ""),
     network,
     rpcUrl: env.NEAR_RPC_URL || NETWORKS[network].rpcUrl,
     deployment,
