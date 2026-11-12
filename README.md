@@ -29,6 +29,7 @@
 - **The contract nets the epoch.** At the close, the coordinator contract verifies every IOU signature with `env::ed25519_verify`, recomputes every position, asserts they sum to zero, locks each debt in collateral and fixes a settlement plan: debtors pay creditors directly, with no pool in between.
 - **One batch settles it, through NEAR Intents.** Each net debtor signs `transfer` intents for exactly its lines of the plan. The contract checks them line by line and forwards the whole batch to the verifier's `execute_intents`, which executes it atomically. A debtor that never signs is covered from its collateral.
 - **Orchestrators hire their own teams.** Five studio agents (design, smart contracts, backend, photo, video) sell finished work. Hired by a client agent, a studio puts each role on its team out to a sealed-bid tender, and the freelancers who win do the work. See [Studios](#studios-hire-an-orchestrator-it-hires-its-team).
+- **Sign in with your wallet.** Connect a NEAR wallet to launch agents you operate, sign their spending limits, commission studios and follow every receipt. See [Your own agents](#your-own-agents-sign-in-with-a-near-wallet).
 - **Anyone can check it.** The Verify page reads the contract over the NEAR RPC and redoes the signatures, the netting and the plan in your browser. `pnpm sim` does the same from the command line and exits 0 only if everything matches.
 
 ## Run it
@@ -131,6 +132,17 @@ The full rules, with every limit and a step-by-step text diagram of one round, a
 | RULES.md before any code | [RULES.md](RULES.md) |
 | Simulation mode: 20 buyers, 5 sellers, scripted, no LLM calls | `pnpm sim` (§11 of RULES.md) |
 | A live page with rounds, bids, clearing price and allocations | `/rounds`, `/rounds/:id` and the live floor |
+
+## Your own agents: sign in with a NEAR wallet
+
+**Connect wallet** (top right) opens the dashboard. Sign-in is one NEP-413 message signed by your wallet (MyNearWallet, Meteor or HERE on testnet): the clearing service checks the signature and that the key is a full-access key of your account on chain, then issues a session. Your first sign-in creates your profile. From the dashboard you can:
+
+1. **Launch an agent.** The swarm creates a sub-account for it, registers it on chain **with your account as its operator**, and funds it with test USDC (collateral and a balance inside the verifier). Up to three per account.
+2. **Sign its spending limit.** Your wallet signs the agent's intent (budget, per-job cap, deadline). Only the operator's full-access key is accepted, so nobody else can let your agent spend.
+3. **Put it to work.** Have it commission any studio. The studio tenders its team on chain, and the commission shows up on your dashboard.
+4. **Follow the money.** Every job your agents bought or sold, each NEAR Intents settlement they signed (with the transaction), and the limits you signed.
+
+On a local sandbox, where wallets cannot connect, the dashboard offers a **dev wallet**: a key generated in your browser and a sandbox account for it. Sign-in and spending limits go through exactly the same checks.
 
 ## Studios: hire an orchestrator, it hires its team
 

@@ -267,3 +267,12 @@ A studio is an agent that sells a finished product and hires its own team to mak
 6. A freelancer never audits a contract it wrote: the auditors and the coders are different agents.
 7. Files a studio delivers are stored under their sha256 and served at `/media/<sha256>.<ext>`. The delivery's result carries the hash, and the seller's signature covers the result.
 8. The client's debt to the lead and the lead's debts to its team are ordinary IOUs: they net in the epoch they were signed in and settle in the same batch (§4, §7).
+
+## 13. Accounts
+
+1. Signing in is a NEP-413 message naming the account, the network and the time, signed for `quorum-sign-in`. The clearing service accepts it only if the signature verifies, the key is a full-access key of the account on chain, the message is under ten minutes old and its nonce was never used. **[service]**
+2. A session lasts seven days and is a MAC over the account and the expiry; the backend alone holds the key.
+3. A user agent is a sub-account of the deployment's root, registered from its own account with the user's account as its operator. **[contract]**
+4. Only an agent's operator can authorise its spending: an intent must be signed by a full-access key of the operator account (§6). **[service]**
+5. An account may run up to three user agents; the swarm funds each with 2 tUSDC of collateral and 2 tUSDC inside the verifier.
+6. The dev wallet exists on the local sandbox only.
