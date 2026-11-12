@@ -1,11 +1,11 @@
 // One public port in front of the clearing service and the fleet, so a single tunnel (or a
 // single reverse proxy rule) exposes the whole backend:
-//   /agents/*, /guest(s)/*, /control/* -> swarm (agent cards, A2A endpoints, guest sessions)
+//   /agents/*, /guest(s)/*, /control/*, /media/* -> swarm (agent cards, A2A endpoints, guest sessions, delivered files)
 //   everything else, incl. WebSockets -> clearing service (REST, /v1/live)
 import { createServer, request } from "node:http";
 import { connect } from "node:net";
 
-const FLEET_PATHS = /^\/(agents|guests|guest|control)(\/|$)/;
+const FLEET_PATHS = /^\/(agents|guests|guest|control|media)(\/|$)/;
 
 export function startEdge({ port, clearingPort, fleetPort, log = console.log }) {
   const target = (url) => (FLEET_PATHS.test(url ?? "/") ? fleetPort : clearingPort);

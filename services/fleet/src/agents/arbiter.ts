@@ -4,6 +4,8 @@ import type { Fleet } from "../fleet.ts";
 import { PRICES, judgeClaim, type FactCheck } from "./workers.ts";
 import { wikiSearch } from "../work/wikipedia.ts";
 import { devanagariRatio, keywords, overlap } from "../work/text.ts";
+import { audit } from "../work/contracts.ts";
+import { contrast } from "../work/design.ts";
 
 interface Evaluation {
   upheld: boolean;
@@ -96,6 +98,22 @@ async function evaluate(service: string, spec: { input?: unknown }, result: unkn
       const o = overlap(r.summary, text);
       if (o < 0.5) return { upheld: true, reasoning: `Only ${Math.round(o * 100)}% of the summary's content words come from the source.` };
       return { upheld: false, reasoning: `Summary is shorter than the source and ${Math.round(o * 100)}% grounded in it.` };
+    }
+    case "contract-code": {
+      // re-run the audit independently on the delivered source
+      const files = (result as { files?: { path: string; content: string }[] }).files ?? [];
+      const src = files.find((f) => f.path === "src/lib.rs")?.content;
+      if (!src) return { upheld: true, reasoning: "The delivery contains no contract source." };
+      const a = audit(src);
+      const high = a.findings.filter((f) => f.severity === "high");
+      return high.length
+        ? { upheld: true, reasoning: `An independent audit of the delivered source finds ${high.length} high-severity issue(s): ${high.map((f) => `${f.message} (line ${f.line})`).join("; ")}.` }
+        : { upheld: false, reasoning: `An independent audit finds no high-severity issue (score ${a.score}).` };
+    }
+    case "palette": {
+      const pairs = (result as { pairs?: { fg: string; bg: string; use: string }[] }).pairs ?? [];
+      const bad = pairs.filter((p) => contrast(p.fg, p.bg) < (p.use.includes("accent") ? 3 : 4.5));
+      return bad.length ? { upheld: true, reasoning: `Recomputed contrast fails for: ${bad.map((p) => p.use).join(", ")}.` } : { upheld: false, reasoning: `All ${pairs.length} pairs meet WCAG AA on recomputation.` };
     }
     case "search": {
       const r = result as { hits?: unknown[] };

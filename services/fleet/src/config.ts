@@ -27,9 +27,12 @@ export interface FleetConfig {
   /** secret key of the root account, which creates the agents' sub-accounts and signs their intents */
   rootSecretKey: string;
   adminToken: string;
-  /** which swarms run: the research fleet, the group-buy market, or both */
+  /** which swarms run: the research fleet, the group-buy market, the studios */
   research: boolean;
   market: boolean;
+  studios: boolean;
+  /** where delivered files (images, video, captions) are stored */
+  dataDir: string;
   background: boolean;
   backgroundIntervalSeconds: number;
   collateralTarget: bigint;
@@ -65,7 +68,7 @@ export function loadFleetConfig(): FleetConfig {
   if (!rootSecretKey) throw new Error(`QUORUM_ROOT_KEY must be set on ${network}`);
   const units = (v: string | undefined, d: string) => BigInt(Math.round(Number(v ?? d) * 1e6));
   const ms = (v: string | undefined, d: number) => Math.round(Number(v ?? d) * 1000);
-  const modes = (e.FLEET_MODE ?? "research,market").split(",").map((s) => s.trim());
+  const modes = (e.FLEET_MODE ?? "research,market,studios").split(",").map((s) => s.trim());
   return {
     network,
     port: Number(e.FLEET_PORT ?? 8788),
@@ -77,6 +80,8 @@ export function loadFleetConfig(): FleetConfig {
     adminToken: e.ADMIN_TOKEN ?? "quorum-admin",
     research: modes.includes("research"),
     market: modes.includes("market"),
+    studios: modes.includes("studios"),
+    dataDir: e.DATA_DIR ?? resolve(REPO_ROOT, ".data"),
     // on a public network every round and settlement costs storage: traffic is on demand by default
     background: (e.FLEET_BACKGROUND ?? (local ? "on" : "off")) !== "off",
     backgroundIntervalSeconds: Number(e.BACKGROUND_INTERVAL_SECONDS ?? 45),

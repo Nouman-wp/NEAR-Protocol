@@ -2,7 +2,7 @@
 // Build the website and publish it to Vercel, with Vercel proxying the backend paths to the
 // machine running `pnpm serve <network> --tunnel`:
 //
-//   /v1/*  /agents/*  /guest(s)/*  /control/*   ->  <backend>
+//   /v1/*  /agents/*  /guest(s)/*  /control/*  /media/*   ->  <backend>
 //
 // so the public site, the API and every agent card (whose URLs are written on chain) live
 // under one stable domain. Vercel does not proxy WebSockets, so the live feed
@@ -44,7 +44,7 @@ console.log(`building for ${site || "(site URL not known yet)"} -> backend ${bac
 execFileSync(shell ? "pnpm.cmd" : "pnpm", ["run", "build"], { cwd: web, env, stdio: "inherit", shell });
 
 // 2. routing: backend paths are proxied, everything else is the single-page app
-const proxied = ["v1", "guest", "guests", "control"];
+const proxied = ["v1", "guest", "guests", "control", "media"];
 // agent cards and A2A endpoints live at /agents/<slug>; the site's own agent pages are
 // /agents and /agents/<numeric id>, so only slug paths go to the backend
 const agentSlug = ":slug([a-z][a-z0-9-]*)";

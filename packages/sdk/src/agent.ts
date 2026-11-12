@@ -808,7 +808,8 @@ export class QuorumAgent {
         method: "message/send",
         params: { message: { role: "user", messageId: randomUUID(), parts: [{ kind: "data", data: { quorum } }] } },
       }),
-      signal: AbortSignal.timeout(60_000),
+      // executing a job can take minutes (a studio forms a team in sealed-bid rounds first)
+      signal: AbortSignal.timeout(quorum.action === "execute" ? 300_000 : 60_000),
     });
     const body = (await res.json()) as { result?: { parts?: { kind: string; data?: { quorum?: unknown } }[] }; error?: { message: string } };
     if (body.error) throw new Error(`${seller.name}: ${body.error.message}`);

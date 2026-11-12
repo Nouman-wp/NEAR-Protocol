@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { join } from "node:path";
 import { ONE_NEAR, formatUnits, randomKeyPair, type AgentSummary as Summary } from "@quorum/core";
 import { ClearingClient, QuorumAgent, Operator, RoundVoidError, end, serveAgents, type AgentProfile, type ChainRound, type ClearingConfig, type HireResult } from "@quorum/sdk";
 import { agentKey, type FleetConfig } from "./config.ts";
@@ -6,11 +7,13 @@ import { installArbiter } from "./agents/arbiter.ts";
 import { installOrchestrator, runBrief, TOPICS, type BriefRecord } from "./agents/orchestrator.ts";
 import { installLens, installPolyglot, installRogue, installScout, installScribe, installSentinel, installVerifier } from "./agents/workers.ts";
 import { Market, marketMembers } from "./market.ts";
+import { FREELANCERS, ROLES, STUDIOS, briefFor, studioMembers, type StudioJob, type StudioKind } from "./agents/studios.ts";
+import { MediaStore } from "./work/media.ts";
 
 export interface FleetMember {
   /** also the name of the agent's sub-account: `<slug>.<root>` */
   slug: string;
-  group: "research" | "market";
+  group: "research" | "market" | "studios";
   profile: Omit<AgentProfile, "baseUrl" | "slug">;
   install: (fleet: Fleet, agent: QuorumAgent) => void;
   /** standing intents: what this agent may buy on its own, signed by its operator */
@@ -109,6 +112,8 @@ export class Fleet {
   readonly agents = new Map<string, QuorumAgent>();
   readonly standing = new Map<string, string>();
   readonly briefs: BriefRecord[] = [];
+  readonly studioJobs: StudioJob[] = [];
+  readonly media: MediaStore;
   readonly activity = new Map<string, number>();
   readonly logs: { at: number; slug: string; message: string }[] = [];
   readonly state: FleetState;
@@ -128,7 +133,8 @@ export class Fleet {
   constructor(cfg: FleetConfig) {
     this.cfg = cfg;
     this.state = { paused: false, background: cfg.background, rogueBadRate: cfg.rogueBadRate, rogueDiscount: false, offline: new Set(), scenario: null };
-    this.members = [...(cfg.research ? RESEARCH : []), ...(cfg.market ? marketMembers(cfg.simBuyers, cfg.simSellers, cfg.simSeed) : [])];
+    this.members = [...(cfg.research ? RESEARCH : []), ...(cfg.market ? marketMembers(cfg.simBuyers, cfg.simSellers, cfg.simSeed) : []), ...(cfg.studios ? studioMembers() : [])];
+    this.media = new MediaStore(join(cfg.dataDir, "media"), cfg.publicUrl);
   }
 
   log(slug: string, message: string): void {
@@ -210,6 +216,13 @@ export class Fleet {
         const topic = TOPICS[Math.floor(Math.random() * TOPICS.length)]!;
         void runBrief(this, { topic, languages: Math.random() < 0.3 ? ["en", "hi"] : ["en"], intentId, origin: "background" });
       }, this.cfg.backgroundIntervalSeconds * 1000);
+    }
+    if (this.cfg.studios) {
+      setInterval(() => {
+        if (!this.state.background || this.state.paused || this.studioJobs.some((j) => j.status === "forming" || j.status === "working")) return;
+        const s = STUDIOS[Math.floor(Math.random() * STUDIOS.length)]!;
+        void this.commission(s.kind, null, "background").catch(() => undefined);
+      }, this.cfg.backgroundIntervalSeconds * 2000);
     }
     if (this.cfg.market && this.cfg.simAuto) {
       setInterval(() => {
@@ -453,6 +466,57 @@ export class Fleet {
     }
   }
 
+  // ---------------------------------------------------------------- studios
+
+  /** The founder commissions a studio; the studio's lead forms its team and does the work. */
+  async commission(kind: StudioKind, brief: Record<string, unknown> | null, origin: string): Promise<{ ok: boolean; message: string }> {
+    if (!this.cfg.studios) throw new Error("the studios are not running");
+    const studio = STUDIOS.find((s) => s.kind === kind);
+    if (!studio) throw new Error(`unknown studio ${kind}`);
+    const intentId = this.standing.get("founder:main");
+    if (!intentId) throw new Error("the founder has no standing intent yet");
+    const input = briefFor(kind, brief);
+    this.log("founder", `commissions ${studio.name} (${origin}): ${JSON.stringify(input).slice(0, 120)}`);
+    void this.hire("founder", studio.service, input, { intentId, minReputation: 0 }).then(
+      (r) => this.log("founder", `${studio.name} delivered job ${r.jobId.slice(0, 10)} for ${formatUnits(r.price)} USDC`),
+      (err) => this.log("founder", `${studio.name} commission failed: ${(err as Error).message}`),
+    );
+    return { ok: true, message: `${studio.name} takes the commission: it puts ${studio.roles.length} roles out to sealed-bid tender, then its team does the work` };
+  }
+
+  private studiosView() {
+    return {
+      running: this.cfg.studios,
+      studios: STUDIOS.map((s) => ({
+        kind: s.kind,
+        slug: s.slug,
+        name: s.name,
+        service: s.service,
+        product: s.product,
+        price: s.price.toString(),
+        description: s.description,
+        examples: s.examples,
+        agentId: this.agents.get(s.slug)?.agentId.toString() ?? null,
+        roles: s.roles.map((r) => ({
+          service: r,
+          name: ROLES[r]!.name,
+          reserve: ROLES[r]!.reserve.toString(),
+          description: ROLES[r]!.description,
+          bidders: FREELANCERS.filter((f) => f.skills[r]).map((f) => ({ slug: f.slug, name: f.name, strategy: f.skills[r]![0] })),
+        })),
+      })),
+      freelancers: FREELANCERS.map((f) => ({
+        slug: f.slug,
+        name: f.name,
+        role: f.role,
+        description: f.description,
+        agentId: this.agents.get(f.slug)?.agentId.toString() ?? null,
+        skills: Object.entries(f.skills).map(([service, [strategy]]) => ({ service, strategy })),
+      })),
+      jobs: this.studioJobs.map((j) => ({ ...j, deliverables: undefined, delivered: j.deliverables !== null })),
+    };
+  }
+
   // ---------------------------------------------------------------- scenarios
 
   async scenario(name: string): Promise<{ ok: boolean; message: string }> {
@@ -510,6 +574,12 @@ export class Fleet {
           this.state.rogueDiscount = false;
         }, 120_000);
         return { ok: true, message: "Rogue bids far below everyone and cuts its quality; watch the disputes, then its bids stop counting" };
+      }
+      case "studio-rush": {
+        if (!this.cfg.studios) throw new Error("the studios are not running");
+        this.state.scenario = { name, startedAt: now, until: now + 150_000 };
+        STUDIOS.forEach((s, i) => setTimeout(() => void this.commission(s.kind, null, "scenario").catch((err) => this.log("founder", (err as Error).message)), i * 4_000));
+        return { ok: true, message: "the founder commissions all five studios: each lead tenders its roles, freelancers bid sealed, the winners do the work" };
       }
       case "default-drill": {
         const intent = research();
@@ -603,6 +673,24 @@ export class Fleet {
       end(res, b ? 200 : 404, b ?? { error: "unknown brief" });
       return true;
     }
+    if (req.method === "GET" && p.startsWith("/media/")) {
+      const file = this.media.serve(p.slice("/media/".length));
+      if (!file) end(res, 404, { error: "unknown file" });
+      else {
+        res.writeHead(200, { "content-type": file.type, "content-length": file.body.length, "cache-control": "public, max-age=31536000, immutable" });
+        res.end(file.body);
+      }
+      return true;
+    }
+    if (req.method === "GET" && p === "/control/studios") {
+      end(res, 200, this.studiosView());
+      return true;
+    }
+    if (req.method === "GET" && p.startsWith("/control/studios/")) {
+      const j = this.studioJobs.find((x) => x.id === p.split("/")[3]);
+      end(res, j ? 200 : 404, j ?? { error: "unknown studio job" });
+      return true;
+    }
     if (req.method === "GET" && p === "/control/market") {
       end(res, 200, { running: this.cfg.market, buyers: this.cfg.market ? this.cfg.simBuyers : 0, sellers: this.cfg.market ? this.cfg.simSellers : 0, seed: this.cfg.simSeed, rounds: this.market?.rounds ?? [] });
       return true;
@@ -628,6 +716,10 @@ export class Fleet {
       const b = (body ?? {}) as { scenario?: string; goal?: string; budget?: number; perJobCap?: number; minReputation?: number; services?: string[]; deadlineMinutes?: number };
       try {
         if (action === "start") end(res, 200, await this.scenario(b.scenario ?? ""));
+        else if (action === "commission") {
+          const c = (body ?? {}) as { studio?: string; brief?: Record<string, unknown> };
+          end(res, 200, await this.commission(String(c.studio ?? "") as StudioKind, c.brief ?? null, "admin"));
+        }
         else if (action === "intent") {
           // demo convenience: the operator signs an intent for the orchestrator on the presenter's behalf
           const orch = this.agents.get("orchestrator");
@@ -693,6 +785,8 @@ export class Fleet {
       scenario: this.state.scenario && this.state.scenario.until > Date.now() ? this.state.scenario : null,
       rogueBadRate: this.state.rogueBadRate,
       briefsRunning: this.briefs.filter((b) => b.status === "running").length,
+      studiosRunning: this.studioJobs.filter((j) => j.status === "forming" || j.status === "working").length,
+      studios: this.cfg.studios,
       roundsRunning: this.market?.busy ?? 0,
       agents,
     };
