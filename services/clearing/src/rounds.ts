@@ -80,7 +80,7 @@ export class RoundBook {
     const now = Date.now();
     const rows = this.db.all<{ id: number; chain_json: string }>("SELECT id, chain_json FROM rounds WHERE status = 'Open'");
     for (const r of rows) {
-      const reveal = (JSON.parse(r.chain_json) as { reveal_deadline?: number }).reveal_deadline ?? Infinity;
+      const reveal = (JSON.parse(r.chain_json) as Stored).round?.reveal_deadline ?? Infinity;
       if (now < reveal + 60_000 || now - (this.closeTried.get(r.id) ?? 0) < 5 * 60_000) continue;
       this.closeTried.set(r.id, now);
       try {
