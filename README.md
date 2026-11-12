@@ -51,7 +51,7 @@ pnpm install
 | Open **Epochs**, then a sealed epoch | Net positions summing to zero, the settlement plan (debtor → creditor), and the `settle` transaction that executed it through the verifier. |
 | Open **Verify** | Your browser reads the epoch from the chain and checks every signature, the netting and the plan. Expect "Everything matches". |
 | `pnpm test:chain` | The contracts against a real NEAR node with no services. It covers a tender and a group buy, IOUs posted and netted, one NEAR Intents batch settling the epoch, and a default covered from collateral. A forged IOU, a changed bid, an early reveal, an underpaying batch and a replayed payload are all refused. |
-| `pnpm test:contracts` (needs Rust) and `pnpm -r test` | 67 contract unit tests and 60 TypeScript tests. |
+| `pnpm test:contracts` (needs Rust) and `pnpm -r test` | 67 contract unit tests and 82 TypeScript tests. |
 
 On **Windows**, run the node in WSL and everything else in Windows. WSL forwards localhost, so `pnpm dev` finds the node:
 
@@ -66,18 +66,28 @@ pnpm install && pnpm dev
 
 ## See it
 
+All from the live testnet deployment.
+
 <table>
   <tr>
     <td width="50%" valign="top"><img src="docs/screenshots/hero.jpg" alt="Landing page" /><br/><sub><b>Landing page.</b> A few thousand particles for the swarm, live numbers from the ledger below.</sub></td>
     <td width="50%" valign="top"><img src="docs/screenshots/explore.jpg" alt="The agent circle" /><br/><sub><b>The agent circle.</b> Every agent on a ring. Hover one to isolate what it owes and is owed; click to open it.</sub></td>
   </tr>
   <tr>
-    <td valign="top"><img src="docs/screenshots/rounds.jpg" alt="Rounds and price discovery" /><br/><sub><b>Price discovery.</b> The clearing price of GPU hours falls from $0.027 towards $0.021 as the adaptive and undercutting sellers learn from past rounds.</sub></td>
-    <td valign="top"><img src="docs/screenshots/round.jpg" alt="One sealed-bid round" /><br/><sub><b>One round.</b> Five sealed bids revealed, the winner at the second price, and eight buyers who each pay only their share.</sub></td>
+    <td valign="top"><img src="docs/screenshots/studios.jpg" alt="Studios" /><br/><sub><b>Studios.</b> Five orchestrator agents sell finished work. Each hire puts every role on the studio's team out to a sealed-bid tender on chain.</sub></td>
+    <td valign="top"><img src="docs/screenshots/commission.jpg" alt="One studio commission" /><br/><sub><b>One commission.</b> Darkroom was hired for $0.009. It tendered three roles (retouch, grade, reframe) with two sealed bids each, delivered the photo and kept the difference.</sub></td>
   </tr>
   <tr>
-    <td valign="top"><img src="docs/screenshots/epoch.jpg" alt="An epoch receipt" /><br/><sub><b>An epoch.</b> Net positions that sum to zero, and the plan the contract fixed: each debtor pays creditors directly, all in one verifier transaction.</sub></td>
+    <td valign="top"><img src="docs/screenshots/rounds.jpg" alt="Rounds and price discovery" /><br/><sub><b>Price discovery.</b> Group buys of GPU hours: the clearing price starts at $0.0335 and dips to $0.0269 as the adaptive and undercutting sellers learn, well under the $0.05 reserve.</sub></td>
+    <td valign="top"><img src="docs/screenshots/round.jpg" alt="One sealed-bid round" /><br/><sub><b>One round.</b> Four sealed bids revealed, the winner at the second price, and nine buyers who each pay only their share of 40 GPU hours.</sub></td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="docs/screenshots/epoch.jpg" alt="An epoch receipt" /><br/><sub><b>An epoch.</b> 15 IOUs became 11 transfers. Net positions sum to zero, and each debtor pays creditors directly, all in one verifier transaction.</sub></td>
     <td valign="top"><img src="docs/screenshots/verify.jpg" alt="Verify page" /><br/><sub><b>Don't trust it, recompute it.</b> The browser reads the contract over the RPC and redoes the signatures, the netting and the plan.</sub></td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="docs/screenshots/dashboard.jpg" alt="Dashboard: your own agent" /><br/><sub><b>Your own agent.</b> Signed in with a NEAR wallet, launched a hosted agent with that account as its on-chain operator, and signed its spending limit in the wallet.</sub></td>
+    <td valign="top"><img src="docs/screenshots/receipts.jpg" alt="Dashboard: commissions and settlement" /><br/><sub><b>Its receipts.</b> The agent commissioned a studio. The purchase netted in epoch 15 and settled through the verifier, transaction linked.</sub></td>
   </tr>
 </table>
 
@@ -283,7 +293,7 @@ await agent.settleDebts();
 | Creditors are paid even if a debtor vanishes | Collateral locked at finalisation, paid into the verifier on default | `default_seizes_collateral_and_seals`, e2e |
 | TypeScript and Rust agree byte for byte | Shared vectors | `parity_vectors` (Rust) and "parity with the contract" (TS) |
 
-**67** contract unit tests, **76** TypeScript tests, the chain end-to-end test and the simulation's 8 on-chain checks all run in CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
+**67** contract unit tests, **82** TypeScript tests, the chain end-to-end test and the simulation's 8 on-chain checks all run in CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
 
 ## NEAR testnet
 
