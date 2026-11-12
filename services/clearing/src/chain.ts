@@ -1,4 +1,4 @@
-import { NETWORKS, NearAccount, NearError, NearRpc, TGAS, intentsTokenId, type AccountId, type Deployment, type Hex, type NetworkKey, type PublicKey, type TxResult } from "@quorum/core";
+import { NETWORKS, NearAccount, implicitAccountId, NearError, NearRpc, TGAS, intentsTokenId, type AccountId, type Deployment, type Hex, type NetworkKey, type PublicKey, type TxResult } from "@quorum/core";
 import { log } from "./bus.ts";
 
 export interface VaultAccount {
@@ -248,6 +248,14 @@ export class Chain {
    * People sign in with the account they have, so a testnet deployment also checks mainnet keys.
    */
   async holdsFullAccessKey(account: AccountId, publicKey: PublicKey, network: NetworkKey = this.key): Promise<boolean> {
+    // an implicit account is named after its own key: the signature proves it, funded or not
+    if (/^[0-9a-f]{64}$/.test(account)) {
+      try {
+        if (implicitAccountId(publicKey) === account) return true;
+      } catch {
+        return false;
+      }
+    }
     const k = `full|${network}|${account}|${publicKey}`;
     const hit = this.keyChecks.get(k);
     if (hit && Date.now() - hit.at < 60_000) return hit.ok;
