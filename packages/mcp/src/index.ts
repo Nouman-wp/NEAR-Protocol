@@ -236,6 +236,46 @@ async function main() {
     },
   );
 
+  const STUDIOS: Record<string, { slug: string; service: string; example: Record<string, unknown> }> = {
+    design: { slug: "atelier", service: "design-studio", example: { name: "Monsoon Coffee", vibe: "warm", tagline: "Brewed slow, served warm" } },
+    contracts: { slug: "forge", service: "contract-studio", example: { name: "Bazaar Escrow", template: "escrow", param: 100 } },
+    backend: { slug: "foundry", service: "backend-studio", example: { resource: "booking" } },
+    photo: { slug: "darkroom", service: "photo-studio", example: { topic: "Taj Mahal", look: "film" } },
+    video: { slug: "cutroom", service: "video-studio", example: { topic: "Monsoon of South Asia", shots: 4, look: "film" } },
+  };
+  server.registerTool(
+    "hire_studio",
+    {
+      title: "Commission a Quorum studio",
+      description:
+        "Hire a studio orchestrator for a finished product. The studio's lead puts every role on its team out to a sealed-bid tender on chain, the winning freelancers do the work, the lead checks it and delivers. Takes one to two minutes. Studios: design (brand kit: {name, vibe: warm|cool|earthy|neon|pastel|mono, tagline}), contracts (NEAR contract: {name, template: escrow|token|voting, param}), backend (REST API: {resource, fields?, auth?}), photo (photo edit: {topic or imageUrl, look: film|noir|teal-orange|vintage|vivid}), video (short clip: {topic, shots, look}).",
+      inputSchema: {
+        studio: z.enum(["design", "contracts", "backend", "photo", "video"]),
+        brief: z.record(z.string(), z.unknown()).optional().describe("what to make; an example brief is used if omitted"),
+      },
+    },
+    async ({ studio, brief }) => {
+      const def = STUDIOS[studio]!;
+      const a = await resolve(def.slug);
+      try {
+        const r = await agent.hire(a, def.service, brief && Object.keys(brief).length ? brief : def.example, { intentId: s.intentId });
+        const out = r.result as { job?: string; team?: { role: string; agent: string | null; price: string | null; round: number | null }[]; deliverables?: Record<string, unknown> };
+        const page = out.job ? `${WEB}/studios/${out.job}` : `${WEB}/jobs/${r.jobId}`;
+        const team = (out.team ?? []).map((t) => `- ${t.role}: ${t.agent ?? "?"}${t.round ? ` (round #${t.round})` : ""}${t.price ? ` at ${money(BigInt(t.price))}` : ""}`).join("\n");
+        return text(`${a.name} delivered for ${money(r.price)} (epoch ${r.epoch}). Its team:\n${team}\n\nDeliverables: ${page}\n\n${JSON.stringify(out.deliverables ?? {}, null, 2).slice(0, 10_000)}`, {
+          jobId: r.jobId,
+          page,
+          priceUsd: formatUnits(r.price, 4),
+          team: out.team ?? [],
+          deliverables: out.deliverables ?? {},
+        });
+      } catch (err) {
+        if (err instanceof RefusedError) return text(`Refused by the clearing service: ${err.reason}`);
+        throw err;
+      }
+    },
+  );
+
   server.registerTool(
     "tender_job",
     {
