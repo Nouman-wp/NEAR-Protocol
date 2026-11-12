@@ -8,14 +8,15 @@ export interface Network {
   name: string;
   /** NEAR network id, as wallets and near-api-js name it */
   networkId: string;
+  /** JSON-RPC endpoints, comma-separated: the client stays on one and fails over to the next */
   rpcUrl: string;
   explorer: string | null;
 }
 
 export const NETWORKS: Record<NetworkKey, Network> = {
   local: { key: "local", name: "Local sandbox", networkId: "sandbox", rpcUrl: "http://127.0.0.1:3030", explorer: null },
-  testnet: { key: "testnet", name: "NEAR testnet", networkId: "testnet", rpcUrl: "https://rpc.testnet.near.org", explorer: "https://testnet.nearblocks.io" },
-  mainnet: { key: "mainnet", name: "NEAR", networkId: "mainnet", rpcUrl: "https://rpc.mainnet.near.org", explorer: "https://nearblocks.io" },
+  testnet: { key: "testnet", name: "NEAR testnet", networkId: "testnet", rpcUrl: "https://rpc.testnet.fastnear.com,https://near-testnet.drpc.org,https://archival-rpc.testnet.near.org", explorer: "https://testnet.nearblocks.io" },
+  mainnet: { key: "mainnet", name: "NEAR", networkId: "mainnet", rpcUrl: "https://rpc.mainnet.fastnear.com", explorer: "https://nearblocks.io" },
 };
 
 /** The NEAR Intents verifier. It exists on mainnet only. */

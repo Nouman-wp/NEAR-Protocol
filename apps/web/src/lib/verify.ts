@@ -86,6 +86,7 @@ interface ChainEpoch {
 export async function verifyEpochInBrowser(epochId: number, onStep: (c: Check) => void): Promise<{ ok: boolean; rpc: string; contract: string; receipt: string | null }> {
   const cfg = await api<{ network: { rpc: string }; deployment: { contract: string; token: string }; domain: QuorumDomain }>("/v1/config");
   const rpc = new NearRpc(cfg.network.rpc);
+  const rpcName = () => rpc.url;
   const contract = cfg.deployment.contract;
   let ok = true;
   const step = (name: string, pass: boolean, detail: string) => {
@@ -98,9 +99,9 @@ export async function verifyEpochInBrowser(epochId: number, onStep: (c: Check) =
   const chain = await rpc.view<ChainEpoch | null>(contract, "get_epoch", { epoch: epochId });
   if (!chain) {
     step("Epoch on chain", false, `${contract} has no record of epoch ${epochId}: it has not been finalised yet, or it is old enough to have been pruned from contract state to give its storage back (the ledger keeps every epoch; public deployments keep the latest 20 on chain).`);
-    return { ok: false, rpc: cfg.network.rpc, contract, receipt: null };
+    return { ok: false, rpc: rpcName(), contract, receipt: null };
   }
-  step("Epoch on chain", chain.status === "Sealed" || chain.status === "Finalized", `Read from ${contract} over ${cfg.network.rpc}: status ${chain.status}, ${chain.iou_count} IOUs.`);
+  step("Epoch on chain", chain.status === "Sealed" || chain.status === "Finalized", `Read from ${contract} over ${rpcName()}: status ${chain.status}, ${chain.iou_count} IOUs.`);
 
   // keys from the chain, not from the service
   const buyers = [...new Set(ious.map((i) => Number(i.buyer)))];
@@ -148,5 +149,5 @@ export async function verifyEpochInBrowser(epochId: number, onStep: (c: Check) =
   }
   step("NEAR Intents payloads", badIntent === 0, `${paid.length - badIntent} of ${paid.length} debts were paid by a signed transfer payload whose amounts match the recomputed plan, and the contract marks them settled.`);
   void chainIouSetHash;
-  return { ok, rpc: cfg.network.rpc, contract, receipt: chain.receipt_hash };
+  return { ok, rpc: rpcName(), contract, receipt: chain.receipt_hash };
 }

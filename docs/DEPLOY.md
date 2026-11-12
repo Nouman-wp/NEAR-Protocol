@@ -94,7 +94,7 @@ This builds the website and deploys it to Vercel (the Vercel CLI must be logged 
 |---|---|
 | `curl https://quorum-api.example.org/v1/health` | `ok: true`: the chain is reachable, the verifier answers, and the swarm is ready |
 | Open the website, then Live floor | The swarm trading. Run a scenario with the `ADMIN_TOKEN` from `.env.testnet` |
-| Open Verify | "Everything matches", read from `rpc.testnet.near.org` |
+| Open Verify | "Everything matches", read from `rpc.testnet.fastnear.com` |
 | `https://testnet.nearblocks.io/address/clearing.<root>` | Every round, posting, finalisation and settlement transaction |
 
 ## Optional: Supabase mirror

@@ -70,11 +70,11 @@ async function main(): Promise<void> {
   const app = await buildApi({ cfg, db, chain, registry, rep, intents, ledger, epochs, settlements, rounds, mirror, domain, intentsHealthy: () => intentsHealthy });
   await app.listen({ port: cfg.PORT, host: "0.0.0.0" });
 
-  setInterval(() => void registry.sync(), 5_000);
+  setInterval(() => void registry.sync(), cfg.network === "local" ? 5_000 : 10_000);
   // re-read every agent card now and then, so new or repriced services show up without a restart
   setTimeout(() => void registry.sync(true), 60_000);
   setInterval(() => void registry.sync(true), 10 * 60_000);
-  setInterval(() => void rounds.sync(), cfg.network === "local" ? 1_000 : 2_000);
+  setInterval(() => void rounds.sync(), cfg.network === "local" ? 1_000 : 3_000);
   setInterval(() => void settlements.tick().catch((err) => log("warn", "settlement", (err as Error).message)), 2_000);
   setInterval(() => void chain.ping(), 10_000);
   if (cfg.keepEpochs > 0 || cfg.keepRounds > 0) setInterval(() => void prune(), 5 * 60_000);

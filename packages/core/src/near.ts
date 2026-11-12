@@ -84,27 +84,58 @@ export interface RpcOptions {
 }
 
 export class NearRpc {
-  readonly url: string;
+  /** Every endpoint, from a comma-separated list. One is used until it fails or rate-limits. */
+  readonly urls: string[];
   private readonly opts: RpcOptions;
   private id = 0;
   private block: { hash: Uint8Array; at: number } | null = null;
+  private current = 0;
+  private coolUntil: number[];
 
   constructor(url: string, opts: RpcOptions = {}) {
-    this.url = url;
+    this.urls = url.split(",").map((u) => u.trim()).filter(Boolean);
+    if (!this.urls.length) throw new Error("no RPC URL");
+    this.coolUntil = this.urls.map(() => 0);
     this.opts = opts;
   }
 
-  async request<T>(method: string, params: unknown, attempts = 4): Promise<T> {
+  /** The endpoint in use. */
+  get url(): string {
+    return this.urls[this.current]!;
+  }
+
+  /** The endpoint in use, or the next one that is not cooling down after a failure. */
+  private pick(): number {
+    const now = Date.now();
+    for (let k = 0; k < this.urls.length; k++) {
+      const i = (this.current + k) % this.urls.length;
+      if (this.coolUntil[i]! <= now) return (this.current = i);
+    }
+    return (this.current = this.coolUntil.indexOf(Math.min(...this.coolUntil)));
+  }
+
+  private anyAvailable(): boolean {
+    const now = Date.now();
+    return this.coolUntil.some((t) => t <= now);
+  }
+
+  async request<T>(method: string, params: unknown, attempts = 6): Promise<T> {
     let last: unknown;
     for (let i = 0; i < attempts; i++) {
+      let retryAfterMs = 0;
+      const at = this.pick();
       try {
-        const res = await fetch(this.url, {
+        const res = await fetch(this.urls[at]!, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ jsonrpc: "2.0", id: ++this.id, method, params }),
           signal: AbortSignal.timeout(this.opts.timeoutMs ?? (method === "tx" ? 15_000 : 40_000)),
         });
-        if (res.status === 429 || res.status >= 500) throw new NearError(`RPC answered ${res.status}`, "rpc");
+        if (res.status === 429 || res.status >= 500) {
+          // public RPCs rate-limit bursts: honour Retry-After when given, otherwise back off exponentially
+          retryAfterMs = Math.min(10_000, Number(res.headers.get("retry-after") ?? 0) * 1000);
+          throw new NearError(`RPC answered ${res.status}`, "rpc");
+        }
         const body = (await res.json()) as { result?: T; error?: { name?: string; cause?: { name?: string; info?: unknown }; message?: string; data?: unknown } };
         if (body.error) {
           const cause = body.error.cause?.name ?? body.error.name ?? "RPC_ERROR";
@@ -116,9 +147,13 @@ export class NearRpc {
         last = err;
         const kind = err instanceof NearError ? err.kind : "network";
         const transient = kind === "network" || kind === "rpc" || kind === "TIMEOUT_ERROR" || kind === "INTERNAL_ERROR" || (err as Error).name === "TimeoutError";
-        if (transient) this.opts.onTrouble?.((err as Error).message);
+        if (transient) {
+          this.opts.onTrouble?.((err as Error).message);
+          // rest this endpoint; with several configured, the next attempt goes to another one
+          if (this.urls.length > 1) this.coolUntil[at] = Date.now() + Math.max(retryAfterMs, kind === "rpc" ? 30_000 : 5_000);
+        }
         if (!transient || method === "send_tx" || method === "broadcast_tx_commit") throw err;
-        await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+        if (i + 1 < attempts && !this.anyAvailable()) await new Promise((r) => setTimeout(r, Math.max(retryAfterMs, kind === "rpc" ? Math.min(8_000, 500 * 2 ** i) : 400 * (i + 1))));
       }
     }
     throw last;
