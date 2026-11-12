@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router";
+import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { useLive } from "../lib/api.ts";
 import { useTheme } from "../lib/theme.ts";
+import { connectWallet, network, useAccount, walletsSupported } from "../lib/account.ts";
 import { Arrow, Mark } from "./ui.tsx";
 
 export const REPO = "https://github.com/Nouman-wp/NEAR-Protocol";
@@ -15,6 +16,31 @@ const NAV = [
   ["/verify", "Verify"],
   ["/developers", "Developers"],
 ] as const;
+
+/** Replaces the old "Open the floor" button: connect a wallet, or go to your dashboard. */
+function AccountButton() {
+  const acc = useAccount();
+  const navigate = useNavigate();
+  if (acc.session) {
+    const id = acc.session.accountId;
+    return (
+      <Link to="/dashboard" className="btn sm account-btn" title={id}>
+        <i className="account-dot" aria-hidden="true" />
+        {id.length > 22 ? `${id.slice(0, 10)}…${id.slice(-9)}` : id}
+      </Link>
+    );
+  }
+  const go = async () => {
+    const net = await network().catch(() => null);
+    navigate("/dashboard");
+    if (net && walletsSupported(net.key) && !acc.connected) await connectWallet();
+  };
+  return (
+    <button className="btn sm account-btn" onClick={() => void go()}>
+      {acc.connected ? "Sign in" : "Connect wallet"} <Arrow />
+    </button>
+  );
+}
 
 export function Header() {
   const live = useLive();
@@ -53,9 +79,7 @@ export function Header() {
             </svg>
           )}
         </button>
-        <Link to="/floor" className="btn sm">
-          Open the floor <Arrow />
-        </Link>
+        <AccountButton />
         <button className="menu-btn label" aria-expanded={open} onClick={() => setOpen(!open)}>
           Menu
         </button>

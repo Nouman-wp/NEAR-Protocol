@@ -10,12 +10,18 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "5.2.8",
     "@fontsource-variable/jetbrains-mono": "5.3.0",
+    "@near-wallet-selector/core": "10.1.4",
+    "@near-wallet-selector/here-wallet": "10.1.4",
+    "@near-wallet-selector/meteor-wallet": "10.1.4",
+    "@near-wallet-selector/modal-ui": "10.1.4",
+    "@near-wallet-selector/my-near-wallet": "10.1.4",
     "@quorum/core": "workspace:*",
+    "buffer": "6.0.3",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "react-router": "7.18.4",
-    "@fontsource-variable/geist": "5.2.8"
+    "react-router": "7.18.4"
   },
   "devDependencies": {
     "@types/react": "19.3.0",

@@ -7,6 +7,7 @@ import "./styles/app.css";
 import { Header, Footer } from "./components/chrome.tsx";
 import Landing from "./pages/Landing.tsx";
 import { startLive } from "./lib/api.ts";
+import { restoreWallet } from "./lib/account.ts";
 
 const Floor = lazy(() => import("./pages/Floor.tsx"));
 const RoundList = lazy(() => import("./pages/Rounds.tsx").then((m) => ({ default: m.RoundList })));
@@ -19,6 +20,7 @@ const JobPage = lazy(() => import("./pages/Job.tsx"));
 const Verify = lazy(() => import("./pages/Verify.tsx"));
 const Disputes = lazy(() => import("./pages/Verify.tsx").then((m) => ({ default: m.Disputes })));
 const Developers = lazy(() => import("./pages/Developers.tsx"));
+const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
 const StudiosPage = lazy(() => import("./pages/Studios.tsx").then((m) => ({ default: m.StudiosPage })));
 const StudioJobPage = lazy(() => import("./pages/Studios.tsx").then((m) => ({ default: m.StudioJobPage })));
 
@@ -56,6 +58,7 @@ function App() {
           <Route path="/disputes" element={<Disputes />} />
           <Route path="/verify" element={<Verify />} />
           <Route path="/developers" element={<Developers />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/status" element={<Developers />} />
           <Route path="*" element={<Landing />} />
         </Routes>
@@ -66,6 +69,7 @@ function App() {
 }
 
 startLive();
+void restoreWallet();
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>

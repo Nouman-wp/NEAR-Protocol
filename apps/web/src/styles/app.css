@@ -17,12 +17,12 @@
   /* light (the default): off-white ground, ink type, burgundy accents */
   color-scheme: light;
   --fg: 42, 36, 29;
-  --ground: #f4f0e8;
-  --ground-2: #ede7dc;
-  --panel: rgba(255, 253, 249, 0.66);
-  --panel-solid: #fbf9f5;
-  --line: rgba(42, 36, 29, 0.12);
-  --line-strong: rgba(42, 36, 29, 0.22);
+  --ground: #e9e2d5;
+  --ground-2: #e1d9ca;
+  --panel: rgba(244, 238, 228, 0.72);
+  --panel-solid: #f1ebe0;
+  --line: rgba(42, 36, 29, 0.13);
+  --line-strong: rgba(42, 36, 29, 0.24);
   --text: #2a241d;
   --muted: rgba(42, 36, 29, 0.72);
   --faint: rgba(42, 36, 29, 0.54);
@@ -37,11 +37,11 @@
   --warn: #93600f;
   --bad: #b3261e;
 
-  --ambient: radial-gradient(120% 70% at 50% 0%, #f7e9e6 0%, #f5eee6 45%, var(--ground) 80%);
-  --glow-1: radial-gradient(circle, rgba(200, 112, 127, 0.26) 0%, rgba(233, 201, 207, 0.22) 34%, transparent 66%);
-  --glow-2: radial-gradient(circle, rgba(170, 181, 155, 0.22) 0%, rgba(233, 201, 207, 0.16) 38%, transparent 66%);
-  --header-bg: rgba(244, 240, 232, 0.78);
-  --menu-bg: rgba(244, 240, 232, 0.98);
+  --ambient: radial-gradient(120% 70% at 50% 0%, #eedfd8 0%, #ebe3d6 45%, var(--ground) 80%);
+  --glow-1: radial-gradient(circle, rgba(184, 104, 112, 0.22) 0%, rgba(214, 178, 170, 0.2) 34%, transparent 66%);
+  --glow-2: radial-gradient(circle, rgba(150, 160, 130, 0.2) 0%, rgba(214, 178, 170, 0.14) 38%, transparent 66%);
+  --header-bg: rgba(233, 226, 213, 0.82);
+  --menu-bg: rgba(233, 226, 213, 0.98);
   --btn-bg: linear-gradient(100deg, #6d2937 0%, #7e3043 55%, #8c2c40 100%);
   --btn-fg: #faf8f4;
   --btn-glow: rgba(109, 41, 55, 0.35);
@@ -49,12 +49,12 @@
   --marquee: linear-gradient(90deg, #2a241d, #8c2c40 50%, #5e6852);
   --feature-bg: linear-gradient(180deg, #6d2937 0%, #4c1624 100%);
   --feature-fg: #f3f0e8;
-  --feature-muted: rgba(var(--fg), 0.74);
-  --stage: radial-gradient(circle at 50% 45%, rgba(200, 112, 127, 0.2), transparent 62%), radial-gradient(rgba(42, 36, 29, 0.09) 1px, transparent 1.4px) 0 0 / 30px 30px, rgba(255, 253, 249, 0.55);
+  --feature-muted: rgba(243, 240, 232, 0.74);
+  --stage: radial-gradient(circle at 50% 45%, rgba(184, 104, 112, 0.18), transparent 62%), radial-gradient(rgba(42, 36, 29, 0.09) 1px, transparent 1.4px) 0 0 / 30px 30px, rgba(244, 238, 228, 0.6);
   --code-bg: rgba(42, 36, 29, 0.05);
-  --input-bg: rgba(255, 255, 255, 0.7);
+  --input-bg: rgba(246, 241, 232, 0.85);
   --shadow: rgba(42, 36, 29, 0.22);
-  --footer-glow: radial-gradient(60% 90% at 20% 10%, rgba(200, 112, 127, 0.16), transparent 70%);
+  --footer-glow: radial-gradient(60% 90% at 20% 10%, rgba(184, 104, 112, 0.14), transparent 70%);
   --node-stroke: rgba(42, 36, 29, 0.55);
 }
 
@@ -1280,4 +1280,39 @@ input::placeholder {
   .site-header .menu-btn {
     margin-left: 10px;
   }
+}
+
+/* the account button in the header */
+.account-btn {
+  gap: 9px;
+}
+.account-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--good);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 25%, transparent);
+}
+@media (max-width: 1020px) {
+  /* keep sign-in reachable on small screens */
+  .site-header .account-btn {
+    display: inline-flex;
+    margin-left: 10px;
+  }
+}
+@media (max-width: 520px) {
+  .site-header .account-btn {
+    max-width: 128px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+select {
+  font: inherit;
+  color: var(--text);
+}
+/* small print inside the featured (burgundy in light, blush in dark) stat cards */
+.card.light small,
+.stat.light small {
+  color: var(--feature-muted);
 }
