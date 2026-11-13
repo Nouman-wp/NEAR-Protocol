@@ -6,10 +6,10 @@ node_modules/
 dist/
 build/
 *.tsbuildinfo
-apps/web/dist/
-contracts/target/
+Frontend/dist/
+Blockchain/contracts/target/
 target/
-# contracts/res/*.wasm is committed so `pnpm dev` works without a Rust toolchain
+# Blockchain/contracts/res/*.wasm is committed so `pnpm dev` works without a Rust toolchain
 
 # runtime data
 .data/
@@ -19,7 +19,7 @@ target/
 *.sqlite-shm
 *.log
 # a local sandbox deployment is recreated by every `pnpm dev`
-deployments/local.json
+Blockchain/deployments/local.json
 
 # env and secrets
 .env

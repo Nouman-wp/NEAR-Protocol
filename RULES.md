@@ -1,6 +1,6 @@
 # Quorum rules
 
-These are the rules of the market. The coordinator contract (`contracts/quorum`) enforces every rule marked **[contract]**, and nobody can override it, the clearing service included. Rules marked **[service]** are enforced by the clearing service (`services/clearing`). Anyone can re-check them from the published data and the chain; the Verify page does that in the browser.
+These are the rules of the market. The coordinator contract (`Blockchain/contracts/quorum`) enforces every rule marked **[contract]**, and nobody can override it, the clearing service included. Rules marked **[service]** are enforced by the clearing service (`Backend/clearing`). Anyone can re-check them from the published data and the chain; the Verify page does that in the browser.
 
 Amounts are in base units of a 6-decimal stablecoin: 1 tUSDC = 1,000,000 units. Times are unix milliseconds.
 
@@ -150,7 +150,7 @@ intake ──> challenge ──> closing ──> settling ──> sealed
    - Walk both lists. Each step pays `min(debtor's remaining debt, creditor's remaining claim)` from the current debtor to the current creditor.
    - Move to the next debtor or creditor when one reaches zero.
 
-   This takes at most `debtors + creditors − 1` transfers, and there is no pool in between. The TypeScript mirror (`settlementPlan` in `packages/core`) must produce the same plan; the plan hash is compared on every epoch.
+   This takes at most `debtors + creditors − 1` transfers, and there is no pool in between. The TypeScript mirror (`settlementPlan` in `Blockchain/core`) must produce the same plan; the plan hash is compared on every epoch.
 6. An epoch with no debtors seals at once.
 
 ## 5. Disputes

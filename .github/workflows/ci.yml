@@ -15,9 +15,9 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: contracts
+          workspaces: Blockchain/contracts
       - name: Unit tests (coordinator, intents-lite, test USDC)
-        run: cd contracts && cargo test
+        run: cd Blockchain/contracts && cargo test
 
   forge:
     # the contracts the Forge studio delivers, compiled and tested exactly as delivered

@@ -1,7 +1,10 @@
 packages:
-  - "packages/*"
-  - "services/*"
-  - "apps/*"
+  - "Frontend"
+  - "Backend/clearing"
+  - "Blockchain/core"
+  - "Blockchain/sdk"
+  - "Blockchain/mcp"
+  - "Blockchain/agents"
 
 onlyBuiltDependencies:
   - esbuild
