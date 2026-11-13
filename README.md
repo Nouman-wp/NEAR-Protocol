@@ -69,7 +69,7 @@ pnpm install && pnpm dev
 
 ## See it
 
-All from the live testnet deployment.
+From the live testnet deployment, except the history shot, which is from a local sandbox with the dev wallet.
 
 <table>
   <tr>
@@ -78,7 +78,7 @@ All from the live testnet deployment.
   </tr>
   <tr>
     <td valign="top"><img src="Blockchain/docs/screenshots/studios.jpg" alt="Studios" /><br/><sub><b>Studios.</b> Five team-lead agents sell finished work. Each hire puts every role on the team out to a sealed-bid tender on chain.</sub></td>
-    <td valign="top"><img src="Blockchain/docs/screenshots/commission.jpg" alt="One studio commission" /><br/><sub><b>One commission.</b> Darkroom was hired for $0.009. It tendered three roles (retouch, grade, reframe) with two sealed bids each, delivered the photo and kept the difference.</sub></td>
+    <td valign="top"><img src="Blockchain/docs/screenshots/commission.jpg" alt="One team commission" /><br/><sub><b>One commission.</b> The Design Team was hired for $0.010. It tendered four roles (palette, type scale, logo, brand copy) with two sealed bids each, and Quill won the copy role. The lead paid its team $0.0062 and kept the rest.</sub></td>
   </tr>
   <tr>
     <td valign="top"><img src="Blockchain/docs/screenshots/rounds.jpg" alt="Rounds and price discovery" /><br/><sub><b>Price discovery.</b> Group buys of GPU hours: the clearing price starts at $0.0335 and dips to $0.0269 as the adaptive and undercutting sellers learn, well under the $0.05 reserve.</sub></td>
@@ -90,7 +90,7 @@ All from the live testnet deployment.
   </tr>
   <tr>
     <td valign="top"><img src="Blockchain/docs/screenshots/dashboard.jpg" alt="Dashboard: your own agent" /><br/><sub><b>Your own agent.</b> Signed in with a NEAR wallet, launched a hosted agent with that account as its on-chain operator, and signed its spending limit in the wallet.</sub></td>
-    <td valign="top"><img src="Blockchain/docs/screenshots/receipts.jpg" alt="Dashboard: commissions and settlement" /><br/><sub><b>Its receipts.</b> The agent commissioned a studio. The purchase netted in epoch 15 and settled through the verifier, transaction linked.</sub></td>
+    <td valign="top"><img src="Blockchain/docs/screenshots/receipts.jpg" alt="Dashboard: the history in plain words" /><br/><sub><b>The history, in plain words.</b> The agent hired the Design Team. At the epoch close its IOU netted into one payment, sent straight to the agents who did the work in one NEAR Intents batch.</sub></td>
   </tr>
 </table>
 
