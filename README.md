@@ -19,7 +19,7 @@
 
 > Built for **NEAR HACKATHON**, track **05 · AI Swarms** ("Many agents. One economy."). Also entered in **07 · Agent Economy**.
 
-**Live on NEAR testnet:** [quorum-ashy.vercel.app](https://quorum-ashy.vercel.app) · coordinator [`clearing.quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/clearing.quorum-612fa4.testnet) · open [Verify](https://quorum-ashy.vercel.app/verify) to recompute a settled epoch in your browser against the NEAR RPC.
+**Live on NEAR testnet:** [quorum.caspx.in](https://quorum.caspx.in) · coordinator [`clearing.quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/clearing.quorum-612fa4.testnet) · open [Verify](https://quorum.caspx.in/verify) to recompute a settled epoch in your browser against the NEAR RPC.
 
 ## In one minute
 
@@ -177,7 +177,7 @@ Five studio agents each sell a finished product. When a client agent hires one, 
 6. The lead delivers. Files (images, the GIF, captions) are stored under their sha256 and the signed delivery covers the hash, so a downloaded file can be checked against what was delivered.
 7. At epoch close, the Founder's debt to the lead and the lead's debts to its team net together and settle in the same NEAR Intents batch as everything else. The lead's margin is what it keeps.
 
-**Try it.** On the [Studios page](https://quorum-ashy.vercel.app/studios), use **All five studios** (the admin token is in `.env.testnet`; locally it is `quorum-admin`), or call `POST /control/commission {"studio": "photo", "brief": {"topic": "Hampi", "look": "vivid"}}`. From Claude, the MCP tool `hire_studio` commissions a studio from the guest agent. Each commission page shows the team, every round, what each member was paid, what the lead kept, the steps and disputes, and the deliverables.
+**Try it.** On the [Studios page](https://quorum.caspx.in/studios), use **All five studios** (the admin token is in `.env.testnet`; locally it is `quorum-admin`), or call `POST /control/commission {"studio": "photo", "brief": {"topic": "Hampi", "look": "vivid"}}`. From Claude, the MCP tool `hire_studio` commissions a studio from the guest agent. Each commission page shows the team, every round, what each member was paid, what the lead kept, the steps and disputes, and the deliverables.
 
 ## Architecture
 
@@ -316,7 +316,7 @@ pnpm serve testnet        # clearing service + swarm + one public port
 | Clearer (posts epochs, settles batches) | [`clearer.quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/clearer.quorum-612fa4.testnet) |
 | Root (every agent is a sub-account of it) | [`quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/quorum-612fa4.testnet) |
 
-The website is at [quorum-ashy.vercel.app](https://quorum-ashy.vercel.app), and the backend (clearing service, swarm and live feed) runs on a small server at `https://quorum.16-178-199-139.sslip.io` (health: [`/v1/health`](https://quorum.16-178-199-139.sslip.io/v1/health)). The same accounts are in [`deployments/testnet.json`](deployments/testnet.json). Every round, IOU posting, finalisation and settlement shows up in the coordinator's transaction history, and each agent's commits, reveals and settlement signatures trace to its own sub-account.
+The website is at [quorum.caspx.in](https://quorum.caspx.in) (served by Vercel, which also proxies the API and the agent cards), and the backend (clearing service, swarm and live feed) runs on a small server at `https://quorum.16-178-199-139.sslip.io` (health: [`/v1/health`](https://quorum.16-178-199-139.sslip.io/v1/health)). The same accounts are in [`deployments/testnet.json`](deployments/testnet.json). Every round, IOU posting, finalisation and settlement shows up in the coordinator's transaction history, and each agent's commits, reveals and settlement signatures trace to its own sub-account.
 
 ## Repository
 

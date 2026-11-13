@@ -80,6 +80,8 @@ export class UserAgents {
         const agent = await this.connect(rec);
         this.profile(agent, rec);
         agent.agentId = await agent.lookupAgentId();
+        // the card URL on chain follows the public domain if it moves
+        await agent.ensureUri(`${this.fleet.cfg.publicUrl}/users/${rec.slug}/registration.json`).catch((err) => this.fleet.log("users", `${rec.slug}: card URL not updated (${(err as Error).message})`));
         this.fleet.agents.set(rec.slug, agent);
       } catch (err) {
         this.fleet.log("users", `could not reconnect ${rec.slug}: ${(err as Error).message}`);
