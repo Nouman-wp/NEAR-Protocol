@@ -23,6 +23,8 @@ export function Orbit({ agents, edges, active, centre }: { agents: AgentSummary[
   const [now, setNow] = useState(() => Date.now());
   const nav = useNavigate();
   const wrap = useRef<HTMLDivElement>(null);
+  // no travelling lights for people who asked for less motion
+  const still = useMemo(() => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches, []);
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(t);
@@ -66,9 +68,11 @@ export function Orbit({ agents, edges, active, centre }: { agents: AgentSummary[
           return (
             <g key={id} className={off ? "dim" : undefined}>
               <path id={id} className="edge" d={d} strokeWidth={weight} opacity={0.3 + (weight / 4.2) * 0.5} />
-              <circle className="pulse" r={1.4 + weight * 0.45}>
-                <animateMotion dur={`${2.2 + (Number(e.from) % 5) * 0.35}s`} repeatCount="indefinite" path={d} />
-              </circle>
+              {!still && (
+                <circle className="pulse" r={1.4 + weight * 0.45}>
+                  <animateMotion dur={`${2.2 + (Number(e.from) % 5) * 0.35}s`} repeatCount="indefinite" path={d} />
+                </circle>
+              )}
             </g>
           );
         })}
@@ -107,15 +111,15 @@ export function Orbit({ agents, edges, active, centre }: { agents: AgentSummary[
           );
         })}
         <g textAnchor="middle" pointerEvents="none">
-          <text x={C} y={C - 16} fontSize={11} letterSpacing="2.4" opacity={0.6}>
-            {(focus ? focus.a.role : (centre?.label ?? "")).toUpperCase()}
+          <text x={C} y={C - 18} fontSize={15} opacity={0.7}>
+            {focus ? focus.a.role : (centre?.label ?? "")}
           </text>
           <text x={C} y={C + 20} fontSize={focus ? 30 : 40} fontWeight={500} letterSpacing="-1.4">
             {focus ? focus.a.name : (centre?.value ?? "")}
           </text>
           {focus && (
             <text x={C} y={C + 48} fontSize={13} opacity={0.72}>
-              owes {usd(owes, 4)} · is owed {usd(owed, 4)}
+              owes {usd(owes)} · is owed {usd(owed)}
             </text>
           )}
         </g>

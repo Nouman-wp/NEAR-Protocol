@@ -6,7 +6,7 @@ import { AgentChip, Empty, Tag, Tx } from "./ui.tsx";
 
 /**
  * The signed-in user's history as plain sentences: who hired whom, for what, what it cost,
- * and where the money is now (owed until the epoch closes, then paid on chain).
+ * and where the money is now (owed until the settle-up, then paid on NEAR).
  */
 
 interface Activity {
@@ -39,21 +39,21 @@ const article = (word: string) => (/^[aeiou]/i.test(word) ? "an" : "a");
 function jobState(j: JobView, bought: boolean): { text: string; kind: Kind; hint: string } {
   switch (j.status) {
     case "settled":
-      return { text: bought ? "Paid" : "Received", kind: "good", hint: `Settled on chain when epoch #${j.epoch} closed.` };
+      return { text: bought ? "Paid" : "Received", kind: "good", hint: `Paid on NEAR in settle-up ${j.epoch}.` };
     case "delivered":
       return {
         text: bought ? "Owed" : "Owed to you",
         kind: "warn",
-        hint: `Delivered. A signed IOU for now; it is netted and paid on chain when epoch #${j.epoch} closes (every ~90 s).`,
+        hint: `Delivered. On the tab for now; paid on NEAR when settle-up ${j.epoch} closes (about every 90 seconds).`,
       };
     case "accepted":
       return { text: "In progress", kind: "live", hint: "Accepted; the seller is doing the work." };
     case "quoted":
       return { text: "Quoted", kind: "live", hint: "Price agreed, work not started yet." };
     case "disputed":
-      return { text: "Disputed", kind: "warn", hint: "Under review by the validator. If the dispute is upheld, nothing is charged." };
+      return { text: "Complaint open", kind: "warn", hint: "An independent checker is looking at it. If the complaint is accepted, nothing is charged." };
     case "voided":
-      return { text: "Not charged", kind: undefined, hint: "Voided, for example after an upheld dispute." };
+      return { text: "Not charged", kind: undefined, hint: "Cancelled, for example after an accepted complaint." };
     case "refused":
       return { text: "Not charged", kind: "bad", hint: "Refused: outside the spending limit or the seller's terms." };
   }
@@ -62,13 +62,13 @@ function jobState(j: JobView, bought: boolean): { text: string; kind: Kind; hint
 function payState(s: SettlementView): { text: string; kind: Kind; hint: string } {
   switch (s.status) {
     case "recorded":
-      return { text: "Paid on chain", kind: "good", hint: "Executed in one NEAR Intents batch and marked settled by the contract." };
+      return { text: "Paid on NEAR", kind: "good", hint: "Paid in one batch with everyone else, and recorded on NEAR." };
     case "submitted":
-      return { text: "Signed, in the batch", kind: "live", hint: "Your agent signed its transfers; the batch settles in a few seconds." };
+      return { text: "Signed, paying now", kind: "live", hint: "Your agent signed its payments; they go through in a few seconds." };
     case "awaiting_payment":
-      return { text: "Waiting for signature", kind: "warn", hint: "Your agent signs its net transfers automatically, usually within seconds." };
+      return { text: "Waiting to sign", kind: "warn", hint: "Your agent signs its payments on its own, usually within seconds." };
     case "defaulted":
-      return { text: "Covered by collateral", kind: "bad", hint: "The agent did not sign in time, so its collateral paid the debt." };
+      return { text: "Paid from deposit", kind: "bad", hint: "The agent didn't sign in time, so its deposit paid what it owed." };
     case "failed":
       return { text: "Retrying", kind: "bad", hint: s.error ?? "The settlement failed and is retried automatically." };
   }
@@ -163,11 +163,11 @@ export function History({ activity, mine, agents }: { activity: Activity | null;
               </>
             )
           }
-          amount={free ? <s>{usd(j.price, 4)}</s> : `${e.bought ? "−" : "+"}${usd(j.price, 4)}`}
+          amount={free ? <s>{usd(j.price)}</s> : `${e.bought ? "−" : "+"}${usd(j.price)}`}
           state={jobState(j, e.bought)}
           meta={
             <>
-              {timeOf(j.createdAt)} · {j.roundId ? <>price set by sealed-bid <Link to={`/rounds/${j.roundId}`}>round #{j.roundId}</Link></> : "posted price"} · <Link to={`/epochs/${j.epoch}`}>epoch #{j.epoch}</Link> ·{" "}
+              {timeOf(j.createdAt)} · {j.roundId ? <>price set in <Link to={`/rounds/${j.roundId}`}>auction #{j.roundId}</Link></> : "fixed price"} · <Link to={`/epochs/${j.epoch}`}>settle-up {j.epoch}</Link> ·{" "}
               <Link className="link" to={`/jobs/${j.id}`}>
                 receipt
               </Link>
@@ -185,7 +185,7 @@ export function History({ activity, mine, agents }: { activity: Activity | null;
           tone="pay"
           title={
             <>
-              <AgentChip id={s.agentId} agents={agents} /> paid what it owed for <Link to={`/epochs/${s.epoch}`}>epoch #{s.epoch}</Link>
+              <AgentChip id={s.agentId} agents={agents} /> paid what it owed in <Link to={`/epochs/${s.epoch}`}>settle-up {s.epoch}</Link>
               {e.lines.length > 0 && (
                 <span className="feed-lines">
                   {" "}
@@ -193,18 +193,18 @@ export function History({ activity, mine, agents }: { activity: Activity | null;
                   {e.lines.map((t, i) => (
                     <span key={`${t.to}-${i}`}>
                       {i > 0 && ", "}
-                      <AgentChip id={t.to} agents={agents} /> <span className="num">{usd(t.amount, 4)}</span>
+                      <AgentChip id={t.to} agents={agents} /> <span className="num">{usd(t.amount)}</span>
                     </span>
                   ))}
                 </span>
               )}
             </>
           }
-          amount={`−${usd(s.amount, 4)}`}
+          amount={`−${usd(s.amount)}`}
           state={payState(s)}
           meta={
             <>
-              {timeOf(s.updatedAt || s.createdAt)} · all its IOUs in the epoch netted into one payment, sent straight to the agents who did the work · {s.settleTx ? <Tx hash={s.settleTx} label="NEAR Intents transaction" /> : "NEAR Intents batch pending"}
+              {timeOf(s.updatedAt || s.createdAt)} · everything it owed in the settle-up, added up into one payment and sent straight to the agents who did the work · {s.settleTx ? <Tx hash={s.settleTx} label="See on NEAR ↗" /> : "payment pending"}
             </>
           }
         />
@@ -218,7 +218,7 @@ export function History({ activity, mine, agents }: { activity: Activity | null;
         tone="in"
         title={
           <>
-            Your agents were paid for <Link to={`/epochs/${e.epoch}`}>epoch #{e.epoch}</Link> by{" "}
+            Your agents were paid in <Link to={`/epochs/${e.epoch}`}>settle-up {e.epoch}</Link> by{" "}
             {e.lines.map((t, i) => (
               <span key={`${t.from}-${i}`}>
                 {i > 0 && ", "}
@@ -227,9 +227,9 @@ export function History({ activity, mine, agents }: { activity: Activity | null;
             ))}
           </>
         }
-        amount={`+${usd(total, 4)}`}
-        state={{ text: "Received", kind: "good", hint: "Paid on chain through NEAR Intents." }}
-        meta={<>{e.lines[0]?.tx ? <Tx hash={e.lines[0].tx} label="view transaction" /> : "settled on chain"}</>}
+        amount={`+${usd(total)}`}
+        state={{ text: "Received", kind: "good", hint: "Paid on NEAR." }}
+        meta={<>{e.lines[0]?.tx ? <Tx hash={e.lines[0].tx} label="See on NEAR ↗" /> : "paid on NEAR"}</>}
       />
     );
   };
@@ -237,7 +237,7 @@ export function History({ activity, mine, agents }: { activity: Activity | null;
   return (
     <section className="stack" style={{ gap: 16 }}>
       <div className="spread" style={{ flexWrap: "wrap" }}>
-        <span className="label">History</span>
+        <h2 className="h3">History</h2>
         <div className="seg" role="radiogroup" aria-label="Filter history">
           {(
             [
@@ -256,9 +256,9 @@ export function History({ activity, mine, agents }: { activity: Activity | null;
 
       <div className="card how-pay">
         {[
-          ["1", "Your agent hires", "It signs an IOU for the price. No money moves yet."],
-          ["2", "The epoch closes", "Every ~90 s all IOUs are checked and netted, so each agent owes one total."],
-          ["3", "One payment on chain", "Your agent signs that total, and it settles in one NEAR Intents batch."],
+          ["1", "Your agent hires", "It puts the price on the tab. No money moves yet."],
+          ["2", "The tab is added up", "About every 90 seconds, so each agent owes or is owed one total."],
+          ["3", "One payment on NEAR", "Your agent signs that total, and everyone is paid in one go."],
         ].map(([n, t, d]) => (
           <div key={n} className="how-step">
             <span className="how-n">{n}</span>
@@ -272,10 +272,10 @@ export function History({ activity, mine, agents }: { activity: Activity | null;
 
       <div className="grid g4 history-sums">
         {[
-          ["Spent", usd(activity?.totals.bought ?? "0", 4), "jobs your agents bought"],
-          ["Earned", usd(activity?.totals.sold ?? "0", 4), "jobs your agents sold"],
-          ["Owed, not paid yet", usd(sums.owed, 4), "settles when the epoch closes"],
-          ["Paid on chain", usd(sums.paid, 4), "through NEAR Intents"],
+          ["Spent", usd(activity?.totals.bought ?? "0"), "jobs your agents bought"],
+          ["Earned", usd(activity?.totals.sold ?? "0"), "jobs your agents sold"],
+          ["On the tab", usd(sums.owed), "paid at the next settle-up"],
+          ["Paid on NEAR", usd(sums.paid), "settled and recorded"],
         ].map(([label, value, note]) => (
           <div key={label} className="card mini-stat">
             <span className="label">{label}</span>
@@ -287,7 +287,7 @@ export function History({ activity, mine, agents }: { activity: Activity | null;
 
       <div className="card flush">
         {days.length === 0 ? (
-          <Empty>{filter === "all" ? "Nothing yet. Launch an agent, sign its spending limit and hire a team: every job and payment shows up here." : "Nothing here yet."}</Empty>
+          <Empty>{filter === "all" ? "Nothing yet. Launch an agent, set its spending limit and hire a team: every job and payment shows up here." : "Nothing here yet."}</Empty>
         ) : (
           days.map((d) => (
             <div key={d.label} className="feed-day">

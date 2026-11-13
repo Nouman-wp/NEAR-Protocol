@@ -1,211 +1,166 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { useLive } from "../lib/api.ts";
+import { fleet, useLive } from "../lib/api.ts";
 import { openDebts } from "../lib/derive.ts";
-import { compact, pct, usd } from "../lib/format.ts";
+import { compact, pct, plural } from "../lib/format.ts";
 import { Sphere } from "../components/Sphere.tsx";
 import { Orbit } from "../components/Orbit.tsx";
-import { Arrow, Reveal } from "../components/ui.tsx";
-import { REPO } from "../components/chrome.tsx";
+import { Go, Reveal } from "../components/ui.tsx";
 
 const STEPS = [
-  ["Every agent is an account", "Each agent is its own NEAR sub-account with its own key, collateral and reputation. Whatever it does on chain, it does under its own name.", "register · scout.quorum.testnet"],
-  ["Prices are found in sealed rounds", "A buyer opens a tender, or many buyers pool their demand. Sellers commit to a hidden price, then reveal it. The contract picks the winner and the clearing price by a fixed rule.", "open_round → commit_bid → reveal_bid → close_round"],
-  ["Every job is a signed IOU", "The buyer signs an IOU for the round's price under NEP-413. Nothing touches the chain per job, and nothing is spent outside the budget a human signed.", "NEP-413 · POST /v1/ious"],
-  ["The contract nets the epoch", "At the close, the contract checks every signature, recomputes every position, requires that they sum to zero and fixes who pays whom.", "post_ious → finalize_epoch"],
-  ["One batch settles it", "Each net debtor signs NEAR Intents transfers for exactly its debt. The contract checks them against its plan and the verifier executes the whole batch at once.", "settle → execute_intents"],
-  ["Bad work is refunded", "A buyer can dispute a delivery. A staked validator re-checks it, an upheld dispute voids the IOU before netting, and the seller's bids stop counting.", "validation_request → validation_response"],
-] as const;
+  {
+    title: "Agents bid in secret",
+    body: "Nobody sees other prices until bidding ends. The best bid wins.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="5" y="10" width="14" height="10" rx="2" />
+        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+      </svg>
+    ),
+  },
+  {
+    title: "They put it on the tab",
+    body: "Every job is a signed promise to pay. Nothing is paid yet.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M7 3h10v18l-2.5-1.5L12 21l-2.5-1.5L7 21Z" />
+        <path d="M10 8h4M10 12h4" />
+      </svg>
+    ),
+  },
+  {
+    title: "Yuki settles up on NEAR",
+    body: "Every few minutes it adds up the tab and pays everyone in one go. All of it goes through, or none of it does.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" />
+        <path d="m8 12 3 3 5-6" />
+      </svg>
+    ),
+  },
+];
+
+/** Ten little debts between five friends become two payments. Illustrative, and labelled "Example". */
+function NightOut() {
+  const pts = [
+    [60, 40],
+    [200, 24],
+    [300, 110],
+    [210, 196],
+    [60, 166],
+  ] as const;
+  const many = [
+    [0, 1],
+    [1, 2],
+    [2, 3],
+    [3, 4],
+    [4, 0],
+    [0, 2],
+    [1, 3],
+    [2, 4],
+    [3, 0],
+    [4, 1],
+  ] as const;
+  const shift = 380;
+  return (
+    <svg viewBox="0 0 720 236" role="img" aria-label="Example: ten small debts between five friends become two payments">
+      {many.map(([a, b], i) => (
+        <line key={i} className="before" x1={pts[a][0]} y1={pts[a][1]} x2={pts[b][0]} y2={pts[b][1]} strokeWidth={1.4} />
+      ))}
+      {pts.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={11} strokeWidth={1.2} />
+      ))}
+      <text x={180} y={232} textAnchor="middle">
+        10 small debts
+      </text>
+      <path className="after" d="M335 110h30m-8-7 8 7-8 7" strokeWidth={1.6} />
+      <line className="after" x1={pts[0][0] + shift} y1={pts[0][1]} x2={pts[2][0] + shift} y2={pts[2][1]} strokeWidth={2.4} />
+      <line className="after" x1={pts[4][0] + shift} y1={pts[4][1]} x2={pts[3][0] + shift} y2={pts[3][1]} strokeWidth={2.4} />
+      {pts.map(([x, y], i) => (
+        <circle key={`b${i}`} cx={x + shift} cy={y} r={11} strokeWidth={1.2} />
+      ))}
+      <text x={180 + shift} y={232} textAnchor="middle">
+        2 payments
+      </text>
+    </svg>
+  );
+}
+
+interface AiStatus {
+  enabled: boolean;
+  keySet?: boolean;
+  model: string;
+}
 
 export default function Landing() {
   const live = useLive();
   const s = live.stats;
   const debts = openDebts(live);
-  const marquee = useRef<HTMLDivElement>(null);
-
+  const [ai, setAi] = useState<AiStatus | null | undefined>(undefined);
   useEffect(() => {
-    const onScroll = () => {
-      const el = marquee.current;
-      if (!el) return;
-      const top = el.parentElement!.getBoundingClientRect().top;
-      el.style.transform = `translate3d(${Math.round(top * 0.55 - 120)}px,0,0)`;
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    fleet<{ ai?: AiStatus }>("/control/studios")
+      .then((d) => setAi(d.ai ?? null))
+      .catch(() => setAi(null));
   }, []);
 
-  const sealed = [...live.epochs.values()].filter((e) => e.phase === "sealed" && e.iouCount > 0).sort((a, b) => b.id - a.id)[0];
+  const sealed = [...live.epochs.values()].filter((e) => e.phase === "sealed" && e.iouCount > 0);
+  // the best recent settle-up: the one that saved the most payments
+  const best = [...sealed].sort((a, b) => b.transfersAvoided - a.transfersAvoided || b.id - a.id)[0];
+  const showBest = !!best && best.transfersAvoided > 0;
 
   return (
     <main>
       <section className="hero">
-        <span className="eyebrow">Yuki</span>
         <h1 className="display">
-          Many agents.
+          AI agents keep a tab.
           <br />
-          One economy.
+          Yuki settles it.
         </h1>
-        <p className="lead">A market and clearing house for AI agent swarms on NEAR. Sealed-bid rounds find the price, signed IOUs carry the trade, and NEAR Intents settles only the difference.</p>
-        <Link className="btn" to="/floor">
-          Watch the swarm trade <Arrow />
-        </Link>
+        <p className="lead">Yuki lets AI agents buy from each other and pay later. It adds up who owes whom and settles everything on NEAR in a few payments.</p>
+        <div className="row" style={{ justifyContent: "center" }}>
+          <Link className="btn" to="/floor">
+            Watch it live <Go />
+          </Link>
+          <Link className="btn ghost" to="/verify">
+            Check it yourself
+          </Link>
+        </div>
         <Sphere />
       </section>
 
-      <div className="marquee" aria-hidden="true">
-        <div ref={marquee}>We clear the swarm · We clear the swarm</div>
-      </div>
-
-      <section className="section" style={{ paddingTop: 40 }}>
+      <section className="section">
         <div className="wrap">
-          <Reveal>
-            <h2 className="h2 statement">
-              Yuki is where agents <span className="tint">bid, trade and settle</span> with each other, with a receipt for every cent.
-            </h2>
+          <Reveal className="card picture">
+            <div className="stack stack-md">
+              <span className="eyebrow">Like a night out</span>
+              <h2 className="h2">Keep a tab. Settle once.</h2>
+              <p className="lead">Friends don't pay after every drink. They keep a tab, and at the end someone works out the totals. Yuki does that for AI agents.</p>
+            </div>
+            <div>
+              <NightOut />
+              <p className="faint" style={{ fontSize: 13, textAlign: "center", marginTop: 6 }}>
+                Example
+              </p>
+            </div>
           </Reveal>
         </div>
       </section>
 
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="wrap">
-          <Reveal className="explore">
-            <div className="card explore-list">
-              <span className="eyebrow">Explore</span>
-              <h2 className="h2" style={{ margin: "18px 0 22px" }}>
-                Explore Yuki
-              </h2>
-              <Link className="explore-item" to="/rounds">
-                <h3 className="h3">Sealed-bid rounds</h3>
-                <span className="arrow-box">
-                  <Arrow />
-                </span>
-                <p>Tenders and group buys, run by the contract. Bids stay hidden until every seller has committed, and the cheapest valid bid wins.</p>
-              </Link>
-              <Link className="explore-item" to="/epochs">
-                <h3 className="h3">Netting and settlement</h3>
-                <span className="arrow-box">
-                  <Arrow />
-                </span>
-                <p>Each epoch's IOUs collapse into a short list of transfers, signed by the debtors and executed in one batch by the NEAR Intents verifier.</p>
-              </Link>
-              <Link className="explore-item" to="/agents">
-                <h3 className="h3">The swarm</h3>
-                <span className="arrow-box">
-                  <Arrow />
-                </span>
-                <p>Research agents that hire each other, and a market of scripted buyers and sellers. Every one is its own NEAR account.</p>
-              </Link>
-              <Link className="explore-item" to="/verify">
-                <h3 className="h3">Check it yourself</h3>
-                <span className="arrow-box">
-                  <Arrow />
-                </span>
-                <p>Your browser reads an epoch from the chain, verifies every signature and redoes the netting. Nothing to take on trust.</p>
-              </Link>
-            </div>
-            <div className="explore-stage">
-              <Link className="btn sm" to="/floor">
-                Live floor <Arrow />
-              </Link>
-              {live.agents.length > 0 ? (
-                <Orbit agents={live.agents} edges={debts.edges} active={debts.active} centre={{ label: s ? `Epoch ${s.currentEpoch} · open debts` : "Open debts", value: usd(debts.gross, 4) }} />
-              ) : (
-                <div className="empty" style={{ paddingTop: 220 }}>
-                  {live.connected ? "No agents have registered yet." : "Waiting for the clearing service. Start it with pnpm dev."}
-                </div>
-              )}
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="wrap">
-          <Reveal className="section-head">
-            <span className="eyebrow">Live ledger</span>
-            <h2 className="h2">Yuki in numbers</h2>
-            <p className="lead">Read from the ledger and the chain as this page loads. There are no sample figures here: on a fresh deployment these start at zero.</p>
-          </Reveal>
-          <Reveal className="grid" delay={80}>
-            <div className="grid" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,2.1fr)" }}>
-              <div className="card light stat" style={{ minHeight: 394 }}>
-                <span className="label">IOUs cleared</span>
-                <div>
-                  <div className="fig">{s ? compact(s.iousCleared) : "—"}</div>
-                  <small>signed, verified on chain and netted across {s?.epochsSealed ?? 0} sealed epochs</small>
-                </div>
-              </div>
-              <div className="grid">
-                <div className="card dots stat">
-                  <span className="label">
-                    Transfers that never
-                    <br />
-                    had to happen
-                  </span>
-                  <div className="fig">
-                    {s ? compact(s.transfersAvoided) : "—"}
-                    {s && s.iousCleared > 0 && <small style={{ display: "inline", marginLeft: 14 }}>{pct(s.transferReduction)} fewer than paying per job</small>}
-                  </div>
-                </div>
-                <div className="grid g2">
-                  <div className="card dots stat">
-                    <span className="label">Sealed-bid rounds closed</span>
-                    <div className="fig">{s ? compact(s.roundsClosed) : "—"}</div>
-                  </div>
-                  <div className="card dots stat">
-                    <span className="label">
-                      Settled through
-                      <br />
-                      the verifier
-                    </span>
-                    <div className="fig">{s ? usd(s.valueSettled) : "—"}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="grid g3">
-              <div className="card dots stat" style={{ minHeight: 150 }}>
-                <span className="label">Agents, each its own account</span>
-                <div className="fig">{s?.agents ?? "—"}</div>
-              </div>
-              <div className="card dots stat" style={{ minHeight: 150 }}>
-                <span className="label">Verifier transfers</span>
-                <div className="fig">{s ? compact(s.intentTransfers) : "—"}</div>
-              </div>
-              <div className="card dots stat" style={{ minHeight: 150 }}>
-                <span className="label">Last cleared epoch</span>
-                <div className="fig">
-                  {sealed ? (
-                    <Link to={`/epochs/${sealed.id}`}>
-                      {sealed.iouCount} → {sealed.settlementTransfers}
-                    </Link>
-                  ) : (
-                    "—"
-                  )}
-                  {sealed && <small style={{ display: "inline", marginLeft: 14 }}>IOUs in, transfers out · epoch {sealed.id}</small>}
-                </div>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="wrap">
           <Reveal className="section-head">
             <span className="eyebrow">How it works</span>
-            <h2 className="h2">
-              From a sealed bid to a settled debt, <span className="tint">in six steps</span>
-            </h2>
+            <h2 className="h2">Three steps</h2>
           </Reveal>
-          <div className="grid g3 steps">
-            {STEPS.map(([title, body, where], i) => (
-              <Reveal key={title} delay={(i % 3) * 90}>
-                <div className="card step" style={{ height: "100%" }}>
-                  <h3 className="h3">{title}</h3>
-                  <p>{body}</p>
-                  <div className="where">{where}</div>
+          <div className="how3">
+            {STEPS.map((st, i) => (
+              <Reveal key={st.title} delay={i * 90}>
+                <div className="card" style={{ height: "100%" }}>
+                  <span className="icon">{st.icon}</span>
+                  <h3 className="h3">
+                    {i + 1}. {st.title}
+                  </h3>
+                  <p>{st.body}</p>
                 </div>
               </Reveal>
             ))}
@@ -213,33 +168,141 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="wrap">
+          <Reveal className="section-head">
+            <span className="eyebrow">Live from NEAR testnet</span>
+            <h2 className="h2">Yuki in numbers</h2>
+          </Reveal>
+          <Reveal>
+            <div className="stats" style={{ ["--n" as string]: 3 }}>
+              <div className="card light stat">
+                <span className="label">Payments saved</span>
+                <div className="fig">
+                  {s ? compact(s.transfersAvoided) : "…"}
+                  {s && s.iousCleared > 0 && <small>{pct(s.transferReduction)} fewer than paying for every job</small>}
+                </div>
+              </div>
+              <div className="card stat">
+                <span className="label">Tab entries settled</span>
+                <div className="fig">{s ? compact(s.iousCleared) : "…"}</div>
+              </div>
+              <div className="card stat">
+                <span className="label">Auctions finished</span>
+                <div className="fig">{s ? compact(s.roundsClosed) : "…"}</div>
+              </div>
+              <div className="card stat">
+                <span className="label">Agents</span>
+                <div className="fig">{s ? s.agents : "…"}</div>
+              </div>
+            </div>
+          </Reveal>
+          {showBest && (
+            <Link className="card click" to={`/epochs/${best.id}`}>
+              <span className="label">Best recent settle-up</span>
+              <div className="h3" style={{ marginTop: 6 }}>
+                {plural(best.iouCount, "tab entry", "tab entries")} → {plural(best.settlementTransfers, "payment")}
+              </div>
+            </Link>
+          )}
+        </div>
+      </section>
+
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="wrap">
+          <Reveal className="explore">
+            <div className="card explore-list">
+              <h2 className="h2" style={{ margin: "0 0 12px" }}>
+                Take a look
+              </h2>
+              <Link className="explore-item" to="/rounds">
+                <h3 className="h3">Secret auctions</h3>
+                <span className="arrow-box">
+                  <Go />
+                </span>
+                <p>See who bid, who won and the winning price.</p>
+              </Link>
+              <Link className="explore-item" to="/epochs">
+                <h3 className="h3">Settling up</h3>
+                <span className="arrow-box">
+                  <Go />
+                </span>
+                <p>See how many tab entries became how few payments.</p>
+              </Link>
+              <Link className="explore-item" to="/agents">
+                <h3 className="h3">The agents</h3>
+                <span className="arrow-box">
+                  <Go />
+                </span>
+                <p>Every agent has its own NEAR account, money and trust score.</p>
+              </Link>
+              <Link className="explore-item" to="/verify">
+                <h3 className="h3">Check it yourself</h3>
+                <span className="arrow-box">
+                  <Go />
+                </span>
+                <p>Your browser reads the records from NEAR and checks every number.</p>
+              </Link>
+            </div>
+            <div className="explore-stage">
+              <Link className="btn sm" to="/floor">
+                Watch it live <Go />
+              </Link>
+              {live.agents.length > 0 ? (
+                <Orbit
+                  agents={live.agents}
+                  edges={debts.edges}
+                  active={debts.active}
+                  centre={
+                    debts.count > 0
+                      ? { label: "On the tab right now", value: plural(debts.count, "entry", "entries") }
+                      : best
+                        ? { label: `Last settle-up`, value: `${best.iouCount} → ${best.settlementTransfers}` }
+                        : { label: "Waiting for trades", value: plural(live.agents.length, "agent") }
+                  }
+                />
+              ) : (
+                <div className="empty" style={{ paddingTop: 220 }}>
+                  {live.connected ? "No agents yet. They sign up in their first minute." : "Connecting to the live service…"}
+                </div>
+              )}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      <section className="section" style={{ paddingTop: 0 }}>
         <div className="wrap">
           <div className="grid g2">
             <Reveal>
-              <div className="card dots" style={{ height: "100%", padding: 40 }}>
-                <span className="eyebrow">Simulation mode</span>
-                <h2 className="h2" style={{ margin: "18px 0" }}>
-                  20 buyers, 5 sellers, no model calls
+              <div className="card" style={{ height: "100%" }}>
+                <span className="eyebrow">AI</span>
+                <h2 className="h3" style={{ margin: "14px 0 10px" }}>
+                  Uses NEAR AI
                 </h2>
-                <p className="lead" style={{ marginBottom: 26 }}>
-                  One command starts a local NEAR node, deploys the contracts, gives every agent its own account and runs a group-buying market with scripted strategies. It checks itself against the chain and exits 0 only if everything matched.
+                <p className="muted">Some agents write with a private AI model on NEAR AI Cloud. When the model is offline, they use built-in rules, and the site says so.</p>
+                <p style={{ marginTop: 14 }}>
+                  {ai === undefined ? (
+                    <span className="faint">Checking the AI model…</span>
+                  ) : ai?.enabled ? (
+                    <span className="tag good">AI model answering · {ai.model.split("/").pop()}</span>
+                  ) : (
+                    <span className="tag">Using built-in rules right now</span>
+                  )}
                 </p>
-                <pre>
-                  <code>{`git clone ${REPO}.git quorum\ncd quorum\npnpm install\npnpm sim`}</code>
-                </pre>
               </div>
             </Reveal>
             <Reveal delay={90}>
-              <div className="card dots" style={{ height: "100%", padding: 40 }}>
-                <span className="eyebrow">Settlement</span>
-                <h2 className="h2" style={{ margin: "18px 0" }}>
-                  Debtors pay creditors directly
-                </h2>
-                <p className="lead" style={{ marginBottom: 26 }}>
-                  There is no pool in the middle. The contract fixes a plan with at most one fewer transfer than there are parties, and only accepts NEAR Intents payloads that match it line for line.
+              <div className="card" style={{ height: "100%" }}>
+                <span className="eyebrow">Why NEAR</span>
+                <ul className="stack stack-sm" style={{ margin: "14px 0 0", paddingLeft: 18 }}>
+                  <li>Every agent has its own NEAR account.</li>
+                  <li>Every tab entry is signed, so nobody can fake one.</li>
+                  <li>One batch pays everyone at once, or nobody.</li>
+                </ul>
+                <p className="faint" style={{ marginTop: 14, fontSize: 14 }}>
+                  Runs on NEAR testnet. No real money moves.
                 </p>
-                {s && <p className="note">{s.intents.kind === "near-intents" ? `Settling through ${s.intents.account}.` : `This deployment runs on ${s.network.name}. NEAR Intents (intents.near) exists on mainnet only, so settlement here goes through ${s.intents.account}, a small stand-in contract with the same execute_intents interface and NEP-413 rules. The transfers are real token movements on this network.`}</p>}
               </div>
             </Reveal>
           </div>

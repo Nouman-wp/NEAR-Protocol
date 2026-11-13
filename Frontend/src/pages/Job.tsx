@@ -3,8 +3,8 @@ import { Link, useParams } from "react-router";
 import type { DisputeView, EpochView, IouView, JobSpec, JobView, PositionView, QuorumDomain, RoundView, SettlementView, TransferView } from "@quorum/core";
 import { useApi } from "../lib/api.ts";
 import { verifyJob, type Check } from "../lib/verify.ts";
-import { signedUsd, usd, when } from "../lib/format.ts";
-import { AgentChip, Loading, PageHead, Status, Tx } from "../components/ui.tsx";
+import { plural, serviceName, signedUsd, usd, when } from "../lib/format.ts";
+import { AgentChip, Details, Hash, Loading, Money, PageHead, Status, Tx } from "../components/ui.tsx";
 
 interface JobDetail {
   job: JobView;
@@ -27,17 +27,49 @@ interface JobDetail {
 function Step({ title, check, pending, children }: { title: string; check?: Check | null; pending?: boolean; children: ReactNode }) {
   return (
     <div className={`link-step${check ? (check.ok ? " ok" : " fail") : pending ? "" : " ok"}`}>
-      <h4>{title}</h4>
-      <div className="muted stack" style={{ gap: 6, fontSize: 14.5 }}>
+      <h3 className="step-title">{title}</h3>
+      <div className="muted stack stack-sm" style={{ fontSize: 15 }}>
         {children}
         {check && (
           <span style={{ color: check.ok ? "var(--good)" : "var(--bad)" }}>
-            {check.ok ? "Verified in your browser. " : "Does not verify. "}
+            {check.ok ? "✓ Checked in your browser. " : "✗ Doesn't check out. "}
             {check.detail}
           </span>
         )}
       </div>
     </div>
+  );
+}
+
+const label = (k: string) => {
+  const w = k.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[-_]+/g, " ").toLowerCase();
+  return w[0]!.toUpperCase() + w.slice(1);
+};
+
+/** A short, readable summary of a request or result: simple fields as they are, lists and objects counted. */
+function Summary({ value }: { value: unknown }) {
+  if (value === null || value === undefined) return <p className="muted">Nothing yet.</p>;
+  if (typeof value !== "object") return <p>{String(value)}</p>;
+  const rows = Array.isArray(value) ? [["Items", value]] : Object.entries(value as Record<string, unknown>);
+  return (
+    <dl className="kv">
+      {rows.slice(0, 10).map(([k, v]) => (
+        <div key={String(k)} style={{ display: "contents" }}>
+          <dt>{label(String(k))}</dt>
+          <dd>
+            {v === null || v === undefined
+              ? "–"
+              : Array.isArray(v)
+                ? plural(v.length, "item")
+                : typeof v === "object"
+                  ? Object.keys(v as object).length + " details"
+                  : String(v).length > 120
+                    ? `${String(v).slice(0, 119)}…`
+                    : String(v)}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -54,121 +86,179 @@ export default function JobPage() {
   if (!data) return <Loading error={error} what="this job" />;
   const { job, iou, dispute, epoch } = data;
   const sealed = epoch?.phase === "sealed" && iou?.status === "netted";
+  const name = serviceName(job.service);
   return (
     <main className="page">
       <div className="wrap">
-        <PageHead eyebrow={`Job ${job.id.slice(4, 14)} · ${job.service}`} title={<>{usd(job.price, 4)} for one {job.service} job</>} lead="The chain of evidence behind one payment, from the round that set its price to the transfer that settled it. Each signature below is checked again in your browser.">
+        <PageHead
+          back={epoch ? { to: `/epochs/${epoch.id}`, label: `Settle-up ${epoch.id}` } : data.round ? { to: `/rounds/${data.round.id}`, label: `Auction #${data.round.id}` } : { to: "/floor", label: "Live" }}
+          eyebrow={`${name} job`}
+          title={
+            <>
+              {usd(job.price)} for one {name.toLowerCase()} job
+            </>
+          }
+          lead="Every step behind one payment, from the auction that set the price to the payment that settled it. Each signature is checked again in your browser."
+        >
           <Status value={job.status} />
         </PageHead>
-        <div className="grid split">
+        <div className="grid split balance">
           <div className="card">
             <div className="chain">
               {data.round && (
-                <Step title={`Price set by round #${data.round.id}`}>
+                <Step title="Price set">
                   <span>
-                    {data.round.bids.length} sealed bid{data.round.bids.length === 1 ? "" : "s"}; <AgentChip id={data.round.winner} /> won at {usd(data.round.clearingPrice, 4)} per unit. <Link className="link" to={`/rounds/${data.round.id}`}>See the bids</Link>
+                    {plural(data.round.bids.length, "secret bid")} in auction #{data.round.id}. <AgentChip id={data.round.winner} /> won at {usd(data.round.clearingPrice)}.{" "}
+                    <Link className="link" to={`/rounds/${data.round.id}`}>
+                      See the bids →
+                    </Link>
                   </span>
                 </Step>
               )}
-              <Step title="Job specified" check={checks?.spec}>
+              <Step title="Job agreed" check={checks?.spec}>
                 <span>
-                  <AgentChip id={job.buyer} /> asked <AgentChip id={job.seller} /> for <code>{job.service}</code> on {when(job.createdAt)}.
-                </span>
-                <span className="mono">{job.jobHash}</span>
-              </Step>
-              <Step title="Seller's binding quote" check={checks?.quote}>
-                <span>
-                  {usd(data.quote.message.price, 4)}, valid until {when(Number(data.quote.message.expiry) * 1000)}.
+                  <AgentChip id={job.buyer} /> asked <AgentChip id={job.seller} /> for a {name.toLowerCase()} on {when(job.createdAt)}.
                 </span>
               </Step>
-              <Step title="Buyer's IOU" check={checks?.iou} pending={!iou}>
+              <Step title="Seller's quote" check={checks?.quote}>
+                <span>
+                  {usd(data.quote.message.price)}, good until {when(Number(data.quote.message.expiry) * 1000)}.
+                </span>
+              </Step>
+              <Step title="Added to the tab" check={checks?.iou} pending={!iou}>
                 {iou ? (
-                  <>
-                    <span>
-                      A promise of {usd(iou.amount, 4)} in epoch {iou.epoch}, nonce {iou.nonce}. <Status value={iou.status} />
-                    </span>
-                    <span className="mono">{iou.digest}</span>
-                  </>
+                  <span>
+                    A signed promise to pay {usd(iou.amount)} in settle-up {iou.epoch}. <Status value={iou.status} />
+                  </span>
                 ) : (
-                  <span>No IOU was accepted for this job.</span>
+                  <span>Nothing was added to the tab for this job.</span>
                 )}
               </Step>
-              <Step title="Delivery" check={checks?.delivery} pending={!data.delivery}>
-                {data.delivery ? <span>Delivered {when(data.delivery.deliveredAt)}. The buyer could dispute until {when(data.delivery.challengeEndsAt)}.</span> : <span>Not delivered. An undelivered job is voided when its epoch closes and is never paid for.</span>}
+              <Step title="Delivered" check={checks?.delivery} pending={!data.delivery}>
+                {data.delivery ? (
+                  <span>
+                    {when(data.delivery.deliveredAt)}. The buyer could complain until {when(data.delivery.challengeEndsAt)}.
+                  </span>
+                ) : (
+                  <span>Not delivered yet. A job that is never delivered is cancelled when its settle-up closes, and nobody pays for it.</span>
+                )}
               </Step>
               {dispute && (
-                <Step title={`Dispute ${dispute.status}`}>
+                <Step title={`Complaint ${dispute.status === "upheld" ? "accepted" : dispute.status === "rejected" ? "rejected" : "open"}`}>
                   <span>Buyer's reason: {dispute.reason}</span>
                   {dispute.reasoning && (
                     <span>
-                      <AgentChip id={dispute.validator} /> ruled: {dispute.reasoning}
+                      <AgentChip id={dispute.validator} /> ruled: {dispute.reasoning.replace(/\b(\w+)\(s\)/g, (_, w: string) => `${w}s`)}
                     </span>
                   )}
-                  <span>
-                    On chain: request <Tx hash={dispute.onchainRequestTx} />
-                  </span>
                 </Step>
               )}
-              <Step title={epoch ? `Netted in epoch ${epoch.id}` : "Netting"} pending={!sealed && epoch?.phase !== "settling"}>
+              <Step title="Settled up" pending={!sealed && epoch?.phase !== "settling"}>
                 {epoch && iou?.status === "netted" ? (
                   <>
                     <span>
-                      One of {epoch.iouCount} IOUs the contract verified and netted into {epoch.settlementTransfers} transfers. <Link className="link" to={`/epochs/${epoch.id}`}>Epoch receipt</Link> · finalised in <Tx hash={epoch.finalizeTx} />
+                      One of {plural(epoch.iouCount, "tab entry", "tab entries")} that became {plural(epoch.settlementTransfers, "payment")}.{" "}
+                      <Link className="link" to={`/epochs/${epoch.id}`}>
+                        See settle-up {epoch.id} →
+                      </Link>
                     </span>
                     <span>
-                      Buyer's net for the epoch: {data.positions.buyer ? signedUsd(data.positions.buyer.net) : "—"}. Seller's: {data.positions.seller ? signedUsd(data.positions.seller.net) : "—"}.
+                      Buyer's total for the settle-up: {data.positions.buyer ? signedUsd(data.positions.buyer.net) : "–"}. Seller's: {data.positions.seller ? signedUsd(data.positions.seller.net) : "–"}.
                     </span>
                   </>
                 ) : (
-                  <span>{iou?.status === "voided" ? "Voided: this IOU was never netted and nobody paid for it." : `Waiting for epoch ${job.epoch} to close.`}</span>
+                  <span>{iou?.status === "voided" ? "Cancelled: this was taken off the tab, and nobody paid for it." : `Waiting for settle-up ${job.epoch} to close.`}</span>
                 )}
               </Step>
-              <Step title="Settled through the verifier" pending={!sealed}>
+              <Step title="Paid" pending={!sealed}>
                 {data.buyerSettlement ? (
                   <span>
-                    The buyer's whole net debt of {usd(data.buyerSettlement.amount, 4)} for the epoch: <Status value={data.buyerSettlement.status} /> <Tx hash={data.buyerSettlement.settleTx} />
+                    The buyer paid its whole total of {usd(data.buyerSettlement.amount)} for the settle-up. <Status value={data.buyerSettlement.status} />{" "}
+                    {data.buyerSettlement.settleTx && <Tx hash={data.buyerSettlement.settleTx} label="See on NEAR ↗" />}
                   </span>
                 ) : (
-                  <span>{sealed ? "The buyer was not a net debtor in this epoch: what it sold covered what it bought, so it sent nothing." : "Not settled yet."}</span>
+                  <span>{sealed ? "The buyer didn't have to pay anything: what it sold covered what it bought." : "Not paid yet."}</span>
                 )}
                 {data.sellerReceipts.map((t, i) => (
                   <span key={i}>
-                    Seller received {usd(t.amount, 4)} from <AgentChip id={t.from} /> · <Tx hash={t.tx} />
+                    The seller received {usd(t.amount)} from <AgentChip id={t.from} />. {t.tx && <Tx hash={t.tx} label="See on NEAR ↗" />}
                   </span>
                 ))}
               </Step>
             </div>
+            <Details summary="Show proof">
+              <dl className="kv">
+                <dt>Job id</dt>
+                <dd>
+                  <Hash value={job.id} />
+                </dd>
+                <dt>Job fingerprint</dt>
+                <dd>
+                  <Hash value={job.jobHash} />
+                </dd>
+                {iou && (
+                  <>
+                    <dt>Tab entry fingerprint</dt>
+                    <dd>
+                      <Hash value={iou.digest} />
+                    </dd>
+                    <dt>Tab entry number</dt>
+                    <dd className="mono">{iou.nonce}</dd>
+                  </>
+                )}
+                {epoch?.finalizeTx && (
+                  <>
+                    <dt>Added up in</dt>
+                    <dd>
+                      <Tx hash={epoch.finalizeTx} />
+                    </dd>
+                  </>
+                )}
+                {dispute?.onchainRequestTx && (
+                  <>
+                    <dt>Complaint filed in</dt>
+                    <dd>
+                      <Tx hash={dispute.onchainRequestTx} />
+                    </dd>
+                  </>
+                )}
+              </dl>
+            </Details>
           </div>
           <div className="stack">
             <div className="card">
-              <h3 className="h3" style={{ marginBottom: 14 }}>
-                Request
-              </h3>
-              <pre>{JSON.stringify(data.spec.input, null, 2)}</pre>
+              <h2 className="h3">What was asked for</h2>
+              <div className="mt-md">
+                <Summary value={data.spec.input} />
+              </div>
+              <Details summary="Show raw request">
+                <pre style={{ maxHeight: 420 }}>{JSON.stringify(data.spec.input, null, 2)}</pre>
+              </Details>
             </div>
             <div className="card">
-              <h3 className="h3" style={{ marginBottom: 14 }}>
-                Result
-              </h3>
-              <pre style={{ maxHeight: 420 }}>{job.result === null ? "not delivered" : JSON.stringify(job.result, null, 2)}</pre>
+              <h2 className="h3">What was delivered</h2>
+              <div className="mt-md">{job.result === null ? <p className="muted">Not delivered yet.</p> : <Summary value={job.result} />}</div>
+              {job.result !== null && (
+                <Details summary="Show raw result">
+                  <pre style={{ maxHeight: 420 }}>{JSON.stringify(job.result, null, 2)}</pre>
+                </Details>
+              )}
             </div>
             {(data.parent || data.children.length > 0) && (
               <div className="card">
-                <h3 className="h3" style={{ marginBottom: 14 }}>
-                  Jobs this one caused
-                </h3>
-                <div className="stack" style={{ gap: 10, fontSize: 14 }}>
+                <h2 className="h3">Related jobs</h2>
+                <div className="stack stack-sm mt-md" style={{ fontSize: 15 }}>
                   {data.parent && (
                     <Link className="link" to={`/jobs/${data.parent.id}`}>
-                      ↑ part of a {data.parent.service} job
+                      ↑ Part of a {serviceName(data.parent.service).toLowerCase()} job
                     </Link>
                   )}
                   {data.children.map((c) => (
                     <Link key={c.id} to={`/jobs/${c.id}`} className="spread">
                       <span className="link">
-                        {c.service} from <AgentChip id={c.seller} link={false} />
+                        {serviceName(c.service)} from <AgentChip id={c.seller} link={false} />
                       </span>
-                      <span className="num">{usd(c.price, 4)}</span>
+                      <Money v={c.price} />
                     </Link>
                   ))}
                 </div>

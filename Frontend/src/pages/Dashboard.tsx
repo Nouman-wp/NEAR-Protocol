@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { NETWORKS, NearRpc, type AgentSummary, type IntentView, type JobView, type SettlementView, type TransferView } from "@quorum/core";
 import { authed, authoriseSpending, connectWallet, network, setWalletNetwork, signInWithDevWallet, signInWithWallet, signOut, useAccount, walletsSupported } from "../lib/account.ts";
 import { agentName, useLive } from "../lib/api.ts";
-import { ago, score, teamName, TEAMS, usd } from "../lib/format.ts";
+import { ago, plural, teamName, titleCase, trust, TEAMS, usd } from "../lib/format.ts";
 import { Account, AgentChip, Empty, PageHead, Status, Tag } from "../components/ui.tsx";
 import { History } from "../components/History.tsx";
 
@@ -68,19 +68,18 @@ function SignIn({ net }: { net: { key: string; name: string } | null }) {
     <div className="page">
       <div className="wrap stack" style={{ gap: 32 }}>
         <PageHead
-          eyebrow="Dashboard"
-          title="Your agents, your limits, your receipts."
-          lead="Sign in with a NEAR wallet to launch agents you operate, sign the spending limits they buy under, hire the teams, and follow every job, debt and settlement that is yours."
+          title="Your agents"
+          lead="Connect your NEAR wallet to run your own agents, set how much they can spend, and see every payment."
         />
         <div className="grid g2" style={{ gap: 18 }}>
           <div className="card stack" style={{ gap: 18 }}>
-            <span className="label">{acc.connected ? "Wallet connected" : "Sign in"}</span>
+            <span className="label">{acc.connected ? "Wallet connected" : "Step 1 of 2"}</span>
             {wallets ? (
               acc.connected ? (
                 <>
                   <h3 className="h3">{acc.connected}</h3>
                   <p className="muted" style={{ margin: 0 }}>
-                    Sign one short message to prove the account is yours. It is not a transaction and costs nothing. The first sign-in creates your Yuki profile.
+                    Sign one short message to prove the account is yours. It isn't a payment and costs nothing.
                   </p>
                   <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
                     <button className="btn" disabled={!!acc.busy} onClick={() => void signInWithWallet()}>
@@ -93,36 +92,36 @@ function SignIn({ net }: { net: { key: string; name: string } | null }) {
                 </>
               ) : (
                 <>
-                  <h3 className="h3">Connect a NEAR wallet</h3>
+                  <h3 className="h3">Connect your NEAR wallet</h3>
                   {net?.key === "testnet" && (
                     <div className="stack" style={{ gap: 8 }}>
-                      <span className="label">Your account is on</span>
+                      <span className="label">Your NEAR account is on</span>
                       <div className="seg" role="radiogroup" aria-label="Account network">
                         {(["mainnet", "testnet"] as const).map((n) => (
                           <button key={n} role="radio" aria-checked={acc.walletNetwork === n} className={acc.walletNetwork === n ? "on" : ""} onClick={() => setWalletNetwork(n)}>
-                            NEAR {n}
+                            {n === "mainnet" ? "Mainnet" : "Testnet"}
                           </button>
                         ))}
                       </div>
                     </div>
                   )}
                   <p className="muted" style={{ margin: 0 }}>
-                    {net?.key === "testnet" && acc.walletNetwork === "mainnet"
-                      ? "Use the account you already have. Signing in is one signed message: no transaction, no fee, nothing leaves your wallet. The agents you launch trade test USDC on NEAR testnet."
-                      : "Sign in with a NEAR testnet account (a free one takes a minute at testnet.mynearwallet.com, or in Meteor after switching it to Testnet)."}{" "}
-                    MyNearWallet, Meteor and HERE are supported.
+                    {net?.key === "testnet"
+                      ? "This site runs on testnet, but you can sign in with either kind of account: signing in only proves the account is yours. Your agents trade test money on testnet either way."
+                      : "Sign in with your NEAR account."}{" "}
+                    MyNearWallet, Meteor and HERE work.
                   </p>
                   <button className="btn" style={{ alignSelf: "flex-start" }} disabled={!!acc.busy} onClick={() => void connectWallet()}>
                     Connect wallet
                   </button>
-                  <small className="faint">If your wallet asks you to create or import a wallet, it has no account on the network chosen above: switch it there.</small>
+                  <small className="faint">No account on this network? Switch network above, or in your wallet.</small>
                 </>
               )
             ) : (
               <>
                 <h3 className="h3">Local sandbox</h3>
                 <p className="muted" style={{ margin: 0 }}>
-                  NEAR wallets do not reach a local sandbox. The dev wallet makes a key in this browser and an account for it on the sandbox; sign-in and spending limits then go through exactly the same checks as a real wallet.
+                  Wallets can't reach a local test network. The dev wallet makes a key in this browser and an account for it, and goes through the same checks as a real wallet.
                 </p>
                 <button className="btn" style={{ alignSelf: "flex-start" }} disabled={!!acc.busy} onClick={() => void signInWithDevWallet()}>
                   Sign in with a dev wallet
@@ -133,12 +132,12 @@ function SignIn({ net }: { net: { key: string; name: string } | null }) {
             {acc.error && <p style={{ margin: 0, color: "var(--bad)" }}>{acc.error}</p>}
           </div>
           <div className="card stack" style={{ gap: 14 }}>
-            <span className="label">What signing in gives you</span>
+            <span className="label">What you get</span>
             {[
-              ["Agents you operate", "Launch hosted agents. Each is its own NEAR sub-account, registered on chain with your account as its operator."],
-              ["Limits you sign", "An agent spends only under an intent you sign in your wallet: budget, per-job cap, deadline. The clearing service checks your key on chain."],
-              ["Teams on call", "Have your agent hire the Design, Smart Contract, Backend, Photo or Marketing Team, and watch the team lead tender each role on chain."],
-              ["Every receipt", "Jobs bought and sold, net debts, and the NEAR Intents settlements that paid them, with explorer links."],
+              ["Your own agents", "Each gets its own NEAR account, with you as its owner."],
+              ["A spending limit you sign", "Your agent can't spend more than you allow."],
+              ["Teams on call", "Your agent can hire any of the five teams."],
+              ["Every payment", "Every job and payment, with a link to see it on NEAR."],
             ].map(([t, d]) => (
               <div key={t} className="stack" style={{ gap: 4 }}>
                 <strong>{t}</strong>
@@ -214,9 +213,9 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
     <div className="page">
       <div className="wrap stack" style={{ gap: 32 }}>
         <PageHead
-          eyebrow={session.created ? "Welcome to Yuki" : "Dashboard"}
+          eyebrow={session.created ? "Welcome to Yuki" : "Your agents"}
           title={`Hello, ${name}`}
-          lead={session.created ? "Your profile is created. Launch an agent below, sign its spending limit, and put it to work." : "Your agents, the limits you signed for them, and everything they bought and sold."}
+          lead={session.created ? "You're in. Launch an agent below, set its spending limit, and put it to work." : "Your agents, the spending limits you set, and everything they bought and sold."}
         >
           <button className="btn sm ghost" onClick={() => void signOut()}>
             Sign out
@@ -224,23 +223,23 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
         </PageHead>
         {error && <p style={{ color: "var(--bad)", margin: 0 }}>{error}</p>}
 
-        <div className="grid g4" style={{ gap: 14 }}>
+        <div className="stats" style={{ ["--n" as string]: 3 }}>
           <div className="card light stat">
             <span className="label">Signed in as</span>
             <strong className="mono" style={{ wordBreak: "break-all" }}>{session.accountId}</strong>
-            <small>{session.via === "dev" ? "dev wallet (local sandbox)" : `NEAR ${session.network ?? ""} account`} · {near !== null ? `${near} NEAR` : "balance unavailable"}</small>
+            <small>{session.via === "dev" ? "Dev wallet (local test network)" : `NEAR ${session.network ?? ""} account`} · {near !== null ? `${near} NEAR` : "balance unavailable"}</small>
           </div>
           <div className="card stat">
-            <span className="label">Agents you operate</span>
-            <span className="num" style={{ fontSize: 34 }}>{agents.length}</span>
+            <span className="label">Your agents</span>
+            <div className="fig">{agents.length}</div>
           </div>
           <div className="card stat">
-            <span className="label">Your agents bought</span>
-            <span className="num" style={{ fontSize: 34 }}>{usd(activity?.totals.bought ?? "0", 3)}</span>
+            <span className="label">They spent</span>
+            <div className="fig">{usd(activity?.totals.bought ?? "0")}</div>
           </div>
           <div className="card stat">
             <span className="label">Jobs bought or sold</span>
-            <span className="num" style={{ fontSize: 34 }}>{activity?.totals.jobs ?? 0}</span>
+            <div className="fig">{activity?.totals.jobs ?? 0}</div>
           </div>
         </div>
 
@@ -248,11 +247,11 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
 
         <section className="stack" style={{ gap: 16 }}>
           <div className="spread">
-            <span className="label">Your agents</span>
+            <h2 className="h3">Your agents</h2>
           </div>
           {agents.length === 0 && hosted.length === 0 ? (
             <div className="card">
-              <Empty>You do not operate an agent yet. Launch one below: it gets its own NEAR account and some test USDC to trade with.</Empty>
+              <Empty>No agents yet. Launch one below: it gets its own NEAR account and some test money to trade with.</Empty>
             </div>
           ) : (
             <div className="grid g2" style={{ gap: 14 }}>
@@ -264,7 +263,7 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
                 .map((h) => (
                   <div key={h.slug} className="card stack" style={{ gap: 8 }}>
                     <strong>{h.name}</strong>
-                    <span className="muted">Registering {h.account} on chain…</span>
+                    <span className="muted">Setting up {h.account} on NEAR…</span>
                   </div>
                 ))}
             </div>
@@ -273,10 +272,10 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
         </section>
 
         <section className="stack" style={{ gap: 16 }}>
-          <span className="label">Team commissions</span>
+          <h2 className="h3">Team orders</h2>
           {commissions.length === 0 ? (
             <div className="card">
-              <Empty>None yet. Sign a spending limit for an agent, then hire a team from its card.</Empty>
+              <Empty>None yet. Set a spending limit for an agent, then hire a team from its card.</Empty>
             </div>
           ) : (
             <div className="stack" style={{ gap: 10 }}>
@@ -286,12 +285,12 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
                     <span className="label">
                       {teamName(c.studio)} · for {c.client?.name ?? "your agent"} · {ago(c.startedAt)}
                     </span>
-                    <strong>{c.label}</strong>
+                    <strong>{titleCase(c.label)}</strong>
                   </div>
                   <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
                     {c.team.map((t) => (
                       <Tag key={t.role} kind={t.winner ? undefined : "live"}>
-                        {t.name}: {t.winner?.name ?? (t.roundId ? `round #${t.roundId}` : "…")}
+                        {t.winner ? `${t.name} by ${t.winner.name}` : `${t.name}: ${t.roundId ? `auction #${t.roundId}` : "hiring…"}`}
                       </Tag>
                     ))}
                   </div>
@@ -305,36 +304,36 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
         <History activity={activity} mine={ids} agents={live.agents} />
 
         <section className="stack" style={{ gap: 16 }}>
-          <span className="label">Spending limits you signed</span>
+          <h2 className="h3">Spending limits you set</h2>
           <div className="card flush">
             <div className="table-wrap">
-              <table>
+              <table className="cards">
                 <thead>
                   <tr>
-                    <th>For</th>
-                    <th className="r">Budget</th>
-                    <th className="r">Spent</th>
-                    <th className="r">Per job</th>
-                    <th>Until</th>
-                    <th>State</th>
+                    <th scope="col">For</th>
+                    <th scope="col" className="r">Budget</th>
+                    <th scope="col" className="r">Spent</th>
+                    <th scope="col" className="r">Most per job</th>
+                    <th scope="col">Until</th>
+                    <th scope="col">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(me?.intents ?? []).length === 0 ? (
                     <tr>
                       <td colSpan={6}>
-                        <Empty>None signed yet.</Empty>
+                        <Empty>None set yet.</Empty>
                       </td>
                     </tr>
                   ) : (
                     me!.intents.map((i) => (
                       <tr key={i.id}>
-                        <td>{agentName(live.agents, i.buyer)}</td>
-                        <td className="r num">{usd(i.budget, 3)}</td>
-                        <td className="r num">{usd(i.spent, 4)}</td>
-                        <td className="r num">{usd(i.perJobCap, 3)}</td>
-                        <td className="faint">{new Date(i.deadline * 1000).toLocaleDateString()}</td>
-                        <td>
+                        <td data-label="">{agentName(live.agents, i.buyer)}</td>
+                        <td data-label="Budget" className="r num">{usd(i.budget)}</td>
+                        <td data-label="Spent" className="r num">{usd(i.spent)}</td>
+                        <td data-label="Most per job" className="r num">{usd(i.perJobCap)}</td>
+                        <td data-label="Until" className="faint">{new Date(i.deadline * 1000).toLocaleDateString()}</td>
+                        <td data-label="Status">
                           <Status value={i.status} />
                         </td>
                       </tr>
@@ -371,7 +370,7 @@ function Profile({ me, onSaved }: { me: Me | null; onSaved: () => void }) {
       <div className="stack" style={{ gap: 4 }}>
         <span className="label">Profile</span>
         <span className="muted">
-          Member since {new Date(me.user.createdAt).toLocaleDateString()} · {me.user.logins} sign-in{me.user.logins === 1 ? "" : "s"}
+          Member since {new Date(me.user.createdAt).toLocaleDateString()} · {plural(me.user.logins, "sign-in")}
         </span>
       </div>
       <div className="row" style={{ gap: 8 }}>
@@ -391,10 +390,10 @@ function Launch({ count, onLaunched }: { count: number; onLaunched: () => void }
   if (count >= 3) return null;
   const launch = async () => {
     setBusy(true);
-    setMsg({ ok: true, text: "Creating the agent's NEAR account, registering it with you as operator and funding it… about half a minute on testnet." });
+    setMsg({ ok: true, text: "Creating your agent's NEAR account and giving it some test money… about half a minute." });
     try {
       const r = await authed<{ account: string; agentId: string }>("fleet", "/users/me/agents", { method: "POST", body: JSON.stringify({ name: name || "My agent" }) });
-      setMsg({ ok: true, text: `Agent #${r.agentId} is live as ${r.account}. Next: sign its spending limit.` });
+      setMsg({ ok: true, text: `Agent #${r.agentId} is ready as ${r.account}. Next: set its spending limit.` });
       setName("");
       onLaunched();
     } catch (err) {
@@ -405,9 +404,9 @@ function Launch({ count, onLaunched }: { count: number; onLaunched: () => void }
   };
   return (
     <div className="card stack" style={{ gap: 12 }}>
-      <span className="label">Launch an agent</span>
+      <h3 className="h3">Launch an agent</h3>
       <p className="muted" style={{ margin: 0 }}>
-        A hosted agent: its own sub-account of the deployment, registered on chain with your account as its operator, with 2 test USDC of collateral and 2 inside the NEAR Intents verifier. Up to three per account.
+        It gets its own NEAR account with you as its owner, a 2 test-dollar deposit and 2 test dollars to spend. Up to three per account.
       </p>
       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
         <input aria-label="Agent name" placeholder="Name, e.g. Scout for Chai Point" value={name} maxLength={32} onChange={(e) => setName(e.target.value)} style={{ flex: "1 1 240px" }} />
@@ -435,7 +434,7 @@ function AgentCard({ a, hosted, hostDown, intents, onChange }: { a: AgentSummary
     setMsg(null);
     const r = await authoriseSpending(a.agentId, budget, 0.05, 7);
     if (r) {
-      setMsg({ ok: true, text: `Signed: ${a.name} may spend up to ${budget} USDC, at most 0.05 a job, for a week.` });
+      setMsg({ ok: true, text: `Done: ${a.name} can spend up to $${budget}, at most $0.05 a job, for a week.` });
       onChange();
     }
   };
@@ -467,27 +466,27 @@ function AgentCard({ a, hosted, hostDown, intents, onChange }: { a: AgentSummary
         <dd>
           <Account id={a.account} />
         </dd>
-        <dt>Operator</dt>
+        <dt>Owner</dt>
         <dd className="mono">{a.operator}</dd>
-        <dt>Collateral free</dt>
-        <dd className="num">{usd(a.collateral.available, 3)}</dd>
-        <dt>Reputation</dt>
-        <dd className="num">{score(a.reputation)}</dd>
+        <dt>Available deposit</dt>
+        <dd className="num">{usd(a.collateral.available)}</dd>
+        <dt>Trust score</dt>
+        <dd className="num">{trust(a.reputation)}</dd>
         <dt>Spending limit</dt>
-        <dd>{active ? `${usd(active.spent, 4)} of ${usd(active.budget, 2)} used` : <span className="faint">none signed</span>}</dd>
+        <dd>{active ? `${usd(active.spent)} of ${usd(active.budget)} used` : <span className="faint">Not set yet</span>}</dd>
       </dl>
       {!active ? (
         <div className="stack" style={{ gap: 8 }}>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <label className="muted" htmlFor={`b-${a.agentId}`}>
-              Budget (USDC)
+              Budget (test dollars)
             </label>
             <input id={`b-${a.agentId}`} type="number" min={0.05} max={2} step={0.05} value={budget} onChange={(e) => setBudget(Math.min(2, Math.max(0.05, Number(e.target.value) || 0.05)))} style={{ width: 90 }} />
             <button className="btn sm" disabled={!!acc.busy} onClick={() => void authorise()}>
-              Sign spending limit
+              Set spending limit
             </button>
           </div>
-          <small className="faint">Your wallet signs an intent: this budget, 0.05 USDC per job at most, valid for 7 days. Nothing is spent until the agent buys.</small>
+          <small className="faint">Your wallet signs a spending permission: this budget, at most $0.05 per job, for 7 days. Nothing is spent until your agent buys something.</small>
         </div>
       ) : hosted ? (
         <div className="stack" style={{ gap: 8 }}>
@@ -506,15 +505,15 @@ function AgentCard({ a, hosted, hostDown, intents, onChange }: { a: AgentSummary
           </button>
         </div>
       ) : hostDown ? (
-        <small className="faint">The agent host is restarting; hiring a team works again in about a minute.</small>
+        <small className="faint">The agent service is restarting. Hiring a team works again in about a minute.</small>
       ) : (
-        <small className="faint">This agent is not hosted here, so it acts on its own; you can still see its jobs below.</small>
+        <small className="faint">This agent runs somewhere else, so it acts on its own. You can still see its jobs below.</small>
       )}
       {acc.busy && <small className="muted">{acc.busy}</small>}
       {acc.error && <small style={{ color: "var(--bad)" }}>{acc.error}</small>}
       {msg && <small style={{ color: msg.ok ? "var(--muted)" : "var(--bad)" }}>{msg.text}</small>}
       <Link className="link" to={`/agents/${a.agentId}`}>
-        Agent page
+        Agent page →
       </Link>
     </div>
   );

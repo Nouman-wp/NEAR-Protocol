@@ -704,14 +704,14 @@ tr.click {
 }
 
 /* ───────────────────────────────── hero */
+/* text on top, the sphere in its own band underneath, so the two never overlap */
 .hero {
   position: relative;
-  min-height: calc(100vh - 76px);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 15vh 24px 0;
+  padding: 12vh 24px min(44vh, 420px);
   overflow: hidden;
 }
 .hero .eyebrow {
@@ -915,9 +915,11 @@ tr.click {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 6px;
-  margin-top: 18px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
 }
-.phases div {
+.phases li {
   padding-top: 10px;
   border-top: 3px solid var(--line);
   font-size: 13px;
@@ -1019,7 +1021,8 @@ tr.click {
   background: var(--bad);
   border-color: var(--bad);
 }
-.link-step h4 {
+.link-step h4,
+.link-step .step-title {
   font-size: 16px;
   font-weight: 500;
   margin-bottom: 6px;
@@ -1479,7 +1482,7 @@ video {
   .phases {
     gap: 4px;
   }
-  .phases div {
+  .phases li {
     font-size: 12px;
     line-height: 1.25;
   }
@@ -2372,4 +2375,38 @@ summary:focus-visible,
   .site-header .header-account {
     display: none !important;
   }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding: 56px 16px 240px;
+  }
+  .hero canvas {
+    height: 230px;
+  }
+  .hero .row .btn {
+    flex: 1 1 100%;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* code on the developers page wraps instead of hiding past the edge */
+pre.wrap-code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+h2.label,
+h3.label {
+  font-weight: 500;
 }

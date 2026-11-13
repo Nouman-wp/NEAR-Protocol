@@ -18,6 +18,7 @@ import {
   type Quote,
 } from "@quorum/core";
 import { api, type EpochDetail } from "./api.ts";
+import { usdExact } from "./format.ts";
 
 export interface Check {
   name: string;
@@ -121,14 +122,14 @@ export async function verifyEpochInBrowser(epochId: number, onStep: (c: Check) =
     if (!key || !verifyMessage(cfg.domain, "IOU", m, i.signature, key)) badSig++;
   }
   step("IOU digests", badDigest === 0, `${ious.length - badDigest} of ${ious.length} digests recomputed from the IOU fields match.`);
-  step("Buyer signatures", badSig === 0, `${ious.length - badSig} of ${ious.length} signatures verify against the key the contract holds for the buyer (${buyers.length} buyers).`);
+  step("Buyer signatures", badSig === 0, `${ious.length - badSig} of ${ious.length} signatures verify against the key the contract holds for ${buyers.length === 1 ? "the buyer" : `each of the ${buyers.length} buyers`}.`);
 
   const nettable = (i: IouView) => ({ buyer: big(i.buyer), seller: big(i.seller), amount: big(i.amount), nonce: big(i.nonce), digest: i.digest });
   const carried = ious.filter((i) => i.epoch < epochId).sort((a, b) => a.epoch - b.epoch || Number(big(a.buyer) - big(b.buyer)) || Number(big(a.nonce) - big(b.nonce)));
   const result = net(ious.filter((i) => i.epoch === epochId).map(nettable), carried.map(nettable));
   const sum = result.positions.reduce((s, p) => s + p.net, 0n);
   step("Positions sum to zero", sum === 0n, `Netting redone here: ${result.positions.length} agents, sum of net positions ${sum}.`);
-  step("IOU count and volume", chain.iou_count === ious.length && BigInt(chain.gross_volume) === result.stats.grossVolume, `chain ${chain.iou_count} IOUs / ${chain.gross_volume}, recomputed ${ious.length} / ${result.stats.grossVolume}.`);
+  step("IOU count and volume", chain.iou_count === ious.length && BigInt(chain.gross_volume) === result.stats.grossVolume, `On NEAR: ${chain.iou_count} IOUs worth ${usdExact(chain.gross_volume)}. Recomputed here: ${ious.length} worth ${usdExact(result.stats.grossVolume)}.`);
   step("IOU set commitment", chain.iou_set_hash === (ious.length ? result.iouSetHash : ZERO_HASH), `chain ${chain.iou_set_hash.slice(0, 18)}…, recomputed ${result.iouSetHash.slice(0, 18)}…`);
   step("Positions commitment", chain.positions_hash === result.positionsHash, `chain ${chain.positions_hash.slice(0, 18)}…, recomputed ${result.positionsHash.slice(0, 18)}…`);
   step("Settlement plan", chain.plan_hash === result.planHash, `${result.plan.length} transfers recomputed; chain ${chain.plan_hash.slice(0, 18)}…, recomputed ${result.planHash.slice(0, 18)}…`);
@@ -147,7 +148,7 @@ export async function verifyEpochInBrowser(epochId: number, onStep: (c: Check) =
     const exact = parsed !== null && parsed.intents.length === lines.length && lines.every((l, k) => Object.values(parsed.intents[k]!.tokens)[0] === l.amount.toString());
     if (!exact || state !== "Settled") badIntent++;
   }
-  step("NEAR Intents payloads", badIntent === 0, `${paid.length - badIntent} of ${paid.length} debts were paid by a signed transfer payload whose amounts match the recomputed plan, and the contract marks them settled.`);
+  step("NEAR Intents payloads", badIntent === 0, `${paid.length - badIntent} of ${paid.length} ${paid.length === 1 ? "debt was" : "debts were"} paid by a signed transfer payload whose amounts match the recomputed plan, and the contract marks ${paid.length === 1 ? "it" : "them"} settled.`);
   void chainIouSetHash;
   return { ok, rpc: rpcName(), contract, receipt: chain.receipt_hash };
 }
