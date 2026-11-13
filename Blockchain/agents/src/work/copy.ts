@@ -57,7 +57,7 @@ const clip = (s: unknown, n: number) => String(s ?? "").replace(/\s+/g, " ").tri
 /** Copy from NEAR AI when it is configured and answers well; the template writer otherwise. */
 export async function writeCopy(brief: DesignBrief, opts: { useModel: boolean }): Promise<BrandCopy> {
   if (!opts.useModel) return templateCopy(brief, "written by a template copywriter");
-  if (!aiStatus().enabled) return templateCopy(brief, "NEAR AI is not configured on this deployment (no NEAR_AI_API_KEY), so the template writer wrote it");
+  if (!aiStatus().keySet) return templateCopy(brief, "NEAR AI is not configured on this deployment (no NEAR_AI_API_KEY), so the template writer wrote it");
   const vibe = vibeOf(brief);
   try {
     const answer = await chat(

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { aiStatus, chat, cleanAnswer, DEFAULT_MODEL, parseJsonAnswer } from "../src/work/nearai.ts";
+import { aiStatus, chat, cleanAnswer, DEFAULT_MODEL, parseJsonAnswer, probeAi } from "../src/work/nearai.ts";
 import { templateCopy, writeCopy } from "../src/work/copy.ts";
 import { FREELANCERS } from "../src/agents/studios.ts";
 
@@ -25,7 +25,7 @@ function fakeNearAi(content: string) {
 
 describe("NEAR AI client", () => {
   it("is off without a key, and says which model it would use", () => {
-    expect(aiStatus()).toMatchObject({ provider: "NEAR AI Cloud", enabled: false, model: DEFAULT_MODEL, endpoint: "https://cloud-api.near.ai/v1" });
+    expect(aiStatus()).toMatchObject({ provider: "NEAR AI Cloud", keySet: false, enabled: false, model: DEFAULT_MODEL, endpoint: "https://cloud-api.near.ai/v1" });
   });
 
   it("refuses to call out without a key, so callers fall back", async () => {
@@ -41,6 +41,17 @@ describe("NEAR AI client", () => {
     expect((calls[0]!.init!.headers as Record<string, string>).authorization).toBe("Bearer test-key");
     expect(JSON.parse(String(calls[0]!.init!.body))).toMatchObject({ model: DEFAULT_MODEL, messages: [{ role: "user", content: "hi" }] });
     expect(calls[1]!.url).toContain("/signature/chatcmpl-1");
+  });
+
+  it("says it is on only while the model answers, and keeps retrying a failing key", async () => {
+    process.env[KEY] = "test-key";
+    vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ error: { message: "No spending limit configured." } }), { status: 402 }));
+    expect((await probeAi()).enabled).toBe(false);
+    expect(aiStatus()).toMatchObject({ keySet: true, enabled: false, lastError: "NEAR AI answered 402: No spending limit configured." });
+    expect((await writeCopy({ name: "Chai Point" }, { useModel: true })).engine.kind).toBe("template");
+    fakeNearAi("ok");
+    expect((await probeAi()).enabled).toBe(true);
+    expect(aiStatus().lastError).toBeNull();
   });
 
   it("strips reasoning and code fences, and finds the JSON in an answer", () => {

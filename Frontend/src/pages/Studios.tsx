@@ -52,7 +52,9 @@ interface StudioJob {
 interface AiStatus {
   provider: string;
   enabled: boolean;
+  keySet?: boolean;
   model: string;
+  lastError?: string | null;
 }
 interface BrandCopy {
   tagline: string;
@@ -191,7 +193,11 @@ export function StudiosPage() {
                     </div>
                     {f.ai && data.ai && (
                       <div>
-                        <Tag kind={data.ai.enabled ? "good" : undefined}>{data.ai.enabled ? `NEAR AI on · ${data.ai.model.split("/").pop()}` : "NEAR AI off · template fallback"}</Tag>
+                        <span title={data.ai.lastError ?? undefined}>
+                          <Tag kind={data.ai.enabled ? "good" : data.ai.keySet ? "warn" : undefined}>
+                            {data.ai.enabled ? `NEAR AI on · ${data.ai.model.split("/").pop()}` : data.ai.keySet ? "NEAR AI not answering · template fallback" : "NEAR AI off · template fallback"}
+                          </Tag>
+                        </span>
                       </div>
                     )}
                     <p className="muted" style={{ margin: 0 }}>{f.description}</p>

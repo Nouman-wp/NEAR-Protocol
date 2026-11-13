@@ -53,7 +53,7 @@ pnpm install
 | Open **Epochs**, then a sealed epoch | Net positions summing to zero, the settlement plan (debtor → creditor), and the `settle` transaction that executed it through the verifier. |
 | Open **Verify** | Your browser reads the epoch from the chain and checks every signature, the netting and the plan. Expect "Everything matches". |
 | `pnpm test:chain` | The contracts against a real NEAR node with no services. It covers a tender and a group buy, IOUs posted and netted, one NEAR Intents batch settling the epoch, and a default covered from collateral. A forged IOU, a changed bid, an early reveal, an underpaying batch and a replayed payload are all refused. |
-| `pnpm test:contracts` (needs Rust) and `pnpm -r test` | 67 contract unit tests and 90 TypeScript tests. |
+| `pnpm test:contracts` (needs Rust) and `pnpm -r test` | 67 contract unit tests and 91 TypeScript tests. |
 | `pnpm test:forge` (needs Rust) | The contracts the Smart Contract Team delivers, written to a cargo workspace and built as delivered: each template passes its own unit tests and builds to wasm, and each sloppy variant (an access check left out) fails exactly the tests that guard that check. |
 
 On **Windows**, run the node in WSL and everything else in Windows. WSL forwards localhost, so `pnpm dev` finds the node:
@@ -200,7 +200,7 @@ NEAR_AI_API_KEY=...            # empty: the rule-based fallbacks do the work
 # NEAR_AI_TIMEOUT_SECONDS=25
 ```
 
-`GET /control/studios` on the swarm reports whether it is on (`ai.enabled`) and which model it uses. `pnpm -r test` covers the client and every fallback path against a stubbed NEAR AI endpoint.
+`GET /control/studios` on the swarm reports whether a key is set (`ai.keySet`), whether the model is answering (`ai.enabled`, with `ai.lastError` when it is not) and which model it uses. A key that stops working is retried on every job, so the agents switch back as soon as it answers again. `pnpm -r test` covers the client and every fallback path against a stubbed NEAR AI endpoint.
 
 ## Architecture
 
@@ -317,7 +317,7 @@ await agent.settleDebts();
 | Creditors are paid even if a debtor vanishes | Collateral locked at finalisation, paid into the verifier on default | `default_seizes_collateral_and_seals`, e2e |
 | TypeScript and Rust agree byte for byte | Shared vectors | `parity_vectors` (Rust) and "parity with the contract" (TS) |
 
-**67** contract unit tests, **90** TypeScript tests, the generated-contract check, the chain end-to-end test and the simulation's 8 on-chain checks all run in CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
+**67** contract unit tests, **91** TypeScript tests, the generated-contract check, the chain end-to-end test and the simulation's 8 on-chain checks all run in CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
 
 ## NEAR testnet
 

@@ -11,7 +11,7 @@ import { Market, marketMembers } from "./market.ts";
 import { FREELANCERS, ROLES, STUDIOS, briefFor, studioMembers, type StudioJob, type StudioKind } from "./agents/studios.ts";
 import { MediaStore } from "./work/media.ts";
 import { UserAgents } from "./agents/users.ts";
-import { aiStatus } from "./work/nearai.ts";
+import { aiStatus, probeAi } from "./work/nearai.ts";
 
 export interface FleetMember {
   /** also the name of the agent's sub-account: `<slug>.<root>` */
@@ -212,6 +212,9 @@ export class Fleet {
 
     // agents users launched from the dashboard
     await this.users.startAll();
+
+    // is the model answering? (a key without credit on the NEAR AI account is not)
+    void probeAi().then((s) => s.keySet && this.log("fleet", s.enabled ? `NEAR AI Cloud answering with ${s.model}` : `NEAR AI Cloud key set but not answering (${s.lastError}); Quill and Scribe use their fallbacks until it does`));
 
     // 4. loops
     const fast = this.cfg.network === "local";

@@ -8,9 +8,15 @@
 
 export interface AiStatus {
   provider: "NEAR AI Cloud";
+  /** a key is configured, so the agents try the model */
+  keySet: boolean;
+  /** the model is answering: a key is set and the last call did not fail */
   enabled: boolean;
   model: string;
   endpoint: string;
+  /** why the last call failed, while it is failing (e.g. no credit on the NEAR AI account) */
+  lastError: string | null;
+  lastOkAt: number | null;
 }
 
 export interface AiAnswer {
@@ -33,13 +39,27 @@ const env = (k: string) => (process.env[k] ?? "").trim();
 /** A verifiable (TEE-hosted) open model by default; NEAR_AI_MODEL picks another from the catalogue. */
 export const DEFAULT_MODEL = "deepseek-ai/DeepSeek-V4.1-Flash-1017";
 
+/** How the last calls went, so the status says "on" only while the model really answers. */
+const health = { lastOkAt: 0, lastErrorAt: 0, lastError: null as string | null };
+
 export function aiStatus(): AiStatus {
+  const keySet = env("NEAR_AI_API_KEY") !== "";
+  const failing = health.lastErrorAt > health.lastOkAt;
   return {
     provider: "NEAR AI Cloud",
-    enabled: env("NEAR_AI_API_KEY") !== "",
+    keySet,
+    enabled: keySet && !failing,
     model: env("NEAR_AI_MODEL") || DEFAULT_MODEL,
     endpoint: (env("NEAR_AI_URL") || "https://cloud-api.near.ai/v1").replace(/\/+$/, ""),
+    lastError: keySet && failing ? health.lastError : null,
+    lastOkAt: health.lastOkAt || null,
   };
+}
+
+/** One tiny call at startup, so the status is right before the first real job. */
+export async function probeAi(): Promise<AiStatus> {
+  if (aiStatus().keySet) await chat([{ role: "user", content: "Reply with the single word: ok" }], { maxTokens: 5, timeoutMs: 20_000 }).catch(() => null);
+  return aiStatus();
 }
 
 /** Strip a reasoning preamble and code fences, leaving the answer itself. */
@@ -70,7 +90,13 @@ async function fetchJson(url: string, init: RequestInit, timeoutMs: number): Pro
   try {
     const res = await fetch(url, { ...init, signal: ctl.signal });
     const body = await res.text();
-    if (!res.ok) throw new Error(`NEAR AI answered ${res.status}: ${body.slice(0, 160)}`);
+    if (!res.ok) {
+      let reason = body.slice(0, 160);
+      try {
+        reason = (JSON.parse(body) as { error?: { message?: string } }).error?.message ?? reason;
+      } catch {}
+      throw new Error(`NEAR AI answered ${res.status}: ${reason}`);
+    }
     return JSON.parse(body);
   } finally {
     clearTimeout(t);
@@ -83,7 +109,19 @@ async function fetchJson(url: string, init: RequestInit, timeoutMs: number): Pro
  */
 export async function chat(messages: ChatMessage[], opts: { maxTokens?: number; temperature?: number; timeoutMs?: number } = {}): Promise<AiAnswer> {
   const s = aiStatus();
-  if (!s.enabled) throw new Error("NEAR AI is not configured (NEAR_AI_API_KEY is empty)");
+  if (!s.keySet) throw new Error("NEAR AI is not configured (NEAR_AI_API_KEY is empty)");
+  try {
+    const answer = await chatOnce(s, messages, opts);
+    health.lastOkAt = Date.now();
+    return answer;
+  } catch (err) {
+    health.lastErrorAt = Date.now();
+    health.lastError = (err as Error).message.slice(0, 200);
+    throw err;
+  }
+}
+
+async function chatOnce(s: AiStatus, messages: ChatMessage[], opts: { maxTokens?: number; temperature?: number; timeoutMs?: number }): Promise<AiAnswer> {
   const key = env("NEAR_AI_API_KEY");
   const timeout = opts.timeoutMs ?? Number(env("NEAR_AI_TIMEOUT_SECONDS") || 25) * 1000;
   const started = Date.now();

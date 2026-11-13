@@ -232,7 +232,7 @@ export function installScribe(fleet: Fleet, agent: QuorumAgent): void {
  * quotes must appear in the text, so a model that invents figures falls back to extraction.
  */
 async function abstractive(title: string, text: string, maxSentences: number) {
-  if (!aiStatus().enabled || text.length < 200) return null;
+  if (!aiStatus().keySet || text.length < 200) return null;
   const a = await chat(
     [
       { role: "system", content: `Summarise the document in at most ${maxSentences} plain sentences. Use only facts stated in it. Answer with the summary only.` },

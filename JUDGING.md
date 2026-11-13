@@ -34,7 +34,7 @@ pnpm install
 | Command | Expected result | Time |
 |---|---|---|
 | `pnpm -r typecheck` | No errors in any of the six packages | ~30 s |
-| `pnpm -r test` | **90 tests pass**: core 37, clearing 18, agents 35 (vitest) | ~15 s |
+| `pnpm -r test` | **91 tests pass**: core 37, clearing 18, agents 36 (vitest) | ~15 s |
 | `pnpm sim` | A local node starts and the three contracts deploy. Then 20 buyer and 5 seller agents, each on its own sub-account, run 8 sealed-bid group-buy rounds with scripted strategies and no model calls. The report ends with **8 checks against the chain**, and the exit code is 0 only if all pass | ~3 min |
 | `pnpm test:chain` | The contracts on a real local node: a tender and a group buy, IOUs posted and netted, one NEAR Intents batch settling the epoch, and a default covered from collateral. A forged IOU, a changed bid, an early reveal, an underpaying batch and a replayed payload are all refused | ~2 min |
 | `pnpm test:contracts` (Rust) | **67** contract unit tests pass | ~2 min first build |
@@ -60,7 +60,7 @@ CI runs all of this on every push: [.github/workflows/ci.yml](.github/workflows/
 | Wallet sign-in is one NEP-413 message, checked against a full-access key on chain | Dashboard sign-in | `Backend/clearing/src/api.ts` (`/v1/auth/login`, `holdsFullAccessKey`), `Blockchain/core/src/auth.ts`, `Frontend/src/lib/account.ts` |
 | Team leads tender every role on chain and pay the winners from the commission | A commission page: one round per role, the winners, the lead's margin | `Blockchain/agents/src/agents/studios.ts` (`runStudio`, `PLANS`) |
 | Bad work is disputed and checked by a staked validator | The Smart Contract Team's budget coder sometimes skips an access check; the audit catches it and the validator upholds the dispute (see the commission's steps and `/disputes`) | `studios.ts` (contracts plan), `Blockchain/agents/src/agents/arbiter.ts` |
-| AI from NEAR AI Cloud, with a rule-based fallback | `GET /control/studios` → `ai.enabled`, `ai.model`. A Design Team commission shows a **Written by NEAR AI Cloud** or **Template writer** badge on its brand copy. `Blockchain/agents/test/ai.test.ts` covers the client and every fallback path against a stubbed endpoint | `Blockchain/agents/src/work/nearai.ts`, `Blockchain/agents/src/work/copy.ts`, `Blockchain/agents/src/agents/workers.ts` (Scribe) |
+| AI from NEAR AI Cloud, with a rule-based fallback | `GET /control/studios` → `ai.keySet`, `ai.enabled` (the model is answering), `ai.lastError`, `ai.model`. A Design Team commission shows a **Written by NEAR AI Cloud** or **Template writer** badge on its brand copy. `Blockchain/agents/test/ai.test.ts` covers the client and every fallback path against a stubbed endpoint | `Blockchain/agents/src/work/nearai.ts`, `Blockchain/agents/src/work/copy.ts`, `Blockchain/agents/src/agents/workers.ts` (Scribe) |
 | Anyone can recompute an epoch | Verify page; `pnpm sim` exits 0 only if everything matches | `Frontend/src/lib/verify.ts` (`verifyEpochInBrowser`), `Blockchain/scripts/sim.ts` |
 | Hire agents from Claude | The MCP server's tools: `find_agent`, `get_quote`, `hire_agent`, `tender_job`, `list_rounds`, `join_group_buy`, `check_balance`, `get_job`, `hire_studio` | `Blockchain/mcp/src/index.ts`; config in the README's MCP section |
 
