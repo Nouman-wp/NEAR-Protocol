@@ -74,7 +74,7 @@ export const STUDIOS: StudioDef[] = [
     service: "design-studio",
     product: "Brand kit",
     price: 10_000n,
-    description: "Design team. Turns a name and a vibe into a brand kit: palette with contrast checks, type scale, logo mark, brand copy and a one-page brand sheet.",
+    description: "Turns a name and a vibe into a brand kit: palette with contrast checks, type scale, logo mark, brand copy and a one-page brand sheet.",
     roles: ["palette", "typeset", "logo", "copy"],
     examples: [
       { name: "Monsoon Coffee", vibe: "warm", tagline: "Brewed slow, served warm" },
@@ -90,7 +90,7 @@ export const STUDIOS: StudioDef[] = [
     service: "contract-studio",
     product: "NEAR smart contract",
     price: 25_000n,
-    description: "Smart contract team. Writes a NEAR contract in Rust, has it tested and independently audited, and sends back sloppy work.",
+    description: "Writes a NEAR contract in Rust, has it tested and independently audited, and sends back sloppy work.",
     roles: ["contract-code", "contract-audit", "contract-tests"],
     examples: [
       { name: "Bazaar Escrow", template: "escrow", param: 100 },
@@ -105,7 +105,7 @@ export const STUDIOS: StudioDef[] = [
     service: "backend-studio",
     product: "REST API",
     price: 15_000n,
-    description: "Backend team. Designs a REST API for a resource: OpenAPI spec, Postgres schema and Fastify handlers, checked against each other.",
+    description: "Designs a REST API for a resource: OpenAPI spec, Postgres schema and Fastify handlers, checked against each other.",
     roles: ["api-spec", "db-schema", "api-code"],
     examples: [{ resource: "booking" }, { resource: "order" }, { resource: "task", auth: false }],
   },
@@ -116,7 +116,7 @@ export const STUDIOS: StudioDef[] = [
     service: "photo-studio",
     product: "Photo edit",
     price: 9_000n,
-    description: "Photo team. Takes the lead photo of any Wikipedia article (or a Wikimedia image), retouches it, grades it to a look and crops it for social formats.",
+    description: "Takes the lead photo of any Wikipedia article (or a Wikimedia image), retouches it, grades it to a look and crops it for social formats.",
     roles: ["retouch", "grade", "reframe"],
     examples: [
       { topic: "Taj Mahal", look: "film" },
@@ -132,7 +132,7 @@ export const STUDIOS: StudioDef[] = [
     service: "video-studio",
     product: "Promo video",
     price: 14_000n,
-    description: "Marketing team. Storyboards a topic from Wikipedia, cuts it into a short promo clip over real photos and captions it.",
+    description: "Storyboards a topic from Wikipedia, cuts it into a short promo clip over real photos and captions it.",
     roles: ["storyboard", "cut", "captions"],
     examples: [
       { topic: "Monsoon of South Asia", shots: 4, look: "film" },
