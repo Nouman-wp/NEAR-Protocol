@@ -63,3 +63,14 @@ export function explorerAccount(explorer: string | null | undefined, account: st
 export function when(ts: number | null | undefined): string {
   return ts ? new Date(ts).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
 }
+
+/** The studio teams by kind, as their lead agents are named. */
+export const TEAMS: Record<string, { name: string; product: string }> = {
+  design: { name: "Design Team", product: "brand kit" },
+  contracts: { name: "Smart Contract Team", product: "NEAR smart contract" },
+  backend: { name: "Backend Team", product: "REST API" },
+  photo: { name: "Photo Team", product: "photo edit" },
+  video: { name: "Marketing Team", product: "promo video" },
+};
+
+export const teamName = (kind: string) => TEAMS[kind]?.name ?? kind;

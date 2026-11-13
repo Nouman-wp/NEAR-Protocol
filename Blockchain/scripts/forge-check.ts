@@ -1,5 +1,5 @@
 /**
- * Compile and test the smart contracts the Forge studio delivers, exactly as delivered:
+ * Compile and test the smart contracts the Smart Contract Team delivers, exactly as delivered:
  * every template as the developer writes it, and as the budget coder sometimes does
  * (its key access check missing). Each clean contract must pass its own unit tests and
  * build to wasm; each sloppy one must fail precisely the tests that guard the check it lost.

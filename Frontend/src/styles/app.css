@@ -1622,3 +1622,161 @@ video {
   --option-wallet-bg-color: #1c0a10;
   --option-single-wallet-bg-color: #1c0a10;
 }
+
+/* ───────────────────────────────── dashboard history: a feed of plain sentences */
+.how-pay {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  padding: 20px 24px;
+}
+.how-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 14px;
+}
+.how-n {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  background: var(--solid);
+  color: var(--on-solid);
+}
+.history-sums {
+  gap: 12px;
+}
+.mini-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+}
+.mini-stat .label {
+  font-size: 11px;
+}
+.mini-stat .num {
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+.feed-day + .feed-day {
+  border-top: 1px solid var(--line);
+}
+.feed-day-label {
+  padding: 14px 20px 6px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.feed {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 6px;
+}
+.feed-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 20px;
+}
+.feed-item + .feed-item {
+  border-top: 1px solid rgba(var(--fg), 0.06);
+}
+.feed-item:hover {
+  background: rgba(var(--fg), 0.03);
+}
+.feed-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  border: 1px solid var(--line-strong);
+}
+.feed-icon.out {
+  color: var(--blush);
+  border-color: rgba(var(--blush-rgb), 0.4);
+}
+.feed-icon.in,
+.feed-icon.pay {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 40%, transparent);
+}
+.feed-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.feed-title {
+  line-height: 1.7;
+  font-size: 15px;
+}
+.feed-title .chip {
+  vertical-align: middle;
+  gap: 6px;
+}
+.feed-title .chip i {
+  width: 14px;
+  height: 14px;
+}
+.feed-meta {
+  font-size: 12.5px;
+  color: var(--faint);
+}
+.feed-meta a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.feed-meta a.link {
+  color: var(--blush);
+}
+.feed-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.feed-amount {
+  font-size: 15px;
+  white-space: nowrap;
+}
+.feed-amount.out {
+  color: var(--text);
+}
+.feed-amount.in {
+  color: var(--good);
+}
+@media (max-width: 760px) {
+  .how-pay {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .history-sums {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .feed-item {
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: start;
+    padding: 12px 16px;
+  }
+  .feed-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+  }
+  .feed-side {
+    grid-column: 2;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}

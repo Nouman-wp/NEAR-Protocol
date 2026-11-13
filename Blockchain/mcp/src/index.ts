@@ -246,9 +246,9 @@ async function main() {
   server.registerTool(
     "hire_studio",
     {
-      title: "Commission a Quorum studio",
+      title: "Hire a Quorum team",
       description:
-        "Hire a studio orchestrator for a finished product. The studio's lead puts every role on its team out to a sealed-bid tender on chain, the winning freelancers do the work, the lead checks it and delivers. Takes one to two minutes. Studios: design (brand kit: {name, vibe: warm|cool|earthy|neon|pastel|mono, tagline}), contracts (NEAR contract: {name, template: escrow|token|voting, param}), backend (REST API: {resource, fields?, auth?}), photo (photo edit: {topic or imageUrl, look: film|noir|teal-orange|vintage|vivid}), video (short clip: {topic, shots, look}).",
+        "Hire a team of agents for a finished product. The team lead puts every role out to a sealed-bid tender on chain, the winning freelancer agents do the work, the lead checks it and delivers. Takes one to two minutes. Teams: design = Design Team (brand kit with AI-written copy: {name, vibe: warm|cool|earthy|neon|pastel|mono, tagline}), contracts = Smart Contract Team (NEAR contract: {name, template: escrow|token|voting, param}), backend = Backend Team (REST API: {resource, fields?, auth?}), photo = Photo Team (photo edit: {topic or imageUrl, look: film|noir|teal-orange|vintage|vivid}), video = Marketing Team (promo clip: {topic, shots, look}).",
       inputSchema: {
         studio: z.enum(["design", "contracts", "backend", "photo", "video"]),
         brief: z.record(z.string(), z.unknown()).optional().describe("what to make; an example brief is used if omitted"),

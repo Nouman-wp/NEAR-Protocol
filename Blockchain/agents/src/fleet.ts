@@ -11,6 +11,7 @@ import { Market, marketMembers } from "./market.ts";
 import { FREELANCERS, ROLES, STUDIOS, briefFor, studioMembers, type StudioJob, type StudioKind } from "./agents/studios.ts";
 import { MediaStore } from "./work/media.ts";
 import { UserAgents } from "./agents/users.ts";
+import { aiStatus } from "./work/nearai.ts";
 
 export interface FleetMember {
   /** also the name of the agent's sub-account: `<slug>.<root>` */
@@ -66,7 +67,7 @@ export const RESEARCH: FleetMember[] = [
   {
     slug: "scribe",
     group: "research",
-    profile: { name: "Scribe", role: "Summariser", description: "Writes extractive summaries; buys chart descriptions for documents with figures.", fleet: true },
+    profile: { name: "Scribe", role: "Summariser", description: "Writes summaries with a NEAR AI Cloud model when one is configured (extractive summaries otherwise); buys chart descriptions for documents with figures.", fleet: true },
     install: installScribe,
     buys: [{ key: "main", goal: "[standing] Buy figure descriptions and translations", services: ["describe", "translate"], budget: USD(10), perJobCap: USD(0.01), minRep: 600 }],
   },
@@ -332,7 +333,9 @@ export class Fleet {
       if (agent.agentId === 0n) continue;
       const existing = await this.client.intents({ buyer: agent.agentId.toString() });
       for (const b of m.buys) {
-        const reuse = existing.find((i) => i.goal === b.goal && i.status === "active" && BigInt(i.budget) - BigInt(i.spent) > b.budget / 5n && i.deadline > Number(now) + 3600);
+        // a new service on the agent's list (a new role on a team) needs a fresh intent that allows it
+        const covers = (allowed: string[]) => allowed.length === 0 || b.services.every((s) => allowed.includes(s));
+        const reuse = existing.find((i) => i.goal === b.goal && i.status === "active" && covers(i.allowedServices) && BigInt(i.budget) - BigInt(i.spent) > b.budget / 5n && i.deadline > Number(now) + 3600);
         if (reuse) {
           this.standing.set(`${m.slug}:${b.key}`, reuse.id);
           continue;
@@ -544,6 +547,7 @@ export class Fleet {
   private studiosView() {
     return {
       running: this.cfg.studios,
+      ai: aiStatus(),
       studios: STUDIOS.map((s) => ({
         kind: s.kind,
         slug: s.slug,
@@ -567,6 +571,7 @@ export class Fleet {
         name: f.name,
         role: f.role,
         description: f.description,
+        ai: !!f.ai,
         agentId: this.agents.get(f.slug)?.agentId.toString() ?? null,
         skills: Object.entries(f.skills).map(([service, [strategy]]) => ({ service, strategy })),
       })),
@@ -636,7 +641,7 @@ export class Fleet {
         if (!this.cfg.studios) throw new Error("the studios are not running");
         this.state.scenario = { name, startedAt: now, until: now + 150_000 };
         STUDIOS.forEach((s, i) => setTimeout(() => void this.commission(s.kind, null, "scenario").catch((err) => this.log("founder", (err as Error).message)), i * 4_000));
-        return { ok: true, message: "the founder commissions all five studios: each lead tenders its roles, freelancers bid sealed, the winners do the work" };
+        return { ok: true, message: "the Founder hires all five teams: each lead tenders its roles, freelancers bid sealed, the winners do the work" };
       }
       case "default-drill": {
         const intent = research();
@@ -874,6 +879,7 @@ export class Fleet {
     return {
       reachable: true,
       ready: this.ready,
+      ai: aiStatus(),
       network: this.cfg.network,
       research: this.cfg.research,
       market: this.cfg.market,

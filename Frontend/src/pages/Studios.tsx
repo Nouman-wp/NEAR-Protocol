@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { fleet } from "../lib/api.ts";
-import { ago, usd } from "../lib/format.ts";
+import { ago, teamName, usd } from "../lib/format.ts";
 import { AgentChip, Empty, PageHead, Reveal, Status, Tag } from "../components/ui.tsx";
 
 interface Bidder {
@@ -49,10 +49,23 @@ interface StudioJob {
   deliverables?: Record<string, unknown> | null;
   error: string | null;
 }
+interface AiStatus {
+  provider: string;
+  enabled: boolean;
+  model: string;
+}
+interface BrandCopy {
+  tagline: string;
+  story: string;
+  voice: string[];
+  headlines: string[];
+  engine: { kind: "near-ai"; model: string; chatId: string | null; ms: number; signature: { signature: string; signingAddress: string | null } | null } | { kind: "template"; reason: string };
+}
 interface StudiosView {
   running: boolean;
+  ai?: AiStatus;
   studios: StudioInfo[];
-  freelancers: { slug: string; name: string; role: string; description: string; agentId: string | null; skills: { service: string; strategy: string }[] }[];
+  freelancers: { slug: string; name: string; role: string; description: string; ai?: boolean; agentId: string | null; skills: { service: string; strategy: string }[] }[];
   jobs: StudioJob[];
 }
 interface Media {
@@ -112,7 +125,7 @@ function AdminBar({ studios }: { studios: StudioInfo[] }) {
       </p>
       <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
         <button className="btn sm" disabled={sending} onClick={() => post("/control/start", { scenario: "studio-rush" })}>
-          All five studios
+          All five teams
         </button>
         {studios.map((s) => (
           <button key={s.kind} className="btn sm ghost" disabled={sending} onClick={() => post("/control/commission", { studio: s.kind })}>
@@ -132,8 +145,8 @@ export function StudiosPage() {
       <div className="wrap stack" style={{ gap: 40 }}>
         <PageHead
           eyebrow="Studios"
-          title="Hire a studio. It hires its team."
-          lead="Each studio is an orchestrator agent that sells a finished product. When a client hires it, the lead puts every role on its team out to a sealed-bid tender on chain, freelancers bid, the contract picks the winners, and the team does the work. Every hire is a signed IOU, so the client's payment and the team's pay net in the same epoch."
+          title="Hire a team. Its lead hires the specialists."
+          lead="Each team (design, smart contracts, backend, photo, marketing) is a lead agent that sells a finished product. When a client hires it, the lead puts every role out to a sealed-bid tender on chain, freelancer agents bid, the contract picks the winners, and they do the work. Every hire is a signed IOU, so the client's payment and the team's pay net in the same epoch."
         />
         {!data ? (
           <div className="card">
@@ -176,6 +189,11 @@ export function StudiosPage() {
                       <strong>{f.name}</strong>
                       <span className="faint">{f.role}</span>
                     </div>
+                    {f.ai && data.ai && (
+                      <div>
+                        <Tag kind={data.ai.enabled ? "good" : undefined}>{data.ai.enabled ? `NEAR AI on · ${data.ai.model.split("/").pop()}` : "NEAR AI off · template fallback"}</Tag>
+                      </div>
+                    )}
                     <p className="muted" style={{ margin: 0 }}>{f.description}</p>
                     <div className="row" style={{ flexWrap: "wrap", gap: 6 }}>
                       {f.skills.map((s) => (
@@ -296,10 +314,10 @@ export function StudioJobPage() {
   return (
     <div className="page">
       <div className="wrap stack" style={{ gap: 32 }}>
-        <PageHead eyebrow={`Studio commission · ${job.studio}`} title={job.label} lead={`${job.client?.name ?? "A client"} hired ${job.lead[0]!.toUpperCase()}${job.lead.slice(1)} for ${usd(job.price, 3)}. The lead tendered each role on chain and paid its team from that.`}>
+        <PageHead eyebrow={`Commission · ${teamName(job.studio)}`} title={job.label} lead={`${job.client?.name ?? "A client"} hired the ${teamName(job.studio)} for ${usd(job.price, 3)}. The team lead tendered each role on chain and paid the winners from that.`}>
           <Status value={job.status === "done" ? "delivered" : job.status === "failed" ? "failed" : "Open"} />
           <Link className="btn sm ghost" to="/studios">
-            All studios
+            All teams
           </Link>
         </PageHead>
 
@@ -408,6 +426,45 @@ function Code({ title, text }: { title: string; text: string }) {
   );
 }
 
+/** The brand copy, and who wrote it: a NEAR AI Cloud model, or the template writer it falls back to. */
+function CopyCard({ c }: { c: BrandCopy }) {
+  const e = c.engine;
+  return (
+    <div className="card stack" style={{ gap: 14 }}>
+      <div className="spread" style={{ flexWrap: "wrap" }}>
+        <span className="label">Brand copy</span>
+        <div className="row" style={{ gap: 6 }}>
+          {e.kind === "near-ai" ? (
+            <>
+              <Tag kind="good">Written by NEAR AI Cloud · {e.model.split("/").pop()}</Tag>
+              {e.signature && <Tag kind="good">Signed by the TEE</Tag>}
+            </>
+          ) : (
+            <Tag>Template writer</Tag>
+          )}
+        </div>
+      </div>
+      <h3 className="h3" style={{ margin: 0 }}>{c.tagline}</h3>
+      <p className="muted" style={{ margin: 0 }}>{c.story}</p>
+      <div className="row" style={{ gap: 6 }}>
+        {c.voice.map((v) => (
+          <Tag key={v}>{v}</Tag>
+        ))}
+      </div>
+      <ul style={{ margin: 0, paddingLeft: 18 }}>
+        {c.headlines.map((h) => (
+          <li key={h}>{h}</li>
+        ))}
+      </ul>
+      <small className="faint">
+        {e.kind === "near-ai"
+          ? `Private inference on NEAR AI Cloud in ${(e.ms / 1000).toFixed(1)} s${e.chatId ? ` · completion ${e.chatId}` : ""}${e.signature?.signingAddress ? ` · enclave key ${e.signature.signingAddress}` : ""}`
+          : e.reason}
+      </small>
+    </div>
+  );
+}
+
 function Deliverables({ kind, d }: { kind: string; d: Record<string, unknown> }) {
   switch (kind) {
     case "design": {
@@ -442,6 +499,7 @@ function Deliverables({ kind, d }: { kind: string; d: Record<string, unknown> })
               <Code title={`type.css · ${type.display} / ${type.text} · ratio ${type.ratio}`} text={type.css} />
             </div>
           </div>
+          {d.copy ? <CopyCard c={d.copy as BrandCopy} /> : null}
         </section>
       );
     }

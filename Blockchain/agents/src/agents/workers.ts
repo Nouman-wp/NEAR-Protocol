@@ -5,6 +5,7 @@ import { translate } from "../work/translate.ts";
 import { describeChart, type Series } from "../work/chart.ts";
 import { keywords, mainEntity, numbersIn, overlap, sentences, summarize } from "../work/text.ts";
 import { seeded, strategy } from "../strategies.ts";
+import { aiStatus, chat, cleanAnswer } from "../work/nearai.ts";
 
 /** Prices in stablecoin base units (6 decimals). Sub-cent on purpose. */
 export const PRICES = {
@@ -206,7 +207,7 @@ export function installScribe(fleet: Fleet, agent: QuorumAgent): void {
   agent.sell<{ title: string; text: string; figure?: Series; maxSentences?: number }, unknown>({
     id: "summarize",
     name: "Summary",
-    description: "Extractive summary of a document; buys a chart description when the document has a figure.",
+    description: "Summary of a document, written by a NEAR AI Cloud model when one is configured and extractive otherwise; buys a chart description when the document has a figure.",
     price: PRICES.summarize,
     unit: "document",
     tags: ["summarize", "writing", "research"],
@@ -217,11 +218,32 @@ export function installScribe(fleet: Fleet, agent: QuorumAgent): void {
         const r = await fleet.hire("scribe", "describe", input.figure, { parentJobId: ctx.jobId }).catch(() => null);
         figureDescription = (r?.result as { description?: string } | undefined)?.description ?? null;
       }
-      const summary = summarize(text, Math.min(6, Math.max(2, input.maxSentences ?? 4)));
+      const n = Math.min(6, Math.max(2, input.maxSentences ?? 4));
+      const s = await abstractive(String(input.title ?? ""), text, n).catch(() => null);
       fleet.touch("scribe");
-      return { title: input.title, summary, figureDescription, sourceLength: text.length };
+      if (s) return { title: input.title, summary: s.summary, figureDescription, sourceLength: text.length, engine: s.engine };
+      return { title: input.title, summary: summarize(text, n), figureDescription, sourceLength: text.length, engine: { kind: "extractive" } };
     },
   });
+}
+
+/**
+ * A summary written by NEAR AI, kept only if it stays close to the source: every number it
+ * quotes must appear in the text, so a model that invents figures falls back to extraction.
+ */
+async function abstractive(title: string, text: string, maxSentences: number) {
+  if (!aiStatus().enabled || text.length < 200) return null;
+  const a = await chat(
+    [
+      { role: "system", content: `Summarise the document in at most ${maxSentences} plain sentences. Use only facts stated in it. Answer with the summary only.` },
+      { role: "user", content: `${title ? `Title: ${title}\n\n` : ""}${text.slice(0, 12_000)}` },
+    ],
+    { maxTokens: 400, temperature: 0.2, timeoutMs: 15_000 },
+  );
+  const summary = cleanAnswer(a.text).replace(/\s+/g, " ").slice(0, 1200);
+  const source = new Set(numbersIn(text));
+  if (summary.length < 40 || numbersIn(summary).some((x) => !source.has(x))) return null;
+  return { summary, engine: { kind: "near-ai", model: a.model, chatId: a.chatId, ms: a.ms, signature: a.signature } };
 }
 
 // ------------------------------------------------------------------ Lens

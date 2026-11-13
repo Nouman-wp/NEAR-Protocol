@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { NETWORKS, NearRpc, type AgentSummary, type IntentView, type JobView, type SettlementView } from "@quorum/core";
+import { NETWORKS, NearRpc, type AgentSummary, type IntentView, type JobView, type SettlementView, type TransferView } from "@quorum/core";
 import { authed, authoriseSpending, connectWallet, network, setWalletNetwork, signInWithDevWallet, signInWithWallet, signOut, useAccount, walletsSupported } from "../lib/account.ts";
 import { agentName, useLive } from "../lib/api.ts";
-import { ago, score, usd } from "../lib/format.ts";
-import { Account, AgentChip, Empty, PageHead, Status, Tag, Tx } from "../components/ui.tsx";
+import { ago, score, teamName, TEAMS, usd } from "../lib/format.ts";
+import { Account, AgentChip, Empty, PageHead, Status, Tag } from "../components/ui.tsx";
+import { History } from "../components/History.tsx";
 
 interface Me {
   user: { accountId: string; displayName: string | null; createdAt: number; lastLoginAt: number; logins: number };
@@ -19,9 +20,10 @@ interface Hosted {
   ready: boolean;
   createdAt: number;
 }
-interface Activity {
+export interface Activity {
   jobs: JobView[];
   settlements: SettlementView[];
+  transfers: TransferView[];
   totals: { bought: string; sold: string; jobs: number };
 }
 interface Commission {
@@ -37,11 +39,11 @@ interface Commission {
 }
 
 const STUDIOS = [
-  { kind: "design", name: "Atelier · brand kit", field: "name", placeholder: "Brand name, e.g. Chai Point", extra: { vibe: "warm" } },
-  { kind: "contracts", name: "Forge · NEAR contract", field: "name", placeholder: "Contract name, e.g. Bazaar Escrow", extra: { template: "escrow" } },
-  { kind: "backend", name: "Foundry · REST API", field: "resource", placeholder: "Resource, e.g. booking", extra: {} },
-  { kind: "photo", name: "Darkroom · photo edit", field: "topic", placeholder: "Wikipedia topic, e.g. Hampi", extra: { look: "film" } },
-  { kind: "video", name: "Cutroom · short video", field: "topic", placeholder: "Wikipedia topic, e.g. Kerala backwaters", extra: { shots: 4, look: "film" } },
+  { kind: "design", field: "name", placeholder: "Brand name, e.g. Chai Point", extra: { vibe: "warm" } },
+  { kind: "contracts", field: "name", placeholder: "Contract name, e.g. Bazaar Escrow", extra: { template: "escrow" } },
+  { kind: "backend", field: "resource", placeholder: "Resource, e.g. booking", extra: {} },
+  { kind: "photo", field: "topic", placeholder: "Wikipedia topic, e.g. Hampi", extra: { look: "film" } },
+  { kind: "video", field: "topic", placeholder: "Wikipedia topic, e.g. Kerala backwaters", extra: { shots: 4, look: "film" } },
 ] as const;
 
 const busyStatus = (s: string) => s === "forming" || s === "working";
@@ -68,7 +70,7 @@ function SignIn({ net }: { net: { key: string; name: string } | null }) {
         <PageHead
           eyebrow="Dashboard"
           title="Your agents, your limits, your receipts."
-          lead="Sign in with a NEAR wallet to launch agents you operate, sign the spending limits they buy under, commission the studios, and follow every job, debt and settlement that is yours."
+          lead="Sign in with a NEAR wallet to launch agents you operate, sign the spending limits they buy under, hire the teams, and follow every job, debt and settlement that is yours."
         />
         <div className="grid g2" style={{ gap: 18 }}>
           <div className="card stack" style={{ gap: 18 }}>
@@ -135,7 +137,7 @@ function SignIn({ net }: { net: { key: string; name: string } | null }) {
             {[
               ["Agents you operate", "Launch hosted agents. Each is its own NEAR sub-account, registered on chain with your account as its operator."],
               ["Limits you sign", "An agent spends only under an intent you sign in your wallet: budget, per-job cap, deadline. The clearing service checks your key on chain."],
-              ["Studios on call", "Have your agent commission a brand kit, a contract, an API, a photo edit or a video, and watch the studio tender its team."],
+              ["Teams on call", "Have your agent hire the Design, Smart Contract, Backend, Photo or Marketing Team, and watch the team lead tender each role on chain."],
               ["Every receipt", "Jobs bought and sold, net debts, and the NEAR Intents settlements that paid them, with explorer links."],
             ].map(([t, d]) => (
               <div key={t} className="stack" style={{ gap: 4 }}>
@@ -237,7 +239,7 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
             <span className="num" style={{ fontSize: 34 }}>{usd(activity?.totals.bought ?? "0", 3)}</span>
           </div>
           <div className="card stat">
-            <span className="label">Jobs either way</span>
+            <span className="label">Jobs bought or sold</span>
             <span className="num" style={{ fontSize: 34 }}>{activity?.totals.jobs ?? 0}</span>
           </div>
         </div>
@@ -271,10 +273,10 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
         </section>
 
         <section className="stack" style={{ gap: 16 }}>
-          <span className="label">Studio commissions</span>
+          <span className="label">Team commissions</span>
           {commissions.length === 0 ? (
             <div className="card">
-              <Empty>None yet. Sign a spending limit for an agent, then commission a studio from its card.</Empty>
+              <Empty>None yet. Sign a spending limit for an agent, then hire a team from its card.</Empty>
             </div>
           ) : (
             <div className="stack" style={{ gap: 10 }}>
@@ -282,7 +284,7 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
                 <Link key={c.id} to={`/studios/${c.id}`} className="card spread" style={{ gap: 18, flexWrap: "wrap" }}>
                   <div className="stack" style={{ gap: 4 }}>
                     <span className="label">
-                      {c.studio} · for {c.client?.name ?? "your agent"} · {ago(c.startedAt)}
+                      {teamName(c.studio)} · for {c.client?.name ?? "your agent"} · {ago(c.startedAt)}
                     </span>
                     <strong>{c.label}</strong>
                   </div>
@@ -300,105 +302,7 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
           )}
         </section>
 
-        <section className="stack" style={{ gap: 16 }}>
-          <span className="label">Your transactions</span>
-          <div className="card flush">
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>When</th>
-                    <th>Your agent</th>
-                    <th>Side</th>
-                    <th>Counterparty</th>
-                    <th>Service</th>
-                    <th className="r">Amount</th>
-                    <th>Epoch</th>
-                    <th>State</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(activity?.jobs ?? []).length === 0 ? (
-                    <tr>
-                      <td colSpan={8}>
-                        <Empty>No jobs yet.</Empty>
-                      </td>
-                    </tr>
-                  ) : (
-                    activity!.jobs.map((j) => {
-                      const bought = ids.has(j.buyer);
-                      return (
-                        <tr key={j.id}>
-                          <td className="faint">{ago(j.createdAt)}</td>
-                          <td>
-                            <AgentChip id={bought ? j.buyer : j.seller} agents={live.agents} />
-                          </td>
-                          <td>{bought ? "bought" : "sold"}</td>
-                          <td>
-                            <AgentChip id={bought ? j.seller : j.buyer} agents={live.agents} />
-                          </td>
-                          <td>
-                            <Link className="link" to={`/jobs/${j.id}`}>
-                              {j.service}
-                            </Link>
-                          </td>
-                          <td className="r num">{usd(j.price, 4)}</td>
-                          <td>
-                            <Link to={`/epochs/${j.epoch}`}>#{j.epoch}</Link>
-                          </td>
-                          <td>
-                            <Status value={j.status} />
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <span className="label" style={{ marginTop: 8 }}>Your settlements</span>
-          <div className="card flush">
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Epoch</th>
-                    <th>Debtor</th>
-                    <th className="r">Net debt paid</th>
-                    <th>State</th>
-                    <th>Settled in</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(activity?.settlements ?? []).length === 0 ? (
-                    <tr>
-                      <td colSpan={5}>
-                        <Empty>No settlement yet. When an epoch closes with your agent owing money, it signs NEAR Intents transfers for exactly that and the batch settles on chain.</Empty>
-                      </td>
-                    </tr>
-                  ) : (
-                    activity!.settlements.map((s) => (
-                      <tr key={s.id}>
-                        <td>
-                          <Link to={`/epochs/${s.epoch}`}>#{s.epoch}</Link>
-                        </td>
-                        <td>{agentName(live.agents, s.agentId)}</td>
-                        <td className="r num">{usd(s.amount, 4)}</td>
-                        <td>
-                          <Status value={s.status} />
-                        </td>
-                        <td>
-                          <Tx hash={s.settleTx} />
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+        <History activity={activity} mine={ids} agents={live.agents} />
 
         <section className="stack" style={{ gap: 16 }}>
           <span className="label">Spending limits you signed</span>
@@ -588,21 +492,21 @@ function AgentCard({ a, hosted, hostDown, intents, onChange }: { a: AgentSummary
       ) : hosted ? (
         <div className="stack" style={{ gap: 8 }}>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <select aria-label="Studio" value={studio} onChange={(e) => setStudio(e.target.value as typeof studio)}>
+            <select aria-label="Team" value={studio} onChange={(e) => setStudio(e.target.value as typeof studio)}>
               {STUDIOS.map((x) => (
                 <option key={x.kind} value={x.kind}>
-                  {x.name}
+                  {TEAMS[x.kind]!.name} · {TEAMS[x.kind]!.product}
                 </option>
               ))}
             </select>
             <input aria-label="Brief" placeholder={s.placeholder} value={text} maxLength={60} onChange={(e) => setText(e.target.value)} style={{ flex: "1 1 180px" }} />
           </div>
           <button className="btn sm" style={{ alignSelf: "flex-start" }} disabled={busy} onClick={() => void commission()}>
-            {busy ? "Hiring…" : "Commission the studio"}
+            {busy ? "Hiring…" : `Hire the ${teamName(studio)}`}
           </button>
         </div>
       ) : hostDown ? (
-        <small className="faint">The agent host is restarting; studio commissions come back in about a minute.</small>
+        <small className="faint">The agent host is restarting; hiring a team works again in about a minute.</small>
       ) : (
         <small className="faint">This agent is not hosted here, so it acts on its own; you can still see its jobs below.</small>
       )}

@@ -128,10 +128,22 @@ The studios' freelancers make what they sell with deterministic code: colour mat
 - The point of a studio is the coordination: tendering a team, passing work down the line, checking it, disputing it and netting the payment chain. That part is identical whether the work behind it is a template or a model.
 - The checks have to be real for disputes to mean anything, so the audit parses the contract and the validator re-runs it on the delivered source.
 
-**What we gave up:** creative range. A brand kit is one of a few motifs; a contract is one of three templates. The README says so.
+**What we gave up:** creative range. A brand kit is one of a few motifs; a contract is one of three templates. The README says so. Brand copy and summaries are the exception; see §19.
 
 ## 18. One tender per role, opened at once
 
 A studio lead opens all its role tenders together, then runs the work in order, buying each role from its round's winner when the previous role's output is ready.
 
 **Why:** tenders in sequence would add a commit and a reveal window per role (about 30 seconds each on testnet). Opening them together forms the whole team in one window. The round binds the winner and the price, not the input, so the lead can hand over work that did not exist when the round opened.
+
+## 19. One optional model, with a fallback that always works
+
+Two agents can use a language model: Quill writes the Design Team's brand copy, and Scribe writes summaries. Both call NEAR AI Cloud (OpenAI-compatible, open models on private TEE inference) only when `NEAR_AI_API_KEY` is set. With no key, a timeout or an answer that fails its checks, they use their rule-based writers. Every result records which engine produced it.
+
+**Why:**
+- Copy and summaries are where a model clearly beats a template, and neither needs to be reproducible for the market to be checked: rounds, IOUs, netting and settlement never depend on model output.
+- A commission must never fail because a model is slow or down, so the fallback is the default path and the model is an upgrade on top of it.
+- NEAR AI Cloud keeps the stack on NEAR and offers verifiable models: the enclave signs each answer, and that signature is stored with the work.
+- Quill competes for the copy role against a template writer in a normal sealed-bid tender, so the AI agent is one more market participant, not a special case.
+
+**What we gave up:** reproducibility of those two outputs when the model is on. Scribe keeps a model summary only if every number in it appears in the source; otherwise it falls back to extraction. Bidding stays scripted (§15).

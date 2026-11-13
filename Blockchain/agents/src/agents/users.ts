@@ -155,7 +155,7 @@ export class UserAgents {
       (r) => this.fleet.log(slug, `${studio.name} delivered job ${r.jobId.slice(0, 10)}`),
       (err) => this.fleet.log(slug, `${studio.name} commission failed: ${(err as Error).message}`),
     );
-    return { ok: true, message: `${rec.name} hired ${studio.name}. It tenders its team on chain now; the commission appears below in a few seconds.` };
+    return { ok: true, message: `${rec.name} hired the ${studio.name}. Its lead tenders each role on chain now; the commission appears below in a few seconds.` };
   }
 
   /**

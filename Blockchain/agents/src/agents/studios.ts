@@ -9,6 +9,7 @@ import { crossCheck, lintSpec, resourceOf, writeCode, writeSchema, writeSpec, ty
 import { decodeJpeg, encodeJpeg, grade, GRADES, loadSource, reframe, retouch, stats, type Grade, type Stats } from "../work/image.ts";
 import { captions, renderCut, storyboard, type Storyboard, type VideoBrief } from "../work/video.ts";
 import type { MediaRef } from "../work/media.ts";
+import { writeCopy, type BrandCopy } from "../work/copy.ts";
 
 /**
  * Studios: hire an orchestrator, and it hires its team.
@@ -37,6 +38,7 @@ export const ROLES: Record<string, RoleDef> = {
   palette: { service: "palette", name: "Colour palette", reserve: 1_500n, description: "A five-colour palette from a name and a vibe, with WCAG contrast checks on the pairs the brand will use." },
   typeset: { service: "typeset", name: "Type scale", reserve: 1_200n, description: "A font pairing and a modular type scale, as CSS custom properties." },
   logo: { service: "logo", name: "Logo mark", reserve: 2_500n, description: "A geometric logo mark and wordmark as SVG, in the brand's palette." },
+  copy: { service: "copy", name: "Brand copy", reserve: 1_500n, description: "A tagline, a short brand story, three voice traits and three headlines for a brand." },
   "contract-code": { service: "contract-code", name: "Contract code", reserve: 6_000n, description: "A NEAR smart contract in Rust (near-sdk 5) from an escrow, token or voting template." },
   "contract-tests": { service: "contract-tests", name: "Contract tests", reserve: 3_000n, description: "A unit-test module for a NEAR contract, with a coverage report of its require! guards." },
   "contract-audit": { service: "contract-audit", name: "Contract audit", reserve: 4_000n, description: "A static audit of a NEAR contract's source: access checks, deposits, callbacks, arithmetic, storage prefixes." },
@@ -68,12 +70,12 @@ export const STUDIOS: StudioDef[] = [
   {
     kind: "design",
     slug: "atelier",
-    name: "Atelier",
+    name: "Design Team",
     service: "design-studio",
     product: "Brand kit",
     price: 10_000n,
-    description: "Design studio. Turns a name and a vibe into a brand kit: palette with contrast checks, type scale, logo mark and a one-page brand sheet.",
-    roles: ["palette", "typeset", "logo"],
+    description: "Design team. Turns a name and a vibe into a brand kit: palette with contrast checks, type scale, logo mark, brand copy and a one-page brand sheet.",
+    roles: ["palette", "typeset", "logo", "copy"],
     examples: [
       { name: "Monsoon Coffee", vibe: "warm", tagline: "Brewed slow, served warm" },
       { name: "Glacier Labs", vibe: "cool", tagline: "Cold storage for hot data" },
@@ -84,11 +86,11 @@ export const STUDIOS: StudioDef[] = [
   {
     kind: "contracts",
     slug: "forge",
-    name: "Forge",
+    name: "Smart Contract Team",
     service: "contract-studio",
     product: "NEAR smart contract",
     price: 25_000n,
-    description: "Smart-contract studio. Writes a NEAR contract in Rust, has it tested and independently audited, and sends back sloppy work.",
+    description: "Smart contract team. Writes a NEAR contract in Rust, has it tested and independently audited, and sends back sloppy work.",
     roles: ["contract-code", "contract-audit", "contract-tests"],
     examples: [
       { name: "Bazaar Escrow", template: "escrow", param: 100 },
@@ -99,22 +101,22 @@ export const STUDIOS: StudioDef[] = [
   {
     kind: "backend",
     slug: "foundry",
-    name: "Foundry",
+    name: "Backend Team",
     service: "backend-studio",
     product: "REST API",
     price: 15_000n,
-    description: "Backend studio. Designs a REST API for a resource: OpenAPI spec, Postgres schema and Fastify handlers, checked against each other.",
+    description: "Backend team. Designs a REST API for a resource: OpenAPI spec, Postgres schema and Fastify handlers, checked against each other.",
     roles: ["api-spec", "db-schema", "api-code"],
     examples: [{ resource: "booking" }, { resource: "order" }, { resource: "task", auth: false }],
   },
   {
     kind: "photo",
     slug: "darkroom",
-    name: "Darkroom",
+    name: "Photo Team",
     service: "photo-studio",
     product: "Photo edit",
     price: 9_000n,
-    description: "Photo studio. Takes the lead photo of any Wikipedia article (or a Wikimedia image), retouches it, grades it to a look and crops it for social formats.",
+    description: "Photo team. Takes the lead photo of any Wikipedia article (or a Wikimedia image), retouches it, grades it to a look and crops it for social formats.",
     roles: ["retouch", "grade", "reframe"],
     examples: [
       { topic: "Taj Mahal", look: "film" },
@@ -126,11 +128,11 @@ export const STUDIOS: StudioDef[] = [
   {
     kind: "video",
     slug: "cutroom",
-    name: "Cutroom",
+    name: "Marketing Team",
     service: "video-studio",
-    product: "Short video",
+    product: "Promo video",
     price: 14_000n,
-    description: "Video studio. Storyboards a topic from Wikipedia, cuts it into a short animated clip over real photos and captions it.",
+    description: "Marketing team. Storyboards a topic from Wikipedia, cuts it into a short promo clip over real photos and captions it.",
     roles: ["storyboard", "cut", "captions"],
     examples: [
       { topic: "Monsoon of South Asia", shots: 4, look: "film" },
@@ -149,17 +151,20 @@ export interface Freelancer {
   skills: Record<string, [StrategyName, bigint]>;
   /** some of its contract code skips an access check */
   sloppy?: number;
+  /** does its writing with a NEAR AI Cloud model when one is configured */
+  ai?: boolean;
 }
 
 export const FREELANCERS: Freelancer[] = [
   { slug: "hue", name: "Hue", role: "Colourist", description: "Colour for brands and photos; also storyboards and the odd logo.", skills: { palette: ["cost-plus", 900n], grade: ["adaptive", 900n], storyboard: ["noisy", 1_100n], logo: ["opportunist", 1_500n] } },
-  { slug: "kern", name: "Kern", role: "Typographer", description: "Type scales and captions; writes API specs on the side.", skills: { typeset: ["cost-plus", 700n], captions: ["adaptive", 700n], "api-spec": ["noisy", 1_500n], palette: ["undercutter", 950n] } },
+  { slug: "kern", name: "Kern", role: "Typographer", description: "Type scales and captions; writes API specs and template brand copy on the side.", skills: { typeset: ["cost-plus", 700n], captions: ["adaptive", 700n], "api-spec": ["noisy", 1_500n], palette: ["undercutter", 950n], copy: ["opportunist", 900n] } },
   { slug: "vector", name: "Vector", role: "Illustrator", description: "Logo marks, crops and quick edits.", skills: { logo: ["adaptive", 1_400n], reframe: ["cost-plus", 900n], cut: ["noisy", 3_000n], typeset: ["opportunist", 800n] } },
   { slug: "ferris", name: "Ferris", role: "Rust developer", description: "Careful NEAR contracts and their tests; TypeScript backends too.", skills: { "contract-code": ["cost-plus", 3_800n], "contract-tests": ["adaptive", 1_800n], "api-code": ["noisy", 2_500n] } },
   { slug: "ledger", name: "Ledger", role: "Developer (budget)", description: "Undercuts on contract work and backends. Fast, and sometimes forgets an access check.", skills: { "contract-code": ["undercutter", 2_600n], "api-spec": ["cost-plus", 1_400n], "db-schema": ["adaptive", 1_000n], "api-code": ["cost-plus", 2_400n] }, sloppy: 0.5 },
   { slug: "sigil", name: "Sigil", role: "Security auditor", description: "Audits NEAR contracts line by line; writes tests and schemas.", skills: { "contract-audit": ["cost-plus", 2_500n], "contract-tests": ["noisy", 1_900n], "db-schema": ["opportunist", 1_200n] } },
   { slug: "warden", name: "Warden", role: "Security auditor", description: "A second auditor that follows the going rate.", skills: { "contract-audit": ["adaptive", 2_300n], "api-spec": ["adaptive", 1_300n] } },
   { slug: "lumen", name: "Lumen", role: "Photo retoucher", description: "Retouching, grading and reframing; cuts video when it has to.", skills: { retouch: ["cost-plus", 1_200n], grade: ["undercutter", 950n], reframe: ["adaptive", 950n], cut: ["cost-plus", 3_100n] } },
+  { slug: "quill", name: "Quill", role: "AI copywriter", description: "Writes brand copy with a NEAR AI Cloud model (private inference inside a TEE, each answer signed by the enclave). Falls back to a template writer when no model is configured.", skills: { copy: ["cost-plus", 800n] }, ai: true },
   { slug: "reel", name: "Reel", role: "Video editor", description: "Storyboards, cuts and captions; retouches frames.", skills: { storyboard: ["adaptive", 1_200n], cut: ["undercutter", 2_900n], captions: ["cost-plus", 750n], retouch: ["noisy", 1_300n] } },
 ];
 
@@ -204,9 +209,9 @@ export const studioMembers = (): FleetMember[] => [
   ...STUDIOS.map((s): FleetMember => ({
     slug: s.slug,
     group: "studios",
-    profile: { name: s.name, role: `${s.kind === "contracts" ? "Smart contract" : s.kind[0]!.toUpperCase() + s.kind.slice(1)} orchestrator`, description: s.description, fleet: true },
+    profile: { name: s.name, role: `Team lead · ${s.product.toLowerCase()}`, description: s.description, fleet: true },
     install: (fleet: Fleet, agent: QuorumAgent) => installLead(fleet, agent, s),
-    buys: [{ key: "main", goal: `[standing] Hire ${s.name}'s team`, services: [...s.roles, "verdict"], budget: 20_000_000n, perJobCap: 10_000n, minRep: 500 }],
+    buys: [{ key: "main", goal: `[standing] Hire the ${s.name.toLowerCase()}`, services: [...s.roles, "verdict"], budget: 20_000_000n, perJobCap: 10_000n, minRep: 500 }],
   })),
   ...FREELANCERS.map((f): FleetMember => ({
     slug: f.slug,
@@ -235,6 +240,7 @@ const WORK: Record<string, Work> = {
     const logo = makeLogo(brief, brief.palette ?? makePalette(brief));
     return { motif: logo.motif, svg: logo.svg, file: fleet.media.put(logo.svg, "svg", { width: 240, height: 240 }) };
   },
+  copy: async (_f, input, f) => writeCopy(input as unknown as DesignBrief, { useModel: !!f.ai }),
   "contract-code": async (_f, input, f) => {
     const code = writeContract(input as unknown as ContractBrief);
     return f.sloppy && Math.random() < f.sloppy ? sloppy(code) : code;
@@ -459,13 +465,22 @@ const PLANS: Record<StudioKind, (c: PlanCtx) => Promise<Record<string, unknown>>
   async design({ fleet, brief, hireRole, step }) {
     const b: DesignBrief = { name: String(brief.name ?? "Untitled").slice(0, 40), vibe: brief.vibe as DesignBrief["vibe"], tagline: brief.tagline ? String(brief.tagline).slice(0, 80) : undefined };
     const vibe = vibeOf(b);
-    const [pal, type] = await Promise.all([hireRole<Palette>("palette", { ...b, vibe }), hireRole<TypeScale>("typeset", { ...b, vibe })]);
+    // copy is a bonus: the kit still ships if no copywriter can be hired
+    const [pal, type, copy] = await Promise.all([
+      hireRole<Palette>("palette", { ...b, vibe }),
+      hireRole<TypeScale>("typeset", { ...b, vibe }),
+      hireRole<BrandCopy>("copy", { ...b, vibe }).catch((err) => (step(`brand copy: no copywriter could be hired (${(err as Error).message})`), null)),
+    ]);
     const failing = pal.result.pairs.filter((p) => !p.aa);
     step(failing.length ? `palette: ${failing.length} pair(s) below WCAG AA` : `palette: all ${pal.result.pairs.length} contrast pairs pass WCAG AA`);
+    if (copy) {
+      const e = copy.result.engine;
+      step(`brand copy by ${copy.seller.name}: ${e.kind === "near-ai" ? `written by ${e.model} on NEAR AI Cloud in ${(e.ms / 1000).toFixed(1)}s${e.signature ? ", signed by the enclave" : ""}` : e.reason}`);
+    }
     const logo = await hireRole<{ motif: string; svg: string; file: MediaRef }>("logo", { ...b, vibe, palette: pal.result });
-    const sheet = makeBrandSheet(b, pal.result, type.result, logo.result.svg);
+    const sheet = makeBrandSheet({ ...b, tagline: b.tagline ?? copy?.result.tagline }, pal.result, type.result, logo.result.svg);
     step(`brand sheet assembled (${logo.result.motif} mark, ${type.result.display} / ${type.result.text})`);
-    return { name: b.name, vibe, palette: pal.result, type: type.result, logo: logo.result.file, motif: logo.result.motif, sheet: fleet.media.put(sheet, "svg", { width: 960, height: 540 }) };
+    return { name: b.name, vibe, palette: pal.result, type: type.result, logo: logo.result.file, motif: logo.result.motif, copy: copy?.result ?? null, sheet: fleet.media.put(sheet, "svg", { width: 960, height: 540 }) };
   },
 
   async contracts({ fleet, brief, hireRole, step, rec, intentId, studio, refund }) {
