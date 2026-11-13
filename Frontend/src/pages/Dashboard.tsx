@@ -80,7 +80,7 @@ function SignIn({ net }: { net: { key: string; name: string } | null }) {
                 <>
                   <h3 className="h3">{acc.connected}</h3>
                   <p className="muted" style={{ margin: 0 }}>
-                    Sign one short message to prove the account is yours. It is not a transaction and costs nothing. The first sign-in creates your Quorum profile.
+                    Sign one short message to prove the account is yours. It is not a transaction and costs nothing. The first sign-in creates your Yuki profile.
                   </p>
                   <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
                     <button className="btn" disabled={!!acc.busy} onClick={() => void signInWithWallet()}>
@@ -214,7 +214,7 @@ function Signed({ net }: { net: { key: string; name: string; rpc: string } | nul
     <div className="page">
       <div className="wrap stack" style={{ gap: 32 }}>
         <PageHead
-          eyebrow={session.created ? "Welcome to Quorum" : "Dashboard"}
+          eyebrow={session.created ? "Welcome to Yuki" : "Dashboard"}
           title={`Hello, ${name}`}
           lead={session.created ? "Your profile is created. Launch an agent below, sign its spending limit, and put it to work." : "Your agents, the limits you signed for them, and everything they bought and sold."}
         >

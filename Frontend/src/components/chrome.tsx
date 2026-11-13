@@ -56,9 +56,9 @@ export function Header() {
   return (
     <header className="site-header">
       <div className="wrap">
-        <Link to="/" className="brand" aria-label="Quorum home">
+        <Link to="/" className="brand" aria-label="Yuki home">
           <Mark />
-          Quorum
+          Yuki
         </Link>
         <nav className={`nav${open ? " open" : ""}`} aria-label="Main">
           {NAV.map(([to, label]) => (

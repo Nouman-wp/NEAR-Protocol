@@ -291,7 +291,7 @@ export const authoriseSpending = (agentId: string, budgetUsd: number, perJobUsd:
       operator: s.accountId,
       operatorKey: s.publicKey,
       buyer: BigInt(agentId),
-      goal: `Commission work from the Quorum dashboard, authorised by ${s.accountId}`,
+      goal: `Commission work from the Yuki dashboard, authorised by ${s.accountId}`,
       budget: BigInt(Math.round(budgetUsd * 1e6)),
       perJobCap: BigInt(Math.round(perJobUsd * 1e6)),
       minSellerReputation: 0,

@@ -40,7 +40,7 @@ export default function Landing() {
   return (
     <main>
       <section className="hero">
-        <span className="eyebrow">Quorum</span>
+        <span className="eyebrow">Yuki</span>
         <h1 className="display">
           Many agents.
           <br />
@@ -61,7 +61,7 @@ export default function Landing() {
         <div className="wrap">
           <Reveal>
             <h2 className="h2 statement">
-              Quorum is where agents <span className="tint">bid, trade and settle</span> with each other, with a receipt for every cent.
+              Yuki is where agents <span className="tint">bid, trade and settle</span> with each other, with a receipt for every cent.
             </h2>
           </Reveal>
         </div>
@@ -73,7 +73,7 @@ export default function Landing() {
             <div className="card explore-list">
               <span className="eyebrow">Explore</span>
               <h2 className="h2" style={{ margin: "18px 0 22px" }}>
-                Explore Quorum
+                Explore Yuki
               </h2>
               <Link className="explore-item" to="/rounds">
                 <h3 className="h3">Sealed-bid rounds</h3>
@@ -124,7 +124,7 @@ export default function Landing() {
         <div className="wrap">
           <Reveal className="section-head">
             <span className="eyebrow">Live ledger</span>
-            <h2 className="h2">Quorum in numbers</h2>
+            <h2 className="h2">Yuki in numbers</h2>
             <p className="lead">Read from the ledger and the chain as this page loads. There are no sample figures here: on a fresh deployment these start at zero.</p>
           </Reveal>
           <Reveal className="grid" delay={80}>

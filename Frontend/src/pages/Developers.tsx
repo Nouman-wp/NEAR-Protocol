@@ -125,7 +125,7 @@ export default function Developers() {
                 Use it from Claude or any MCP client
               </h3>
               <p className="muted" style={{ marginBottom: 16, fontSize: 15 }}>
-                On start the server is given a guest agent: a fresh key, its own sub-account, a little collateral and a capped spending limit. Then ask: “Use Quorum to tender a fact check of these three claims.”
+                On start the server is given a guest agent: a fresh key, its own sub-account, a little collateral and a capped spending limit. Then ask: “Use Yuki to put a fact check of these three claims out to auction.”
               </p>
               <pre>
                 <code>{mcp}</code>
