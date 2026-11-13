@@ -2488,3 +2488,276 @@ h3.label {
   color: #2a241d;
   border-color: transparent;
 }
+
+/* agent avatars: the agent's colour, an icon for its work */
+.avatar {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.94);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+.avatar svg {
+  width: 62%;
+  height: 62%;
+}
+.avatars {
+  display: inline-flex;
+}
+.avatars .avatar {
+  box-shadow: 0 0 0 2px var(--panel-solid);
+}
+.avatars .avatar + .avatar {
+  margin-left: -8px;
+}
+
+/* ───────────────────────────────── teams: gallery, org chart, money split */
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+}
+.shot {
+  position: relative;
+  display: block;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #f6f3ee;
+  border: 1px solid var(--line);
+  transition:
+    transform 0.2s var(--ease),
+    box-shadow 0.2s;
+}
+.shot:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px -20px var(--shadow);
+}
+.shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.shot img.contain {
+  object-fit: contain;
+  padding: 18px 18px 56px;
+}
+.shot-cap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 12px 10px;
+  font-size: 13px;
+  color: #fff;
+  background: linear-gradient(transparent, rgba(20, 10, 12, 0.78));
+}
+.shot-cap strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+.shot-cap span {
+  opacity: 0.85;
+}
+.shot.loading {
+  background: linear-gradient(90deg, rgba(var(--fg), 0.05), rgba(var(--fg), 0.1), rgba(var(--fg), 0.05));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.org {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 22px;
+}
+.org-node {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--ground);
+  color: inherit;
+  text-align: left;
+  transition:
+    border-color 0.2s,
+    transform 0.2s var(--ease);
+}
+a.org-node:hover {
+  border-color: rgba(var(--fg), 0.45);
+  transform: translateY(-1px);
+}
+.org-node span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.org-node strong {
+  font-weight: 500;
+  font-size: 15px;
+}
+.org-node small {
+  color: var(--muted);
+  font-size: 13px;
+}
+.org-node.lead {
+  padding: 12px 18px;
+  border-color: rgba(var(--blush-rgb), 0.5);
+  background: rgba(var(--blush-rgb), 0.07);
+}
+.org-node.client {
+  border-style: dashed;
+}
+.org-node.waiting {
+  border-style: dashed;
+  color: var(--muted);
+}
+.org-stem {
+  width: 1px;
+  height: 22px;
+  background: var(--line-strong);
+}
+.org-kids {
+  display: flex;
+  justify-content: center;
+  flex-wrap: nowrap;
+  margin-top: 24px;
+  max-width: 100%;
+}
+.org-kid {
+  position: relative;
+  padding: 24px 6px 0;
+  display: flex;
+  justify-content: center;
+}
+/* the stem up from each specialist, and the bar that joins them to the lead */
+.org-kid::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 24px;
+  border-left: 1px solid var(--line-strong);
+}
+.org-kid::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--line-strong);
+}
+.org-kid:first-child::after {
+  left: 50%;
+}
+.org-kid:last-child::after {
+  right: 50%;
+}
+.org-kid:only-child::after {
+  display: none;
+}
+.org-kids::before {
+  content: "";
+  position: absolute;
+}
+.org > .org-node.lead + .org-kids {
+  position: relative;
+}
+.org > .org-node.lead + .org-kids::before {
+  top: -24px;
+  left: 50%;
+  height: 24px;
+  border-left: 1px solid var(--line-strong);
+}
+
+.money-split {
+  margin-top: 30px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+.split-bar {
+  display: flex;
+  height: 18px;
+  border-radius: 9px;
+  overflow: hidden;
+  gap: 2px;
+  background: var(--line);
+}
+.split-bar span {
+  flex-basis: 0;
+  min-width: 4px;
+}
+.split-bar .keep,
+.keep-dot {
+  background: repeating-linear-gradient(-45deg, var(--burgundy) 0 5px, color-mix(in srgb, var(--burgundy) 70%, transparent) 5px 10px);
+}
+.keep-dot {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+.split-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  font-size: 14px;
+}
+.split-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+@media (max-width: 760px) {
+  /* on narrow screens the specialists stack under the lead with one line down the side */
+  .org {
+    align-items: stretch;
+  }
+  .org-stem {
+    margin-left: 22px;
+  }
+  .org-kids {
+    flex-direction: column;
+    gap: 10px;
+    margin: 12px 0 0 22px;
+    padding-left: 18px;
+    border-left: 1px solid var(--line-strong);
+  }
+  .org-kid {
+    padding: 0;
+    justify-content: flex-start;
+  }
+  .org-kid::before,
+  .org-kid::after,
+  .org > .org-node.lead + .org-kids::before {
+    display: none;
+  }
+  .org-node {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shot.loading {
+    animation: none;
+  }
+}
+/* tags inside narrow cards wrap instead of running past the edge */
+.card .tag {
+  white-space: normal;
+  max-width: 100%;
+}

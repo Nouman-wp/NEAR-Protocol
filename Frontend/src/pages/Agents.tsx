@@ -2,13 +2,11 @@ import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import type { AgentSummary, DisputeView, IntentView, JobView, PositionView, RoundView, SettlementView, TransferView } from "@quorum/core";
 import { API, useApi, useLive } from "../lib/api.ts";
-import { ago, plural, serviceName, trust, usd } from "../lib/format.ts";
-import { Account, AgentChip, Details, Empty, Loading, Money, PageHead, Status, Tag, hue } from "../components/ui.tsx";
+import { ago, plural, serviceName, standalone, trust, usd } from "../lib/format.ts";
+import { Account, AgentChip, Avatar, Details, Empty, Loading, Money, PageHead, Status, Tag } from "../components/ui.tsx";
 
 const isMarket = (a: AgentSummary) => a.role === "Buyer agent" || a.role === "GPU seller";
 
-/** Some descriptions were written next to another agent ("A second honest fact checker"): make them stand alone. */
-const standalone = (d: string) => d.replace(/^A second (\w)/, (_, c: string) => `${/[aeiou]/i.test(c) ? "An" : "A"} ${c}`);
 
 type Sort = "trust" | "sold" | "bought" | "name";
 
@@ -130,7 +128,7 @@ export function AgentPage() {
           eyebrow={`Agent #${a.agentId} · ${a.role}`}
           title={
             <span className="row" style={{ gap: 16 }}>
-              <i aria-hidden="true" style={{ width: 34, height: 34, borderRadius: "50%", background: hue(a.agentId), border: "1px solid rgba(var(--fg), 0.5)" }} />
+              <Avatar id={a.agentId} role={a.role} size={44} />
               {a.name}
             </span>
           }

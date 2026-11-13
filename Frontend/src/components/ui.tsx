@@ -3,13 +3,9 @@ import { Link } from "react-router";
 import type { AgentSummary } from "@quorum/core";
 import { clock, explorerAccount, explorerTx, short, statusName, usd, usdExact } from "../lib/format.ts";
 import { useLive } from "../lib/api.ts";
+import { Avatar, hue } from "./Avatar.tsx";
 
-/** A stable colour per agent from the brand's range: burgundy through blush to sage. */
-export function hue(id: string | number): string {
-  // mid tones that read on both the off-white and the burgundy ground
-  const palette = ["#c8707f", "#8c2c40", "#7b836e", "#b8956a", "#a35d6c", "#5e6852", "#d9a8b1", "#9aa58a"];
-  return palette[Number(id) % palette.length]!;
-}
+export { Avatar, hue };
 
 /** ↗ : only for links that open somewhere else (GitHub, the NEAR explorer, a download). */
 export const Arrow = () => (
@@ -41,7 +37,7 @@ export function AgentChip({ id, agents, link = true }: { id: string | null | und
   const a = (agents ?? live.agents).find((x) => x.agentId === id);
   const body = (
     <>
-      <i style={{ background: hue(id) }} />
+      <Avatar id={id} role={a?.role} />
       <span>{a?.name ?? `Agent #${id}`}</span>
     </>
   );

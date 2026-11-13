@@ -173,6 +173,9 @@ export function score(n: number | null | undefined): string {
   return (n / 10).toFixed(1);
 }
 
+/** Some agent descriptions were written next to another agent ("A second honest fact checker"): make them stand alone. */
+export const standalone = (d: string) => d.replace(/^A second (\w)/, (_, c: string) => `${/[aeiou]/i.test(c) ? "An" : "A"} ${c}`);
+
 /** Trust score out of 100: "90/100". */
 export function trust(n: number | null | undefined): string {
   if (n === null || n === undefined) return "—";

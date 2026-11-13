@@ -1,8 +1,8 @@
 import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
-import { fleet } from "../lib/api.ts";
-import { ago, plural, serviceName, teamName, titleCase, usd, usdExact } from "../lib/format.ts";
-import { AgentChip, Details, Empty, Go, Money, PageHead, Reveal, Status, Tag } from "../components/ui.tsx";
+import { fleet, useLive } from "../lib/api.ts";
+import { ago, plural, serviceName, standalone, teamName, titleCase, usd, usdExact } from "../lib/format.ts";
+import { AgentChip, Avatar, Details, Empty, Go, Money, PageHead, Reveal, Status, Tag, hue } from "../components/ui.tsx";
 
 interface Bidder {
   slug: string;
@@ -213,8 +213,73 @@ function OrderForm({ studios }: { studios: StudioInfo[] }) {
   );
 }
 
+/** The one picture that sums up each kind of order, if it has one. */
+function cover(kind: string, d: Record<string, unknown> | null | undefined): { url: string; contain: boolean } | null {
+  if (!d) return null;
+  const m = (x: unknown) => (x && typeof x === "object" && "url" in x ? (x as Media).url : null);
+  if (kind === "design") return m(d.logo) ? { url: m(d.logo)!, contain: true } : null;
+  if (kind === "photo") return m(d.graded) ? { url: m(d.graded)!, contain: false } : null;
+  if (kind === "video") return m((d.cut as { gif?: Media } | undefined)?.gif) ? { url: m((d.cut as { gif: Media }).gif)!, contain: false } : null;
+  return null;
+}
+
+/** Recent work: thumbnails from the latest finished orders that produce pictures. */
+function RecentWork({ jobs, studios }: { jobs: StudioJob[]; studios: StudioInfo[] }) {
+  const picks = jobs.filter((j) => j.status === "done" && ["design", "photo", "video"].includes(j.studio)).slice(0, 8);
+  const key = picks.map((j) => j.id).join(",");
+  const [items, setItems] = useState<{ job: StudioJob; url: string; contain: boolean }[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    Promise.all(picks.map((j) => fleet<StudioJob>(`/control/studios/${j.id}`).catch(() => null))).then((full) => {
+      if (!alive) return;
+      setItems(
+        full.flatMap((j) => {
+          const c = j ? cover(j.studio, j.deliverables) : null;
+          return j && c ? [{ job: j, ...c }] : [];
+        }),
+      );
+    });
+    return () => {
+      alive = false;
+    };
+    // only refetch when the set of finished orders changes, not on every poll
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  if (picks.length === 0) return null;
+  return (
+    <section className="stack stack-md">
+      <h2 className="h3">Recent work</h2>
+      {items === null ? (
+        <div className="gallery">
+          {picks.map((j) => (
+            <div key={j.id} className="shot loading" aria-hidden="true" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <div className="card">
+          <Empty>No pictures yet. Order from the Design, Photo or Marketing Team.</Empty>
+        </div>
+      ) : (
+        <div className="gallery">
+          {items.map(({ job, url, contain }) => (
+            <Link key={job.id} to={`/studios/${job.id}`} className="shot">
+              <img src={url} alt={`${titleCase(job.label)}, by the ${studios.find((s) => s.kind === job.studio)?.name ?? teamName(job.studio)}`} loading="lazy" className={contain ? "contain" : ""} />
+              <span className="shot-cap">
+                <strong>{titleCase(job.label, 28)}</strong>
+                <span>{studios.find((s) => s.kind === job.studio)?.name ?? teamName(job.studio)}</span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+type Who = Map<string, { agentId: string | null; role: string; name: string }>;
+
 function aiLabel(ai: AiStatus): string {
-  return ai.enabled ? `Writing with NEAR AI · ${ai.model.split("/").pop()}` : "Writing with the built-in template right now (AI model offline)";
+  return ai.enabled ? `NEAR AI on · ${ai.model.split("/").pop()}` : "AI offline · using the template";
 }
 
 export function StudiosPage() {
@@ -235,6 +300,7 @@ export function StudiosPage() {
         ) : (
           <>
             <OrderForm studios={data.studios} />
+            <RecentWork jobs={data.jobs} studios={data.studios} />
             <section className="stack stack-md">
               <h2 className="h3">Recent orders</h2>
               {data.jobs.length === 0 ? (
@@ -259,7 +325,7 @@ export function StudiosPage() {
               <div className="fill-grid">
                 {data.studios.map((s, i) => (
                   <Reveal key={s.kind} delay={i * 60}>
-                    <StudioCard s={s} />
+                    <StudioCard s={s} who={new Map(data.freelancers.map((f) => [f.slug, { agentId: f.agentId, role: f.role, name: f.name }]))} />
                   </Reveal>
                 ))}
               </div>
@@ -272,9 +338,14 @@ export function StudiosPage() {
               <div className="agent-grid">
                 {data.freelancers.map((f) => (
                   <div key={f.slug} className="card stack stack-sm">
-                    <div className="spread">
-                      <strong>{f.name}</strong>
-                      <span className="faint">{f.role}</span>
+                    <div className="row" style={{ gap: 12, flexWrap: "nowrap" }}>
+                      <Avatar id={f.agentId ?? f.slug.length} role={f.role} size={40} />
+                      <div className="stack" style={{ gap: 0 }}>
+                        <strong>{f.name}</strong>
+                        <span className="faint" style={{ fontSize: 14 }}>
+                          {f.role}
+                        </span>
+                      </div>
                     </div>
                     {f.ai && data.ai && (
                       <div>
@@ -282,7 +353,7 @@ export function StudiosPage() {
                       </div>
                     )}
                     <p className="muted" style={{ margin: 0 }}>
-                      {f.ai ? "Writes brand copy with a private AI model on NEAR AI Cloud, or with a built-in template when the model is offline." : f.description}
+                      {f.ai ? "Writes brand copy with a private AI model on NEAR AI Cloud, or with a built-in template when the model is offline." : standalone(f.description)}
                     </p>
                     <p style={{ margin: 0, fontSize: 14 }}>
                       <span className="faint">Bids on: </span>
@@ -304,7 +375,9 @@ export function StudiosPage() {
   );
 }
 
-function StudioCard({ s }: { s: StudioInfo }) {
+function StudioCard({ s, who }: { s: StudioInfo; who: Who }) {
+  // everyone this team invites to bid, once each
+  const crew = [...new Map(s.roles.flatMap((r) => r.bidders).map((b) => [b.slug, b])).values()];
   return (
     <div className="card stack stack-md" style={{ height: "100%" }}>
       <div className="spread">
@@ -313,10 +386,24 @@ function StudioCard({ s }: { s: StudioInfo }) {
           {usd(s.price)}
         </span>
       </div>
-      <h3 className="h3">{s.name}</h3>
+      <div className="row" style={{ gap: 12, flexWrap: "nowrap" }}>
+        {s.agentId && <Avatar id={s.agentId} role="Team lead" size={44} />}
+        <h3 className="h3">{s.name}</h3>
+      </div>
       <p className="muted" style={{ margin: 0 }}>
         {s.description}
       </p>
+      <div className="row" style={{ gap: 10 }}>
+        <span className="avatars">
+          {crew.map((b) => {
+            const w = who.get(b.slug);
+            return <Avatar key={b.slug} id={w?.agentId ?? b.slug.length} role={w?.role} size={28} title={`${b.name}${w ? ` · ${w.role}` : ""}`} />;
+          })}
+        </span>
+        <span className="faint" style={{ fontSize: 14 }}>
+          Hires from {plural(crew.length, "specialist")}
+        </span>
+      </div>
       <dl className="kv" style={{ gridTemplateColumns: "auto 1fr" }}>
         {s.roles.map((r) => (
           <Fragment key={r.service}>
@@ -368,6 +455,103 @@ function JobRow({ j, studio }: { j: StudioJob; studio?: StudioInfo }) {
 
 // ------------------------------------------------------------------ one order
 
+/** Who did what: the buyer, the team lead, and the specialists it hired, with what each was paid. */
+function TeamChart({ job }: { job: StudioJob }) {
+  const live = useLive();
+  const leadName = teamName(job.studio);
+  const lead = live.agents.find((a) => a.name === leadName);
+  const role = (agentId: string) => live.agents.find((a) => a.agentId === agentId)?.role;
+  const total = BigInt(job.price);
+  const margin = total - BigInt(job.spent);
+  const paid = job.team.filter((t) => t.winner && t.price);
+  return (
+    <div className="card">
+      <h2 className="h3">Who did the work</h2>
+      <div className="org">
+        {job.client && (
+          <Link className="org-node client" to={`/agents/${job.client.agentId}`}>
+            <Avatar id={job.client.agentId} role={role(job.client.agentId) ?? "Client"} size={32} />
+            <span>
+              <strong>{job.client.name}</strong>
+              <small>ordered for {usd(job.price)}</small>
+            </span>
+          </Link>
+        )}
+        <span className="org-stem" aria-hidden="true" />
+        {lead ? (
+          <Link className="org-node lead" to={`/agents/${lead.agentId}`}>
+            <Avatar id={lead.agentId} role={lead.role} size={44} />
+            <span>
+              <strong>{leadName}</strong>
+              <small>Team lead{job.finishedAt ? ` · kept ${usd(margin)}` : ""}</small>
+            </span>
+          </Link>
+        ) : (
+          <div className="org-node lead">
+            <strong>{leadName}</strong>
+          </div>
+        )}
+        <div className="org-kids" role="list">
+          {job.team.map((t) => (
+            <div key={t.role} className="org-kid" role="listitem">
+              {t.winner ? (
+                <Link className="org-node" to={t.jobId ? `/jobs/${t.jobId}` : `/agents/${t.winner.agentId}`}>
+                  <Avatar id={t.winner.agentId} role={role(t.winner.agentId)} size={36} />
+                  <span>
+                    <strong>{t.winner.name}</strong>
+                    <small>
+                      {t.name} · {t.price ? usd(t.price) : "…"}
+                    </small>
+                  </span>
+                </Link>
+              ) : (
+                <div className="org-node waiting">
+                  <span className="spinner" aria-hidden="true" />
+                  <span>
+                    <strong>{t.name}</strong>
+                    <small>{t.roundId ? `Auction #${t.roundId}` : "Hiring…"}</small>
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {paid.length > 0 && total > 0n && (
+        <div className="money-split">
+          <div className="spread" style={{ marginBottom: 10 }}>
+            <h3 className="label">Where the {usd(total)} went</h3>
+            <span className="faint" style={{ fontSize: 14 }}>
+              {Math.round(Number((BigInt(job.spent) * 1000n) / total) / 10)}% to the specialists
+            </span>
+          </div>
+          <div className="split-bar" role="img" aria-label={`${paid.map((t) => `${t.winner!.name} ${usd(t.price)}`).join(", ")}, team lead keeps ${usd(margin)}`}>
+            {paid.map((t) => (
+              <span key={t.role} style={{ flexGrow: Number(BigInt(t.price!)), background: hue(t.winner!.agentId) }} title={`${t.winner!.name} · ${t.name} · ${usd(t.price)}`} />
+            ))}
+            {margin > 0n && <span className="keep" style={{ flexGrow: Number(margin) }} title={`Team lead keeps ${usd(margin)}`} />}
+          </div>
+          <ul className="split-legend">
+            {paid.map((t) => (
+              <li key={t.role}>
+                <Avatar id={t.winner!.agentId} role={role(t.winner!.agentId)} size={18} />
+                {t.winner!.name} <span className="faint">{t.name.toLowerCase()}</span> <span className="num">{usd(t.price)}</span>
+              </li>
+            ))}
+            {margin > 0n && (
+              <li>
+                <span className="keep-dot" aria-hidden="true" />
+                Team lead keeps <span className="num">{usd(margin)}</span>
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function StudioJobPage() {
   const { id = "" } = useParams();
   const [job, setJob] = useState<StudioJob | null>(null);
@@ -415,9 +599,11 @@ export function StudioJobPage() {
           <Status value={job.status === "done" ? "delivered" : job.status === "failed" ? "failed" : "Open"} />
         </PageHead>
 
+        <TeamChart job={job} />
+
         <div className="grid g2 balance">
           <div className="card stack stack-md">
-            <h2 className="h3">The team</h2>
+            <h2 className="h3">The auctions</h2>
             <div className="table-wrap">
               <table className="cards">
                 <thead>
@@ -466,20 +652,6 @@ export function StudioJobPage() {
                 </tbody>
               </table>
             </div>
-            <dl className="kv" style={{ gridTemplateColumns: "1fr auto" }}>
-              <dt>The order paid</dt>
-              <dd>
-                <Money v={job.price} />
-              </dd>
-              <dt>Paid to the team</dt>
-              <dd>
-                <Money v={job.spent} />
-              </dd>
-              <dt>The lead keeps</dt>
-              <dd>
-                <Money v={margin.toString()} />
-              </dd>
-            </dl>
           </div>
           <div className="card stack stack-sm">
             <h2 className="h3">What happened</h2>
