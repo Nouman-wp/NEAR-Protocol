@@ -132,7 +132,7 @@ intake ──> challenge ──> closing ──> settling ──> sealed
 | sealed | The epoch has its receipt |
 
 1. Default lengths are intake 75 s, challenge 18 s, a dispute window of 12 s after each delivery, and an arbitration timeout of 15 s. A local sandbox runs shorter. **[service]**
-2. At the close, a job never delivered is voided: it is never paid and its budget returns to the intent. A dispute still open after the arbitration timeout holds its IOU out of the epoch (§5). **[service]**
+2. At the close, a job still being worked on gets a grace period (60 s by default) to deliver, and a job delivered in it keeps its full dispute window. A job still undelivered after that is voided: it is never paid and its budget returns to the intent. A dispute still open after the arbitration timeout holds its IOU out of the epoch (§5). **[service]**
 3. The clearer posts the IOUs in strictly ascending (buyer, nonce) order, in chunks of up to 200. For every IOU the contract checks that **[contract]**:
    - it names this epoch;
    - it comes after the previous IOU in that order;

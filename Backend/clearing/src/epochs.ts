@@ -13,6 +13,8 @@ export interface EpochTimings {
   intakeSeconds: number;
   challengeSeconds: number;
   arbitrationTimeoutSeconds: number;
+  /** how long closing waits for jobs still in flight before it voids them */
+  jobGraceSeconds?: number;
   postChunkSize: number;
   writeReputation: boolean;
   /** write scores on chain every N epochs (scores are cumulative, so nothing is lost) */
@@ -175,6 +177,19 @@ export class EpochEngine {
 
   private async close(e: EpochRow): Promise<void> {
     const now = Date.now();
+
+    // 0. work still in flight gets a grace period: a job accepted late in the epoch (a team
+    //    commission takes about a minute) can still deliver, and a job delivered in that time
+    //    keeps its full dispute window. The tick calls close again until nothing is in flight.
+    if (now < e.challenge_ends_at + (this.t.jobGraceSeconds ?? 0) * 1000) {
+      const inFlight = this.db.get<{ n: number }>(
+        `SELECT COUNT(*) AS n FROM ious i JOIN jobs j ON j.id = i.job_id
+         WHERE i.epoch = ? AND i.status = 'pending' AND (j.status = 'accepted' OR (j.status = 'delivered' AND j.challenge_ends_at > ?))`,
+        e.id,
+        now,
+      )!.n;
+      if (inFlight > 0) return;
+    }
 
     // 1. a job never delivered is never paid for
     const undelivered = this.db.all<IouRow & { intent_id: string | null }>(

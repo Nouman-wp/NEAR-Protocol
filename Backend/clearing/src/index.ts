@@ -48,6 +48,7 @@ async function main(): Promise<void> {
     intakeSeconds: cfg.EPOCH_INTAKE_SECONDS,
     challengeSeconds: cfg.EPOCH_CHALLENGE_SECONDS,
     arbitrationTimeoutSeconds: cfg.ARBITRATION_TIMEOUT_SECONDS,
+    jobGraceSeconds: cfg.JOB_GRACE_SECONDS,
     postChunkSize: cfg.POST_CHUNK_SIZE,
     writeReputation: cfg.WRITE_REPUTATION_ONCHAIN === "true",
     reputationStride: cfg.REPUTATION_EPOCH_STRIDE,

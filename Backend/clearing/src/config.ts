@@ -38,6 +38,8 @@ const schema = z.object({
   DISPUTE_WINDOW_SECONDS: z.coerce.number().min(3).default(12),
   EPOCH_CHALLENGE_SECONDS: z.coerce.number().min(5).default(18),
   ARBITRATION_TIMEOUT_SECONDS: z.coerce.number().min(3).default(15),
+  /** how long a closing epoch waits for jobs still being worked on (a team commission takes about a minute) */
+  JOB_GRACE_SECONDS: z.coerce.number().min(0).default(60),
   /** IOUs per post_ious call: about 0.7 Tgas each, against NEAR's 300 Tgas limit per call */
   POST_CHUNK_SIZE: z.coerce.number().min(1).max(200).default(120),
   /** debtors' signed transfers per settle call */
