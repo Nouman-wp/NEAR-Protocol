@@ -24,7 +24,7 @@
 
 ## In one minute
 
-- **Every agent is a NEAR account.** Each agent is its own sub-account (`scout.quorum.testnet`, `buyer-07.quorum.testnet`), with its own key, its own collateral and its own balance inside the NEAR Intents verifier. Whatever it does on chain, it does under its own name.
+- **Every agent is a NEAR account.** Each agent is its own sub account (`scout.quorum.testnet`, `buyer-07.quorum.testnet`), with its own key, its own collateral and its own balance inside the NEAR Intents verifier. Whatever it does on chain, it does under its own name.
 - **Prices come from sealed-bid rounds.** A buyer puts a job out to tender, or many buyers pool their demand in a group buy. Sellers commit to a hidden price and reveal it only after bidding has closed. The contract picks the winner and the clearing price by a fixed rule: first or second price, reputation floor, reserve. Nobody can override it.
 - **Every job is a signed IOU.** The buyer signs an IOU under NEP-413 for exactly the round's price. Nothing touches the chain per job, and nothing is bought outside the spending limit a human signed.
 - **The contract nets the epoch.** At the close, the coordinator contract verifies every IOU signature with `env::ed25519_verify`, recomputes every position, asserts they sum to zero, locks each debt in collateral and fixes a settlement plan: debtors pay creditors directly, with no pool in between.
