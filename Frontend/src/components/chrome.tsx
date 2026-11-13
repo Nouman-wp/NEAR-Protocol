@@ -3,28 +3,27 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { useLive } from "../lib/api.ts";
 import { useTheme } from "../lib/theme.ts";
 import { connectWallet, network, useAccount, walletsSupported } from "../lib/account.ts";
-import { Arrow, Mark } from "./ui.tsx";
+import { Arrow, Go, Mark } from "./ui.tsx";
 
 export const REPO = "https://github.com/Nouman-wp/NEAR-Protocol";
 
+/** The five places a visitor needs. Everything else lives in the footer and in-page links. */
 const NAV = [
-  ["/floor", "Live floor"],
-  ["/studios", "Studios"],
-  ["/rounds", "Rounds"],
-  ["/epochs", "Epochs"],
-  ["/agents", "Agents"],
-  ["/verify", "Verify"],
-  ["/developers", "Developers"],
+  ["/floor", "Live"],
+  ["/rounds", "Auctions"],
+  ["/epochs", "Settle-ups"],
+  ["/studios", "Teams"],
+  ["/verify", "Check it"],
 ] as const;
 
-/** Replaces the old "Open the floor" button: connect a wallet, or go to your dashboard. */
-function AccountButton() {
+/** Connect a wallet, or go to your agents once signed in. */
+function AccountButton({ className = "" }: { className?: string }) {
   const acc = useAccount();
   const navigate = useNavigate();
   if (acc.session) {
     const id = acc.session.accountId;
     return (
-      <Link to="/dashboard" className="btn sm account-btn" title={id}>
+      <Link to="/dashboard" className={`btn sm account-btn ${className}`} title={id}>
         <i className="account-dot" aria-hidden="true" />
         <span className="lbl-full">{id.length > 22 ? `${id.slice(0, 10)}…${id.slice(-9)}` : id}</span>
         <span className="lbl-short">{id.length > 12 ? `${id.slice(0, 10)}…` : id}</span>
@@ -37,10 +36,9 @@ function AccountButton() {
     if (net && walletsSupported(net.key) && !acc.connected) await connectWallet();
   };
   return (
-    <button className="btn sm account-btn" onClick={() => void go()}>
+    <button className={`btn sm account-btn ${className}`} onClick={() => void go()}>
       <span className="lbl-full">{acc.connected ? "Sign in" : "Connect wallet"}</span>
       <span className="lbl-short">{acc.connected ? "Sign in" : "Connect"}</span>
-      <Arrow />
     </button>
   );
 }
@@ -53,6 +51,8 @@ export function Header() {
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
+  const net = live.stats?.network.name ?? "";
+  const testnet = /test|sandbox|local/i.test(net);
   return (
     <header className="site-header">
       <div className="wrap">
@@ -66,9 +66,15 @@ export function Header() {
               {label}
             </NavLink>
           ))}
+          <NavLink to="/dashboard" className={({ isActive }) => `nav-account${isActive ? " on" : ""}`}>
+            Your agents
+          </NavLink>
         </nav>
-        <span className={`live-dot${live.connected ? "" : " off"}`} title={live.stats?.intents.note}>
-          {live.connected ? (live.stats?.network.name ?? "Live") : "Connecting"}
+        <span
+          className={`live-dot${live.connected ? "" : " off"}`}
+          title={live.connected ? (testnet ? "Test network. No real money moves." : `Live on ${net}`) : "Connecting to the live feed"}
+        >
+          <span className="live-text">{live.connected ? (testnet ? "Testnet" : net || "Live") : "Connecting"}</span>
         </span>
         <button className="theme-btn" onClick={toggleTheme} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} title={theme === "dark" ? "Light mode" : "Dark mode"}>
           {theme === "dark" ? (
@@ -82,8 +88,9 @@ export function Header() {
             </svg>
           )}
         </button>
-        <AccountButton />
-        <button className="menu-btn label" aria-label="Menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {/* the dashboard has its own sign-in, so the header does not repeat it there */}
+        {pathname !== "/dashboard" && <AccountButton className="header-account" />}
+        <button className="menu-btn" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} onClick={() => setOpen(!open)}>
           <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
             {open ? <path d="M4 4l10 10M14 4 4 14" /> : <path d="M2.5 5h13M2.5 9h13M2.5 13h13" />}
           </svg>
@@ -97,43 +104,66 @@ export function Header() {
 export function Footer() {
   const live = useLive();
   const s = live.stats;
+  const { pathname } = useLocation();
+  const home = pathname === "/";
   return (
-    <footer className="site-footer">
+    <footer className={`site-footer${home ? " big" : ""}`}>
       <div className="wrap">
-        <div className="top">
-          <h2 className="h2" style={{ maxWidth: 420 }}>
-            Many agents.
-            <br />
-            One economy.
-          </h2>
-          <div style={{ textAlign: "right" }}>
-            <p className="h3" style={{ marginBottom: 20 }}>
-              Run the whole market yourself
-            </p>
-            <a className="btn" href={`${REPO}#run-it`} target="_blank" rel="noreferrer">
-              Get the code <Arrow />
-            </a>
+        {home && (
+          <div className="top">
+            <h2 className="h2" style={{ maxWidth: 520 }}>
+              AI agents keep a tab.
+              <br />
+              Yuki settles it.
+            </h2>
+            <div className="row">
+              <Link className="btn" to="/floor">
+                See it live <Go />
+              </Link>
+              <a className="btn ghost" href={`${REPO}#run-it`} target="_blank" rel="noreferrer">
+                Get the code <Arrow />
+              </a>
+            </div>
           </div>
-        </div>
+        )}
         <div className="links">
-          {NAV.map(([to, label]) => (
-            <Link key={to} to={to}>
-              {label}
-            </Link>
-          ))}
-          <Link to="/disputes">Disputes</Link>
-          <a href={`${REPO}/blob/main/RULES.md`} target="_blank" rel="noreferrer">
-            Rules
-          </a>
-          <a href={REPO} target="_blank" rel="noreferrer">
-            GitHub
-          </a>
+          <nav aria-label="Explore">
+            <span className="eyebrow">Explore</span>
+            <Link to="/floor">Live</Link>
+            <Link to="/rounds">Auctions</Link>
+            <Link to="/epochs">Settle-ups</Link>
+            <Link to="/studios">Teams</Link>
+            <Link to="/agents">Agents</Link>
+            <Link to="/disputes">Complaints</Link>
+          </nav>
+          <nav aria-label="Check">
+            <span className="eyebrow">Check</span>
+            <Link to="/verify">Check it yourself</Link>
+            <a href={`${REPO}/blob/main/RULES.md`} target="_blank" rel="noreferrer">
+              Rules
+            </a>
+          </nav>
+          <nav aria-label="Build">
+            <span className="eyebrow">Build</span>
+            <Link to="/developers">Developers</Link>
+            <a href={REPO} target="_blank" rel="noreferrer">
+              GitHub
+            </a>
+            <Link to="/dashboard">Your agents</Link>
+          </nav>
         </div>
         <div className="base">
-          <span>Built for NEAR Hackathon · AI Swarms and Agent Economy</span>
-          <span>
-            {s ? `${s.network.name} · coordinator ${s.deployment?.contract} · settles through ${s.intents.account}` : "Waiting for the clearing service"}
-          </span>
+          <span>Yuki · built for the NEAR Hackathon</span>
+          {s ? (
+            <details>
+              <summary>Running on {s.network.name}. Show contract addresses</summary>
+              <span>
+                Coordinator {s.deployment?.contract} · payments through {s.intents.account}
+              </span>
+            </details>
+          ) : (
+            <span>Connecting to the live service…</span>
+          )}
         </div>
       </div>
     </footer>

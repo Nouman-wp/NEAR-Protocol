@@ -60,6 +60,16 @@ function App() {
           <Route path="/developers" element={<Developers />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/status" element={<Developers />} />
+          {/* friendlier names for the same pages; the original routes above stay for links already shared */}
+          <Route path="/live" element={<Floor />} />
+          <Route path="/auctions" element={<RoundList />} />
+          <Route path="/auctions/:id" element={<RoundPage />} />
+          <Route path="/settle-ups" element={<EpochList />} />
+          <Route path="/settle-ups/:id" element={<EpochPage />} />
+          <Route path="/teams" element={<StudiosPage />} />
+          <Route path="/teams/:id" element={<StudioJobPage />} />
+          <Route path="/check" element={<Verify />} />
+          <Route path="/complaints" element={<Disputes />} />
           <Route path="*" element={<Landing />} />
         </Routes>
       </Suspense>

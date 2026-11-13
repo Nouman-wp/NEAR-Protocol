@@ -245,15 +245,14 @@ p {
   margin-left: 8px;
   flex: 1;
 }
-.nav a,
-.eyebrow,
-.btn,
-.label {
+/* Only page eyebrows (and table headers) use spaced capitals; everything else is sentence case. */
+.eyebrow {
   font-size: 12px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 .nav a {
+  font-size: 15px;
   color: var(--muted);
   padding: 8px 0;
   position: relative;
@@ -277,11 +276,13 @@ p {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  padding: 5px 10px;
+  border-radius: 99px;
+  background: rgba(var(--fg), 0.06);
   color: var(--muted);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 13px;
   white-space: nowrap;
+  cursor: default;
 }
 .live-dot::before {
   content: "";
@@ -318,12 +319,13 @@ p {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 17px 22px;
+  gap: 10px;
+  padding: 15px 22px;
   border-radius: 9px;
   border: 0;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 500;
   color: var(--btn-fg);
   background: var(--btn-bg);
   transition:
@@ -335,24 +337,30 @@ p {
   transform: translateY(-2px);
   box-shadow: 0 14px 40px -14px var(--btn-glow);
 }
+.btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
 .btn svg {
   width: 13px;
   height: 13px;
 }
+/* secondary: outlined, clearly a button */
 .btn.ghost {
   color: var(--text);
-  background: rgba(var(--fg), 0.06);
-  border: 1px solid var(--line-strong);
+  background: transparent;
+  border: 1px solid rgba(var(--fg), 0.38);
 }
 .btn.ghost:hover {
-  background: rgba(var(--fg), 0.12);
+  background: rgba(var(--fg), 0.08);
+  border-color: rgba(var(--fg), 0.55);
   box-shadow: none;
 }
 .btn.sm {
-  padding: 10px 14px;
-  font-size: 11px;
-  gap: 9px;
-  border-radius: 7px;
+  padding: 10px 16px;
+  font-size: 14px;
+  gap: 8px;
+  border-radius: 8px;
 }
 .btn:disabled {
   opacity: 0.5;
@@ -363,8 +371,6 @@ p {
 /* ───────────────────────────────── type */
 .eyebrow {
   color: var(--muted);
-  letter-spacing: 0.3em;
-  font-size: 13px;
 }
 .display {
   font-size: clamp(40px, 5.6vw, 76px);
@@ -399,16 +405,15 @@ p {
 
 /* ───────────────────────────────── surfaces */
 .card {
-  background: var(--panel);
+  background: var(--panel-solid);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 28px;
-  backdrop-filter: blur(6px);
 }
 .card.dots {
   background-image: radial-gradient(rgba(var(--fg), 0.07) 1px, transparent 1.4px);
   background-size: 26px 26px;
-  background-color: var(--panel);
+  background-color: var(--panel-solid);
 }
 .card.light {
   background: var(--feature-bg);
@@ -433,8 +438,8 @@ p {
   margin-bottom: 18px;
 }
 .label {
+  font-size: 14px;
   color: var(--muted);
-  letter-spacing: 0.14em;
 }
 .grid {
   display: grid;
@@ -476,8 +481,7 @@ p {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 190px;
-  gap: 28px;
+  gap: 18px;
 }
 .stat .fig {
   font-size: clamp(38px, 4.4vw, 62px);
@@ -490,8 +494,8 @@ p {
   font-size: clamp(30px, 3.1vw, 46px);
 }
 .stat .label {
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: 15px;
+  line-height: 1.35;
   color: var(--text);
 }
 .stat.light .label {
@@ -499,8 +503,8 @@ p {
 }
 .stat small {
   display: block;
-  margin-top: 10px;
-  font-size: 13px;
+  margin-top: 8px;
+  font-size: 14px;
   letter-spacing: 0;
   color: var(--muted);
 }
@@ -524,11 +528,9 @@ p {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 9px;
+  padding: 3px 10px;
   border-radius: 99px;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 13px;
   border: 1px solid var(--line-strong);
   color: var(--muted);
   white-space: nowrap;
@@ -567,6 +569,7 @@ p {
 .chip {
   display: inline-flex;
   align-items: center;
+  vertical-align: middle;
   gap: 8px;
   max-width: 100%;
   white-space: nowrap;
@@ -603,10 +606,10 @@ table {
 th {
   text-align: left;
   font-weight: 400;
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  font-size: 12px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--faint);
+  color: var(--muted);
   padding: 12px 16px;
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
@@ -646,7 +649,7 @@ tr.click {
   cursor: pointer;
 }
 .empty {
-  padding: 44px 24px;
+  padding: 22px 24px;
   text-align: center;
   color: var(--muted);
   font-size: 15px;
@@ -661,16 +664,25 @@ tr.click {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 32px;
-  margin-bottom: 34px;
+  gap: 24px 32px;
+  margin-bottom: 32px;
   flex-wrap: wrap;
+}
+.page-head-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 720px;
 }
 .page-head .lead {
   max-width: 640px;
-  margin-top: 14px;
+}
+.page-actions {
+  padding-bottom: 4px;
 }
 .section {
-  padding: 120px 0;
+  padding: 96px 0;
 }
 .section-head {
   max-width: 760px;
@@ -684,7 +696,7 @@ tr.click {
   margin-top: 20px;
 }
 .note {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--muted);
   border-left: 2px solid var(--sage);
@@ -713,36 +725,19 @@ tr.click {
   position: relative;
   z-index: 2;
 }
+/* the sphere sits under the buttons, never behind the text */
 .hero canvas {
   position: absolute;
   left: 50%;
   bottom: 0;
   width: min(1100px, 130vw);
-  height: 62vh;
+  height: min(44vh, 420px);
   transform: translateX(-50%);
   z-index: 1;
 }
 .hero > *:not(canvas) {
   position: relative;
   z-index: 2;
-}
-.marquee {
-  overflow: hidden;
-  padding: 40px 0 70px;
-  white-space: nowrap;
-}
-.marquee div {
-  display: inline-block;
-  font-size: clamp(90px, 15vw, 230px);
-  font-weight: 400;
-  letter-spacing: -0.05em;
-  line-height: 1;
-  will-change: transform;
-  background: var(--marquee);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  opacity: 0.9;
 }
 .statement {
   text-align: center;
@@ -776,7 +771,7 @@ tr.click {
 .explore-item p {
   grid-column: 1;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 16px;
   max-width: 440px;
 }
 .arrow-box {
@@ -840,7 +835,7 @@ tr.click {
 .step .where {
   margin-top: 18px;
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--sage-light);
 }
 
@@ -890,7 +885,7 @@ tr.click {
   gap: 4px 14px;
   padding: 11px 20px;
   border-bottom: 1px solid rgba(var(--fg), 0.06);
-  font-size: 13.5px;
+  font-size: 14px;
   animation: rise 0.4s var(--ease);
 }
 .feed-row small {
@@ -924,11 +919,9 @@ tr.click {
 }
 .phases div {
   padding-top: 10px;
-  border-top: 2px solid var(--line);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--faint);
+  border-top: 3px solid var(--line);
+  font-size: 13px;
+  color: var(--muted);
 }
 .phases .done {
   border-color: var(--sage);
@@ -982,7 +975,7 @@ tr.click {
   align-items: center;
   padding: 0 10px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--faint);
   background: repeating-linear-gradient(-45deg, rgba(var(--fg), 0.05) 0 6px, transparent 6px 12px);
   overflow: hidden;
@@ -1080,7 +1073,7 @@ input::placeholder {
 }
 .chart .axis {
   font-family: var(--sans);
-  font-size: 11px;
+  font-size: 12px;
   fill: var(--faint);
 }
 .chart .gridline {
@@ -1108,33 +1101,37 @@ input::placeholder {
 .site-footer {
   position: relative;
   border-top: 1px solid var(--line);
-  padding: 90px 0 36px;
+  padding: 56px 0 32px;
+}
+.site-footer.big {
+  padding-top: 88px;
   background: var(--footer-glow);
 }
 .site-footer .top {
   display: flex;
   justify-content: space-between;
-  gap: 40px;
+  align-items: flex-end;
+  gap: 32px;
   flex-wrap: wrap;
-  margin-bottom: 90px;
+  margin-bottom: 72px;
 }
 .site-footer .links {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, max-content));
+  gap: 24px 72px;
+  margin-bottom: 40px;
+}
+.site-footer .links nav {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px 0;
-  margin-bottom: 70px;
+  flex-direction: column;
+  gap: 10px;
+}
+.site-footer .links .eyebrow {
+  margin-bottom: 4px;
 }
 .site-footer .links a {
-  font-size: 14px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 15px;
   color: var(--muted);
-  padding: 0 18px;
-  border-left: 1px solid var(--line-strong);
-}
-.site-footer .links a:first-child {
-  padding-left: 0;
-  border-left: 0;
 }
 .site-footer .links a:hover {
   color: var(--text);
@@ -1142,12 +1139,18 @@ input::placeholder {
 .site-footer .base {
   display: flex;
   justify-content: space-between;
-  gap: 20px;
+  align-items: center;
+  gap: 12px 20px;
   flex-wrap: wrap;
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 13px;
   color: var(--faint);
+}
+.site-footer .base details summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.site-footer .base details[open] {
+  flex-basis: 100%;
 }
 
 /* reveal on scroll */
@@ -1242,16 +1245,22 @@ input::placeholder {
   .phases {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
-  .phases div {
-    font-size: 9px;
-    letter-spacing: 0.04em;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .ambient i,
   .live-dot::before,
   .tag.live::before {
     animation: none;
+  }
+  .btn,
+  .card.click,
+  a.card {
+    transition: none;
+  }
+  .btn:hover,
+  .card.click:hover,
+  a.card:hover {
+    transform: none;
   }
   .reveal {
     opacity: 1;
@@ -1467,22 +1476,22 @@ video {
   .chips .btn {
     flex: none;
   }
+  .phases {
+    gap: 4px;
+  }
   .phases div {
-    font-size: 8.5px;
-    letter-spacing: 0.02em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 12px;
+    line-height: 1.25;
   }
   .site-footer {
-    padding: 64px 0 28px;
+    padding: 44px 0 28px;
   }
   .site-footer .top,
   .site-footer .links {
     margin-bottom: 44px;
   }
   pre {
-    font-size: 11.5px;
+    font-size: 12px;
     padding: 14px;
   }
   input,
@@ -1498,7 +1507,7 @@ video {
   }
   .site-header .account-btn {
     padding: 8px 9px;
-    font-size: 10px;
+    font-size: 13px;
   }
 }
 
@@ -1515,9 +1524,7 @@ video {
   border: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 14px;
   padding: 8px 14px;
   border-radius: 7px;
   cursor: pointer;
@@ -1657,7 +1664,7 @@ video {
   padding: 18px 20px;
 }
 .mini-stat .label {
-  font-size: 11px;
+  font-size: 14px;
 }
 .mini-stat .num {
   font-size: 26px;
@@ -1668,7 +1675,7 @@ video {
 }
 .feed-day-label {
   padding: 14px 20px 6px;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--faint);
@@ -1778,5 +1785,591 @@ video {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+  }
+}
+
+/* ───────────────────────────────── Yuki: shared pieces added in the plain-language pass */
+
+/* spacing scale, instead of one-off gaps */
+.stack-sm {
+  gap: 8px;
+}
+.stack-md {
+  gap: 16px;
+}
+.stack-lg {
+  gap: 24px;
+}
+.mt-md {
+  margin-top: 16px;
+}
+.mb-md {
+  margin-bottom: 16px;
+}
+.card-head.inset {
+  padding: 24px 24px 0;
+}
+
+/* anything you can click looks clickable: lift, border, arrow, focus ring, pressed state */
+a.card,
+.card.click {
+  position: relative;
+  display: block;
+  color: inherit;
+  transition:
+    border-color 0.2s,
+    transform 0.2s var(--ease),
+    box-shadow 0.2s;
+}
+a.card.stack,
+a.card.spread,
+a.card.job-row {
+  display: flex;
+}
+a.card.job-row {
+  display: grid;
+}
+a.card::after,
+.card.click::after {
+  content: "→";
+  position: absolute;
+  right: 20px;
+  bottom: 16px;
+  font-size: 18px;
+  color: var(--faint);
+  transition:
+    transform 0.2s var(--ease),
+    color 0.2s;
+}
+a.card:hover,
+.card.click:hover {
+  border-color: rgba(var(--fg), 0.32);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px -22px var(--shadow);
+}
+a.card:hover::after,
+.card.click:hover::after {
+  color: var(--blush);
+  transform: translateX(3px);
+}
+a.card:active,
+.card.click:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+a.card:focus-visible,
+.card.click:focus-visible {
+  outline: 2px solid var(--blush);
+  outline-offset: 3px;
+  border-radius: var(--radius);
+}
+/* the explore rows and table links get the same ring */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--blush);
+  outline-offset: 3px;
+}
+
+/* stat rows: one big highlighted number, then smaller plain ones */
+.stats {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) repeat(var(--n, 3), minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.stats .card {
+  padding: 22px 24px;
+}
+.stats .stat .fig {
+  font-size: clamp(28px, 2.6vw, 38px);
+}
+.stats .stat.light .fig,
+.stats .stat.hero .fig {
+  font-size: clamp(36px, 4vw, 56px);
+}
+.stats .stat .label {
+  font-size: 14px;
+  color: var(--muted);
+}
+.stats .stat.light .label {
+  color: var(--feature-muted);
+}
+.fig small {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+/* "Show details": proof stays, out of the way */
+.details {
+  border-top: 1px solid var(--line);
+  margin-top: 18px;
+  padding-top: 14px;
+}
+.details > summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.details > summary::-webkit-details-marker {
+  display: none;
+}
+.details > summary::before {
+  content: "+";
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 1px solid var(--line-strong);
+  font-size: 13px;
+  line-height: 1;
+}
+.details[open] > summary::before {
+  content: "−";
+}
+.details > summary:hover {
+  color: var(--text);
+}
+.details-body {
+  margin-top: 14px;
+}
+.details.bare {
+  border-top: 0;
+  margin-top: 6px;
+  padding-top: 0;
+}
+
+/* back link above a detail page's title */
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  font-size: 15px;
+  color: var(--muted);
+}
+.back:hover {
+  color: var(--text);
+}
+
+/* next step in the tour */
+.next-step {
+  display: flex !important;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 40px;
+  padding: 26px 64px 26px 28px;
+}
+
+/* copy buttons and shortened hashes */
+.copy-btn {
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.copy-btn:hover {
+  color: var(--text);
+  background: rgba(var(--fg), 0.06);
+}
+.hash {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.code-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+/* a quiet one-line note above a table ("All paid in one transaction: …") */
+.callout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+}
+.owes {
+  color: var(--blush);
+}
+.owed {
+  color: var(--good);
+}
+
+/* the scenario / try-it list */
+.try {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 16px;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.try:first-child {
+  border-top: 0;
+}
+.try p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.try.primary {
+  padding: 18px 20px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(var(--blush-rgb), 0.35);
+  border-radius: 12px;
+  background: rgba(var(--blush-rgb), 0.06);
+}
+.try.primary + .try {
+  border-top: 0;
+}
+.running {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 15px;
+}
+.spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(var(--blush-rgb), 0.25);
+  border-top-color: var(--blush);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* three steps with icons (home, how it works) */
+.how3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.how3 .card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.how3 .icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(var(--blush-rgb), 0.1);
+  color: var(--blush);
+}
+.how3 .icon svg {
+  width: 24px;
+  height: 24px;
+}
+.how3 p {
+  color: var(--muted);
+  font-size: 16px;
+}
+
+/* the night-out picture: many debts become a few payments */
+.picture {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 40px;
+  align-items: center;
+}
+.picture svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.picture .before,
+.picture .after {
+  fill: none;
+  stroke-linecap: round;
+}
+.picture .before {
+  stroke: rgba(var(--fg), 0.28);
+}
+.picture .after {
+  stroke: var(--blush);
+}
+.picture circle {
+  fill: var(--panel-solid);
+  stroke: rgba(var(--fg), 0.55);
+}
+.picture text {
+  font-family: var(--sans);
+  font-size: 13px;
+  fill: var(--muted);
+}
+
+/* filters with many options: a labelled dropdown */
+.field {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.search {
+  flex: 1 1 220px;
+  max-width: 320px;
+}
+
+/* agent cards */
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+.agent-card {
+  display: flex !important;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 24px 44px !important;
+}
+.agent-card .meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  font-size: 14px;
+}
+.agent-card .meta b {
+  display: block;
+  font-size: 18px;
+  font-weight: 500;
+}
+.agent-card .meta span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* grids whose last card would sit alone: let it fill the row */
+.fill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.balance {
+  align-items: start;
+}
+
+/* progress bar for spending limits */
+.meter {
+  height: 8px;
+  border-radius: 8px;
+  background: rgba(var(--fg), 0.1);
+  overflow: hidden;
+}
+.meter i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--rose), var(--blush));
+}
+
+/* check-it results */
+.result {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px 24px;
+  margin-bottom: 14px;
+}
+.result .fig {
+  font-size: clamp(32px, 4vw, 52px);
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+.result.bad {
+  background: color-mix(in srgb, var(--bad) 14%, var(--panel-solid));
+  border-color: color-mix(in srgb, var(--bad) 50%, transparent);
+}
+.checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.checks li {
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.checks li:first-child {
+  border-top: 0;
+}
+.checks .tick {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 10px;
+  border-radius: 50%;
+  font-size: 13px;
+  background: color-mix(in srgb, var(--good) 18%, transparent);
+  color: var(--good);
+}
+.checks .fail .tick {
+  background: color-mix(in srgb, var(--bad) 18%, transparent);
+  color: var(--bad);
+}
+.checks .details {
+  margin: 6px 0 0 32px;
+  border: 0;
+  padding: 0;
+}
+.checks .details-body {
+  font-size: 14px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* swatches line up whatever their label length */
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 8px;
+  align-items: start;
+}
+
+@media (max-width: 1020px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .stats > :first-child {
+    grid-column: 1 / -1;
+  }
+  .how3,
+  .picture {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* phones: tables become cards, labels come from data-label */
+@media (max-width: 640px) {
+  .section {
+    padding: 64px 0;
+  }
+  .stats .card {
+    padding: 16px;
+  }
+  .stats .stat .fig {
+    font-size: 28px;
+  }
+  .stats .stat.light .fig,
+  .stats .stat.hero .fig {
+    font-size: 34px;
+  }
+  .btn,
+  .btn.sm,
+  .seg button,
+  .copy-btn,
+  .details > summary,
+  .back {
+    min-height: 44px;
+  }
+  .site-footer .links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+  table.cards thead {
+    display: none;
+  }
+  table.cards,
+  table.cards tbody,
+  table.cards tr,
+  table.cards td {
+    display: block;
+    width: 100%;
+  }
+  table.cards tr {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  table.cards tr:last-child {
+    border-bottom: 0;
+  }
+  table.cards td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 5px 0;
+    border: 0;
+    text-align: right;
+  }
+  table.cards td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 13px;
+    text-align: left;
+    flex: none;
+  }
+  table.cards td[data-label=""]::before {
+    content: none;
+  }
+  table.cards td:first-child {
+    font-size: 16px;
+    padding-bottom: 8px;
+  }
+  .table-wrap table.cards {
+    min-width: 0 !important;
+  }
+  .next-step {
+    padding: 22px 56px 22px 22px;
+  }
+  .agent-card .meta b {
+    font-size: 16px;
+  }
+}
+
+/* header: a network badge, not a link; the account link moves into the menu on phones */
+.nav-account {
+  display: none;
+}
+@media (max-width: 1020px) {
+  .nav-account {
+    display: block;
+  }
+  .site-header .live-dot {
+    display: inline-flex;
+    padding: 6px;
+    background: none;
+  }
+  .site-header .live-text {
+    display: none;
+  }
+  .nav a {
+    font-size: 17px;
+  }
+}
+@media (max-width: 640px) {
+  .site-header .header-account {
+    display: none !important;
   }
 }
