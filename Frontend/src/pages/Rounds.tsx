@@ -332,6 +332,51 @@ export function RoundPage() {
               )}
             </div>
 
+          </div>
+
+          <div className="stack">
+            <div className="card">
+              <h2 className="h3">Timeline</h2>
+              <dl className="kv mt-md">
+                <dt>Opened</dt>
+                <dd>{when(r.openedAt)}</dd>
+                <dt>Bidding closed</dt>
+                <dd>{when(r.commitDeadline)}</dd>
+                <dt>Finished</dt>
+                <dd>{r.closedAt ? when(r.closedAt) : "Not yet"}</dd>
+              </dl>
+              <Details>
+                <dl className="kv">
+                  <dt>Contract</dt>
+                  <dd>
+                    <Account id={data.contract} />
+                  </dd>
+                  <dt>Open transaction</dt>
+                  <dd>
+                    <Tx hash={r.openTx} />
+                  </dd>
+                  <dt>Close transaction</dt>
+                  <dd>
+                    <Tx hash={r.closeTx} />
+                  </dd>
+                  <dt>Job description hash</dt>
+                  <dd>
+                    <Hash value={r.specHash} />
+                  </dd>
+                  {r.minReputation > 0 && (
+                    <>
+                      <dt>Minimum trust score</dt>
+                      <dd>{Math.round(r.minReputation / 10)}/100</dd>
+                    </>
+                  )}
+                  <dt>Pricing rule</dt>
+                  <dd>{r.pricing === "SecondPrice" ? "Second price (winner is paid the runner-up's bid)" : "First price (winner is paid its own bid)"}</dd>
+                </dl>
+                <p className="note" style={{ marginTop: 14 }}>
+                  Every opened bid was checked on NEAR against the sealed bid its seller locked in before bidding closed.
+                </p>
+              </Details>
+            </div>
             <div className="card flush">
               <div className="card-head inset">
                 <h2 className="h3">{groupBuy ? "Buyers and their shares" : "Buyer"}</h2>
@@ -388,49 +433,6 @@ export function RoundPage() {
                 </table>
               </div>
             </div>
-          </div>
-
-          <div className="card">
-            <h2 className="h3">Timeline</h2>
-            <dl className="kv mt-md">
-              <dt>Opened</dt>
-              <dd>{when(r.openedAt)}</dd>
-              <dt>Bidding closed</dt>
-              <dd>{when(r.commitDeadline)}</dd>
-              <dt>Finished</dt>
-              <dd>{r.closedAt ? when(r.closedAt) : "Not yet"}</dd>
-            </dl>
-            <Details>
-              <dl className="kv">
-                <dt>Contract</dt>
-                <dd>
-                  <Account id={data.contract} />
-                </dd>
-                <dt>Open transaction</dt>
-                <dd>
-                  <Tx hash={r.openTx} />
-                </dd>
-                <dt>Close transaction</dt>
-                <dd>
-                  <Tx hash={r.closeTx} />
-                </dd>
-                <dt>Job description hash</dt>
-                <dd>
-                  <Hash value={r.specHash} />
-                </dd>
-                {r.minReputation > 0 && (
-                  <>
-                    <dt>Minimum trust score</dt>
-                    <dd>{Math.round(r.minReputation / 10)}/100</dd>
-                  </>
-                )}
-                <dt>Pricing rule</dt>
-                <dd>{r.pricing === "SecondPrice" ? "Second price (winner is paid the runner-up's bid)" : "First price (winner is paid its own bid)"}</dd>
-              </dl>
-              <p className="note" style={{ marginTop: 14 }}>
-                Every opened bid was checked on NEAR against the sealed bid its seller locked in before bidding closed.
-              </p>
-            </Details>
           </div>
         </div>
 

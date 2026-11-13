@@ -119,10 +119,10 @@ export default function Verify() {
           </p>
         )}
 
-        <div className="grid split balance">
+        <div className="stack">
           <div className="card">
             {!epoch && <Empty>Nothing has been settled yet. Run a demo on the Live page, then come back.</Empty>}
-            <ol className="checks">
+            <ol className="checks two">
               {checks.map((c) => (
                 <li key={c.name} className={c.ok ? "ok" : "fail"}>
                   <span className="tick" aria-hidden="true">

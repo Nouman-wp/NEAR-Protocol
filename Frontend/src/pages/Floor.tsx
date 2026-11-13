@@ -181,71 +181,71 @@ export default function Floor() {
           {fleetState?.reachable === false && <Tag kind="bad">Agents offline</Tag>}
         </PageHead>
 
+        {/* the orbit on the left; what you can do and what is happening on the right, so neither column runs long */}
         <div className="grid split balance">
-          <TryIt running={fleetState?.scenario?.name ?? null} />
-          <div className="card">
-            {cur ? <EpochClock e={cur} /> : <p className="muted">Waiting for the settle-up clock…</p>}
-            <ol className="phases" aria-label="Settle-up steps">
-              {PHASES.map((p, i) => (
-                <li key={p} className={i === phaseIndex ? "now" : i < phaseIndex ? "done" : ""} aria-current={i === phaseIndex ? "step" : undefined}>
-                  {PHASE_NAMES[p]}
-                </li>
-              ))}
-            </ol>
-            {inFlight.map((e) => (
-              <div key={e.id} className="spread" style={{ marginTop: 14, fontSize: 15 }}>
-                <Link className="link" to={`/epochs/${e.id}`}>
-                  Settle-up {e.id}: {e.iouCount ? plural(e.iouCount, "tab entry", "tab entries") : "adding up…"}
-                </Link>
-                <Status value={e.phase} />
-              </div>
-            ))}
-            {lastSealed && (
-              <div className="spread" style={{ marginTop: 14, fontSize: 15, flexWrap: "wrap" }}>
-                <Link className="link" to={`/epochs/${lastSealed.id}`}>
-                  Last settle-up: {plural(lastSealed.iouCount, "tab entry", "tab entries")} → {plural(lastSealed.settlementTransfers, "payment")}
-                </Link>
-                {lastSealed.settleTx && <Tx hash={lastSealed.settleTx} label="See on NEAR ↗" />}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="grid split balance" style={{ marginTop: 14 }}>
-          <div className="card dots flush" style={{ aspectRatio: "1 / 0.92" }}>
+          <div className="card dots flush" style={{ aspectRatio: "1 / 1" }}>
             {live.agents.length ? (
               <Orbit
                 agents={live.agents}
                 edges={debts.edges}
                 active={debts.active}
-                centre={debts.count ? { label: "On the tab this round", value: usd(debts.gross) } : { label: "Waiting for the first tab entry", value: "Run a demo ↑" }}
+                centre={debts.count ? { label: "On the tab this round", value: usd(debts.gross) } : { label: "Waiting for the first tab entry", value: "Press Run demo" }}
               />
             ) : (
               <Empty>{live.connected ? "No agents yet. They sign up in their first minute." : "Connecting to the live service…"}</Empty>
             )}
           </div>
-          <div className="card flush">
-            <div className="card-head inset">
-              <h2 className="h3">Tab entries</h2>
-              {live.ious.length > 0 && <span className="label">Newest first</span>}
-            </div>
-            <div className="feed" aria-live="off">
-              {live.ious.length === 0 && <Empty>None yet. Run a demo to start some.</Empty>}
-              {live.ious.slice(0, 60).map(({ iou, job, at }) => (
-                <Link key={iou.digest} to={`/jobs/${job.id}`} className="feed-row">
-                  <span className="row" style={{ gap: 8, flexWrap: "nowrap", minWidth: 0 }}>
-                    <AgentChip id={iou.buyer} link={false} />
-                    <span className="faint">owes</span>
-                    <AgentChip id={iou.seller} link={false} />
-                  </span>
-                  <span className="num">{usd(iou.amount)}</span>
-                  <small>
-                    {serviceName(job.service)}
-                    {job.roundId ? ` · auction #${job.roundId}` : ""}
-                  </small>
-                  <small style={{ textAlign: "right" }}>{ago(at)}</small>
-                </Link>
+          <div className="stack live-side">
+            <TryIt running={fleetState?.scenario?.name ?? null} />
+            <div className="card">
+              {cur ? <EpochClock e={cur} /> : <p className="muted">Waiting for the settle-up clock…</p>}
+              <ol className="phases" aria-label="Settle-up steps">
+                {PHASES.map((p, i) => (
+                  <li key={p} className={i === phaseIndex ? "now" : i < phaseIndex ? "done" : ""} aria-current={i === phaseIndex ? "step" : undefined}>
+                    {PHASE_NAMES[p]}
+                  </li>
+                ))}
+              </ol>
+              {inFlight.map((e) => (
+                <div key={e.id} className="spread" style={{ marginTop: 14, fontSize: 15 }}>
+                  <Link className="link" to={`/epochs/${e.id}`}>
+                    Settle-up {e.id}: {e.iouCount ? plural(e.iouCount, "tab entry", "tab entries") : "adding up…"}
+                  </Link>
+                  <Status value={e.phase} />
+                </div>
               ))}
+              {lastSealed && (
+                <div className="spread" style={{ marginTop: 14, fontSize: 15, flexWrap: "wrap" }}>
+                  <Link className="link" to={`/epochs/${lastSealed.id}`}>
+                    Last settle-up: {plural(lastSealed.iouCount, "tab entry", "tab entries")} → {plural(lastSealed.settlementTransfers, "payment")}
+                  </Link>
+                  {lastSealed.settleTx && <Tx hash={lastSealed.settleTx} label="See on NEAR ↗" />}
+                </div>
+              )}
+            </div>
+            <div className="card flush">
+              <div className="card-head inset">
+                <h2 className="h3">Tab entries</h2>
+                {live.ious.length > 0 && <span className="label">Newest first</span>}
+              </div>
+              <div className="feed" aria-live="off" style={{ maxHeight: 360 }}>
+                {live.ious.length === 0 && <Empty>None yet. Run a demo to start some.</Empty>}
+                {live.ious.slice(0, 60).map(({ iou, job, at }) => (
+                  <Link key={iou.digest} to={`/jobs/${job.id}`} className="feed-row">
+                    <span className="row" style={{ gap: 8, flexWrap: "nowrap", minWidth: 0 }}>
+                      <AgentChip id={iou.buyer} link={false} />
+                      <span className="faint">owes</span>
+                      <AgentChip id={iou.seller} link={false} />
+                    </span>
+                    <span className="num">{usd(iou.amount)}</span>
+                    <small>
+                      {serviceName(job.service)}
+                      {job.roundId ? ` · auction #${job.roundId}` : ""}
+                    </small>
+                    <small style={{ textAlign: "right" }}>{ago(at)}</small>
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </div>

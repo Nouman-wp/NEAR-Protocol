@@ -166,7 +166,8 @@ export function Tx({ hash, label }: { hash: string | null | undefined; label?: s
   const explorer = useLive().stats?.network.explorer ?? null;
   if (!hash) return <span className="faint">—</span>;
   const url = explorerTx(explorer, hash);
-  const text = <span className="mono nowrap">{label ?? short(hash, 6)}</span>;
+  // a hash reads in monospace; a label like "See on NEAR ↗" reads as normal text
+  const text = <span className={label ? "nowrap" : "mono nowrap"}>{label ?? short(hash, 6)}</span>;
   return url ? (
     <a className="link" href={url} target="_blank" rel="noreferrer" title={hash}>
       {text}

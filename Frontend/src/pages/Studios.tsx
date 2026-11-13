@@ -193,7 +193,7 @@ function OrderForm({ studios }: { studios: StudioInfo[] }) {
       )}
       <div className="row">
         <button className="btn" disabled={sending} onClick={() => void order()}>
-          {sending ? "Ordering…" : all ? `Order from all five teams · ${usd(total)}` : `Order a ${team?.product ?? "job"} · ${usd(team?.price)}`} <Go />
+          {sending ? "Ordering…" : all ? `Order from all five teams · ${usd(total)}` : `Order a ${(team?.product ?? "job").replace(/^\w+/, (w) => (w === w.toUpperCase() ? w : w.toLowerCase()))} · ${usd(team?.price)}`} <Go />
         </button>
       </div>
       <Details summary="Demo key">
@@ -451,14 +451,14 @@ export function StudioJobPage() {
                       </td>
                       <td data-label="Winner">{t.winner ? <AgentChip id={t.winner.agentId} /> : <span className="faint">Bidding…</span>}</td>
                       <td data-label="Paid" className="r">
-                        {t.price ? <Money v={t.price} /> : "–"}
-                        {t.jobId && (
-                          <>
-                            {" "}
-                            <Link to={`/jobs/${t.jobId}`} className="link" style={{ fontSize: 14 }}>
-                              Details →
-                            </Link>
-                          </>
+                        {t.price && t.jobId ? (
+                          <Link to={`/jobs/${t.jobId}`} className="link nowrap" title="See this job">
+                            <Money v={t.price} /> →
+                          </Link>
+                        ) : t.price ? (
+                          <Money v={t.price} />
+                        ) : (
+                          "–"
                         )}
                       </td>
                     </tr>

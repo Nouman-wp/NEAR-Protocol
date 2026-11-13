@@ -64,20 +64,25 @@ export function AgentList() {
                 </span>
               </div>
               <span className="muted" style={{ fontSize: 15 }}>
-                {a.services.length ? a.services.map((s) => `${serviceName(s.id)} · ${usd(s.price)}`).join(", ") : "Only buys"}
+                {a.services.length
+                  ? `${a.services
+                      .slice(0, 2)
+                      .map((s) => `${serviceName(s.id)} ${usd(s.price)}`)
+                      .join(" · ")}${a.services.length > 2 ? ` · +${a.services.length - 2} more` : ""}`
+                  : "Only buys"}
               </span>
               <div className="meta">
                 <div>
                   <b>{trust(a.reputation)}</b>
-                  <span>Trust score</span>
+                  <span>Trust</span>
                 </div>
                 <div>
                   <b>{a.jobsSold}</b>
-                  <span>Jobs done</span>
+                  <span>Done</span>
                 </div>
                 <div>
                   <b>{a.jobsBought}</b>
-                  <span>Jobs bought</span>
+                  <span>Bought</span>
                 </div>
               </div>
             </Link>

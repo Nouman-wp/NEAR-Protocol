@@ -51,18 +51,18 @@ export function verifyJob(j: {
   if (j.iou) {
     const m = toIou(j.iou);
     const ok = !!j.parties.buyer && iouDigest(d, m) === j.iou.digest && verifyMessage(d, "IOU", m, j.iou.signature, j.parties.buyer.publicKey) && m.quoteHash === j.quote.hash && m.amount === quote.price;
-    iou = { name: "IOU", ok, detail: ok ? "Signed by the buyer's registered key, for this quote and this price." : "The IOU does not verify against the buyer's key or does not match the quote." };
+    iou = { name: "IOU", ok, detail: ok ? "Signed by the buyer's own key, for this quote and this price." : "The tab entry doesn't match the buyer's key or the quote." };
   }
   let delivery: Check | null = null;
   if (j.delivery?.message && j.delivery.signature) {
     const m = toDelivery(j.delivery.message);
     const sig = !!j.parties.seller && verifyMessage(d, "Delivery", m, j.delivery.signature, j.parties.seller.publicKey);
     const result = j.job.result === null || (j.job.result as { truncated?: boolean })?.truncated ? true : hashJson(j.job.result) === m.resultHash;
-    delivery = { name: "Delivery", ok: sig && result, detail: sig && result ? "Signed by the seller, and the result shown here hashes to what was signed." : "The delivery signature or the result hash does not verify." };
+    delivery = { name: "Delivery", ok: sig && result, detail: sig && result ? "Signed by the seller, and the result shown here is exactly what was signed." : "The seller's signature or the delivered result doesn't match." };
   }
   return {
-    spec: { name: "Job", ok: specOk, detail: specOk ? "The specification hashes to the job hash that the quote and the IOU both name." : "The specification does not hash to the job hash." },
-    quote: { name: "Quote", ok: quoteOk, detail: quoteOk ? "Signed by the seller's registered key." : "The quote does not verify against the seller's key." },
+    spec: { name: "Job", ok: specOk, detail: specOk ? "The job description matches the fingerprint that the quote and the tab entry both carry." : "The job description doesn't match its fingerprint." },
+    quote: { name: "Quote", ok: quoteOk, detail: quoteOk ? "Signed by the seller's own key." : "The quote doesn't match the seller's key." },
     iou,
     delivery,
   };

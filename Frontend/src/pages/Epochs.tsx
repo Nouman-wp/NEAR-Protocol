@@ -166,10 +166,26 @@ export function EpochPage() {
               <Money v={e.grossVolume} />
             </div>
           </div>
-          <div className="card stat">
-            <span className="label">{e.phase === "settling" ? "Time left to pay" : "Actually paid"}</span>
-            <div className="fig">{e.phase === "settling" ? <Countdown to={e.settleDeadline} done="deadline" /> : netted ? <Money v={e.netVolume} /> : "–"}</div>
-          </div>
+          {e.phase === "settling" ? (
+            <div className="card stat">
+              <span className="label">Time left to pay</span>
+              <div className="fig">
+                <Countdown to={e.settleDeadline} done="deadline" />
+              </div>
+            </div>
+          ) : netted && e.transfersAvoided > 0 ? (
+            <div className="card stat">
+              <span className="label">Actually paid</span>
+              <div className="fig">
+                <Money v={e.netVolume} />
+              </div>
+            </div>
+          ) : (
+            <div className="card stat">
+              <span className="label">Payments saved</span>
+              <div className="fig">{netted ? e.transfersAvoided : "–"}</div>
+            </div>
+          )}
           {e.defaults > 0 && (
             <div className="card stat">
               <span className="label">Didn't pay</span>

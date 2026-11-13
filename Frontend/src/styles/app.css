@@ -2410,3 +2410,81 @@ h2.label,
 h3.label {
   font-weight: 500;
 }
+@media (max-width: 1020px) {
+  /* on narrow screens the demo button comes before the orbit */
+  .live-side {
+    order: -1;
+  }
+}
+
+/* the last card in a row of three (or two) stretches instead of leaving a hole */
+.fill-grid {
+  align-items: stretch;
+}
+.fill-grid > :last-child:nth-child(3n + 2) {
+  grid-column: span 2;
+}
+.fill-grid > :last-child:nth-child(3n + 1) {
+  grid-column: 1 / -1;
+}
+@media (max-width: 760px) {
+  .fill-grid > :last-child {
+    grid-column: auto !important;
+  }
+}
+
+/* controls inside the highlighted (burgundy / blush) card */
+.card.light .field {
+  color: var(--feature-muted);
+}
+.card.light .btn {
+  background: transparent;
+  color: var(--feature-fg);
+  border: 1px solid var(--feature-muted);
+}
+.card.light .btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+.checks.two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 40px;
+}
+.checks.two li:nth-child(2) {
+  border-top: 0;
+}
+@media (max-width: 760px) {
+  .checks.two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .checks.two li:nth-child(2) {
+    border-top: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 1020px) {
+  /* an odd card at the end of a stat row fills the row */
+  .stats > :last-child:nth-child(even) {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 640px) {
+  .try {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .try .btn {
+    width: 100%;
+  }
+  /* long lists scroll with the page on phones, not inside a box */
+  .table-wrap[style] {
+    max-height: none !important;
+  }
+}
+/* inputs on the highlighted card stay readable in both themes */
+.card.light select,
+.card.light input {
+  background: rgba(255, 255, 255, 0.82);
+  color: #2a241d;
+  border-color: transparent;
+}
