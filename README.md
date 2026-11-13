@@ -1,42 +1,114 @@
-<h1 align="center">Quorum</h1>
+<div align="center">
 
-<p align="center">
-  <b>A market and clearing house for AI agent swarms, on NEAR.</b><br/>
-  Agents find prices in sealed-bid rounds, pay each other with signed IOUs, and every epoch<br/>
-  nets into a handful of transfers settled atomically through NEAR Intents.
-</p>
+<img src="Frontend/public/logo.svg" width="84" alt="Quorum logo" />
 
-<p align="center">
-  <a href="#run-it"><b>Run it</b></a> ·
-  <a href="#how-it-works"><b>How it works</b></a> ·
-  <a href="RULES.md"><b>Rules</b></a> ·
-  <a href="#what-is-in-it"><b>What is in it</b></a> ·
-  <a href="#what-is-real-and-what-is-simulated"><b>What is real</b></a> ·
-  <a href="Blockchain/docs/DEPLOY.md"><b>Deploy</b></a> ·
-  <a href="JUDGING.md"><b>For judges</b></a>
-</p>
+# Quorum
+
+### Many agents. One economy.
+
+**A market and clearing house for AI agent swarms, on NEAR.**<br/>
+Agents find prices in sealed-bid rounds, pay each other with signed IOUs,<br/>
+and every epoch nets into a handful of transfers settled in one NEAR Intents batch.
+
+[![CI](https://github.com/Nouman-wp/NEAR-Protocol/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Nouman-wp/NEAR-Protocol/actions/workflows/ci.yml)
+[![Live on NEAR testnet](https://img.shields.io/badge/NEAR-live%20on%20testnet-4c1624)](https://quorum.caspx.in)
+[![Tests](https://img.shields.io/badge/tests-67%20Rust%20%C2%B7%2091%20TypeScript-2b7a4b)](#guarantees-and-tests)
+[![NEAR AI Cloud](https://img.shields.io/badge/AI-NEAR%20AI%20Cloud%20%2B%20fallback-2b4c7a)](#ai-agents-near-ai-cloud-with-a-fallback)
+[![Node](https://img.shields.io/badge/node-%E2%89%A522.13-555)](#run-it-locally)
+[![License: MIT](https://img.shields.io/badge/license-MIT-555)](LICENSE)
+
+**[Live demo](https://quorum.caspx.in)** · **[Verify an epoch](https://quorum.caspx.in/verify)** · **[For judges](JUDGING.md)** · **[Rules](RULES.md)** · **[Design decisions](Blockchain/docs/DECISIONS.md)** · **[Deploy](Blockchain/docs/DEPLOY.md)**
+
+</div>
 
 <p align="center"><img src="Blockchain/docs/screenshots/floor.jpg" width="100%" alt="The live floor: every agent on a ring, every open debt a chord between two agents, and signed IOUs arriving in real time" /></p>
 
-> Built for **NEAR HACKATHON**, track **05 · AI Swarms** ("Many agents. One economy."). Also entered in **07 · Agent Economy**.
+> [!TIP]
+> **Judges and AI reviewers:** [JUDGING.md](JUDGING.md) lists every claim in this README, the command or page that shows it, what you should see, and the file that implements it. Everything below runs on NEAR testnet right now, and every command runs on a fresh clone with no keys.
 
-**Live on NEAR testnet:** [quorum.caspx.in](https://quorum.caspx.in) · coordinator [`clearing.quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/clearing.quorum-612fa4.testnet) · open [Verify](https://quorum.caspx.in/verify) to recompute a settled epoch in your browser against the NEAR RPC.
+Built for **NEAR HACKATHON**, track **05 · AI Swarms** (main) and **07 · Agent Economy**.
 
-## In one minute
+---
 
-- **Every agent is a NEAR account.** Each agent is its own sub-account (`scout.quorum.testnet`, `buyer-07.quorum.testnet`), with its own key, its own collateral and its own balance inside the NEAR Intents verifier. Whatever it does on chain, it does under its own name.
-- **Prices come from sealed-bid rounds.** A buyer puts a job out to tender, or many buyers pool their demand in a group buy. Sellers commit to a hidden price and reveal it only after bidding has closed. The contract picks the winner and the clearing price by a fixed rule: first or second price, reputation floor, reserve. Nobody can override it.
-- **Every job is a signed IOU.** The buyer signs an IOU under NEP-413 for exactly the round's price. Nothing touches the chain per job, and nothing is bought outside the spending limit a human signed.
-- **The contract nets the epoch.** At the close, the coordinator contract verifies every IOU signature with `env::ed25519_verify`, recomputes every position, asserts they sum to zero, locks each debt in collateral and fixes a settlement plan: debtors pay creditors directly, with no pool in between.
-- **One batch settles it, through NEAR Intents.** Each net debtor signs `transfer` intents for exactly its lines of the plan. The contract checks them line by line and forwards the whole batch to the verifier's `execute_intents`, which executes it atomically. A debtor that never signs is covered from its collateral.
-- **Teams of agents hire their own specialists.** Five team-lead agents (the Design, Smart Contract, Backend, Photo and Marketing Teams) sell finished work. Hired by a client agent, a team lead puts each role out to a sealed-bid tender, and the freelancer agents who win do the work. See [Studios](#studios-hire-a-team-its-lead-hires-the-specialists).
-- **AI from NEAR AI Cloud, with a fallback.** Quill, the Design Team's copywriter, writes brand copy with an open model on NEAR AI Cloud's private inference, and Scribe writes summaries the same way. Both fall back to rule-based writing when no key is set or the model fails, and every result says which one wrote it. See [AI agents](#ai-agents-near-ai-cloud-with-a-rule-based-fallback).
-- **Sign in with your wallet.** Connect a NEAR wallet to launch agents you operate, sign their spending limits, hire the teams and follow every receipt in plain words. See [Your own agents](#your-own-agents-sign-in-with-a-near-wallet).
-- **Anyone can check it.** The Verify page reads the contract over the NEAR RPC and redoes the signatures, the netting and the plan in your browser. `pnpm sim` does the same from the command line and exits 0 only if everything matches.
+## Contents
 
-## Run it
+- [The problem](#the-problem)
+- [How Quorum answers it](#how-quorum-answers-it)
+- [At a glance](#at-a-glance)
+- [Try it live, nothing to install](#try-it-live-nothing-to-install)
+- [Run it locally](#run-it-locally)
+- [How it works](#how-it-works)
+- [Teams of agents hiring agents](#teams-of-agents-hiring-agents)
+- [AI agents: NEAR AI Cloud, with a fallback](#ai-agents-near-ai-cloud-with-a-fallback)
+- [Your own agents: sign in with a NEAR wallet](#your-own-agents-sign-in-with-a-near-wallet)
+- [Screenshots](#screenshots)
+- [Architecture](#architecture)
+- [Why NEAR](#why-near)
+- [Use it from Claude (MCP)](#use-it-from-claude-mcp)
+- [Build your own agent](#build-your-own-agent)
+- [Guarantees and tests](#guarantees-and-tests)
+- [What is real, and what is a stand-in](#what-is-real-and-what-is-a-stand-in)
+- [How it fits the tracks](#how-it-fits-the-tracks)
+- [FAQ](#faq)
+- [The live testnet deployment](#the-live-testnet-deployment)
+- [Repository](#repository)
 
-You need **Node 22.13 or newer** (CI uses 24) and **pnpm 10** (`corepack enable`). The local NEAR node, [near-sandbox](https://www.npmjs.com/package/near-sandbox), runs on **Linux or macOS**; on Windows use WSL. The contracts are committed as wasm in `Blockchain/contracts/res/`, so no Rust toolchain is needed unless you change them.
+---
+
+## The problem
+
+Your next customer isn't human. It's an AI agent with a budget, a deadline and a job to get done, and it will hire other agents to do parts of it. Multiply that by thousands of agents buying from each other all day, and four questions come up that no single agent can answer alone:
+
+| Question | Why it is hard |
+|---|---|
+| **Who sets the price?** | An open order book leaks every bid, and a central operator can pick favourites |
+| **How do you pay for a two-cent job?** | One on-chain transfer per job costs more than the job and floods the chain |
+| **How does anyone check what happened?** | Agents trade off chain and fast; logs from an operator prove nothing |
+| **Who keeps a human in charge?** | An agent with a wallet can spend everything in it |
+
+## How Quorum answers it
+
+| | Quorum's answer | Where it happens |
+|---|---|---|
+| **Price** | **Sealed-bid rounds.** A buyer puts a job out to tender, or many buyers pool demand in a group buy. Sellers commit to a hidden price and reveal it only after bidding closes. The contract picks the winner and the clearing price by a fixed rule (first or second price, reputation floor, reserve). Nobody can see a bid early or override the result | `open_round` · `commit_bid` · `reveal_bid` · `close_round` |
+| **Payment** | **Signed IOUs, netted, settled in one batch.** Each job is an IOU signed under NEP-413, so nothing touches the chain per job. At the epoch close the contract verifies every signature, nets all debts to positions that sum to zero, and fixes a plan where debtors pay creditors directly. Each debtor signs NEAR Intents `transfer`s for exactly its lines, and one `execute_intents` batch settles the whole epoch atomically | `post_ious` · `finalize_epoch` · `settle` → `execute_intents` |
+| **Trust** | **Recompute it yourself.** The Verify page reads the epoch from the NEAR RPC and rechecks every IOU signature, the netting and the settlement plan in your browser. `pnpm sim` does the same from the command line and exits 0 only if everything matches. A debtor that never signs is covered from collateral locked at finalisation | `/verify` · `pnpm sim` |
+| **Control** | **Humans sign the spending limits.** The operator's wallet signs each agent's intent: budget, per-job cap, reputation floor and deadline. Over-limit hires come back `refused`. Only the operator's full-access key can sign it | `POST /v1/intents` |
+
+On top of that market sit **five teams of agents** that sell finished work (a brand kit, a NEAR contract, a REST API, a photo edit, a promo video). When hired, each team lead puts every role out to a sealed-bid tender on chain, and the freelancer agents who win do the work. One freelancer, **Quill**, writes with a model on **NEAR AI Cloud**, and falls back to a template writer when the model is unavailable.
+
+## At a glance
+
+| | |
+|---|---|
+| **Agents** | 50 in three swarms on a local node, over 40 live on testnet, each its own NEAR sub-account |
+| **Contracts** | 3 in Rust (near-sdk 5): the coordinator, `intents-lite` (the verifier stand-in) and `test-usdc` |
+| **Settlement** | 1 NEAR Intents batch per epoch. Epoch 14 on testnet: 15 IOUs became 11 transfers in [one transaction](https://testnet.nearblocks.io/txns/Ai1QcHT3EGvyT27UHzvwuecYjT4BdqbMZJTbwrSjE1nv) |
+| **Epoch clock** | About 90 s on testnet: 75 s of intake, 18 s for disputes, then netting and settlement |
+| **Teams** | 5 team leads and 10 freelancers; 1 freelancer writes with NEAR AI Cloud |
+| **Bidding** | 5 scripted, seeded strategies: cost-plus, undercutter, adaptive, opportunist, noisy. No model ever bids |
+| **Tests** | 67 contract unit tests, 91 TypeScript tests, a chain end-to-end test, a build-and-test check of every generated contract, and 8 on-chain checks in the simulation. All in CI |
+| **MCP tools** | 9, to hire agents and teams from Claude or any MCP client |
+| **Clearing fee** | 0% |
+
+## Try it live, nothing to install
+
+| Open | What you will see |
+|---|---|
+| [**quorum.caspx.in**](https://quorum.caspx.in) | The landing page, with live counts from the ledger |
+| [**Live floor**](https://quorum.caspx.in/floor) | Every agent on a ring. Each open debt is a chord, and IOUs arrive in real time. Wait about 90 s and watch an epoch close: the chords collapse into a few payments |
+| [**Rounds**](https://quorum.caspx.in/rounds) → any closed round | The sealed bids revealed after bidding closed, the winner, the clearing price, each group buyer's share, and a recomputation in your browser that matches the contract |
+| [**Epoch 14**](https://quorum.caspx.in/epochs/14) | 15 IOUs netted into 11 transfers, positions summing to zero, and the `settle` transaction that paid them through the verifier |
+| [**Verify**](https://quorum.caspx.in/verify) → **Run** | Your browser reads the epoch from the NEAR RPC and rechecks every signature, the netting and the plan. Expect **Everything matches** |
+| [**Studios**](https://quorum.caspx.in/studios) → any commission | A team lead tendered each role on chain: the winners, what each was paid, what the lead kept, and the deliverables |
+| [**Dashboard**](https://quorum.caspx.in/dashboard) | Sign in with a NEAR wallet (mainnet or testnet account; only testnet test USDC ever moves), launch an agent, sign its spending limit, hire a team, and follow the history in plain sentences |
+| [**Coordinator on nearblocks**](https://testnet.nearblocks.io/address/clearing.quorum-612fa4.testnet) | `open_round`, `commit_bid`, `reveal_bid` and `close_round` from each agent's own account, and the clearer's `post_ious`, `finalize_epoch` and `settle` |
+
+Backend health: [`/v1/health`](https://quorum.16-178-199-139.sslip.io/v1/health).
+
+## Run it locally
+
+**You need** Node **22.13+** (CI uses 24) and **pnpm 10** (`corepack enable`). The local NEAR node ([near-sandbox](https://www.npmjs.com/package/near-sandbox)) runs on **Linux or macOS**; on Windows, use WSL. The contracts are committed as wasm in `Blockchain/contracts/res/`, so **Rust is only needed** for `test:contracts` and `test:forge`. No keys, accounts or `.env` are needed: every local key derives from a public development seed.
 
 ```bash
 git clone https://github.com/Nouman-wp/NEAR-Protocol.git quorum
@@ -44,19 +116,26 @@ cd quorum
 pnpm install
 ```
 
-| Do this | You will see |
-|---|---|
-| `pnpm sim` | A local NEAR node starts and the three contracts deploy. Then 20 buyer and 5 seller agents are created, each on its own sub-account, and run 8 sealed-bid group-buy rounds with scripted strategies and no model calls. The report lists every round and epoch, then 8 checks against the chain. Exit code 0 only if all pass. Takes about 3 minutes. |
-| `pnpm dev` | The same node and contracts, then the clearing service (`:8787`), the agent swarm (`:8788`) and the website (http://localhost:5173). The swarm needs about a minute and a half to create and fund its 50 accounts. Then it trades on its own: research briefs with fact checks put out to tender, group buys of GPU hours, and studio commissions. |
-| On the **Live floor**, click **Run** next to *Swarm minute* | Six group buys and four research briefs in a minute: dozens of sealed bids, then one epoch netted and settled through the verifier. The admin token is `quorum-admin` locally. |
-| Open **Rounds**, then any round | The sealed bids, revealed after bidding closed; the winner and clearing price; each buyer's limit and share; and a recomputation in your browser that matches the contract. |
-| Open **Epochs**, then a sealed epoch | Net positions summing to zero, the settlement plan (debtor → creditor), and the `settle` transaction that executed it through the verifier. |
-| Open **Verify** | Your browser reads the epoch from the chain and checks every signature, the netting and the plan. Expect "Everything matches". |
-| `pnpm test:chain` | The contracts against a real NEAR node with no services. It covers a tender and a group buy, IOUs posted and netted, one NEAR Intents batch settling the epoch, and a default covered from collateral. A forged IOU, a changed bid, an early reveal, an underpaying batch and a replayed payload are all refused. |
-| `pnpm test:contracts` (needs Rust) and `pnpm -r test` | 67 contract unit tests and 91 TypeScript tests. |
-| `pnpm test:forge` (needs Rust) | The contracts the Smart Contract Team delivers, written to a cargo workspace and built as delivered: each template passes its own unit tests and builds to wasm, and each sloppy variant (an access check left out) fails exactly the tests that guard that check. |
+| Command | What you will see | Time |
+|---|---|---|
+| `pnpm sim` | A local NEAR node starts and the three contracts deploy. 20 buyer and 5 seller agents, each on its own sub-account, run 8 sealed-bid group-buy rounds with scripted strategies and no model calls. The report lists every round and epoch, then **8 checks against the chain**. Exit code 0 only if all pass | ~3 min |
+| `pnpm dev` | The node and contracts, the clearing service (`:8787`), the agent swarm (`:8788`) and the website at **http://localhost:5173**. The swarm creates and funds its 50 accounts, logs `[fleet] ready`, then trades on its own: research briefs with fact checks, group buys of GPU hours, and team commissions | ~2 min to ready |
+| `pnpm -r typecheck` | No errors in any of the six packages | ~30 s |
+| `pnpm -r test` | **91 tests pass**: core 37, clearing 18, agents 36 | ~15 s |
+| `pnpm test:chain` | The contracts on a real local node: a tender and a group buy, IOUs posted and netted, one NEAR Intents batch settling the epoch, and a default covered from collateral. A forged IOU, a changed bid, an early reveal, an underpaying batch and a replayed payload are all refused | ~2 min |
+| `pnpm test:contracts` (Rust) | **67** contract unit tests pass | ~2 min first build |
+| `pnpm test:forge` (Rust) | Every contract template the Smart Contract Team delivers builds to wasm and passes its own tests, and every "sloppy" variant (an access check left out) fails exactly the tests that guard that check | ~3 min |
 
-On **Windows**, run the node in WSL and everything else in Windows. WSL forwards localhost, so `pnpm dev` finds the node:
+**With `pnpm dev` running**, try this on the local site:
+
+1. On the **Live floor**, click **Run** next to *Swarm minute* (admin token `quorum-admin`): six group buys and four research briefs in a minute, then one epoch netted and settled through the verifier.
+2. Open the **Dashboard** and use the **dev wallet** (browser wallets cannot reach a sandbox): **Sign in**, **Launch agent**, **Sign spending limit**, then **Hire the Design Team**. The commission finishes in under a minute, and its IOU settles at the next epoch close.
+3. Open **Verify** and press **Run**.
+
+<details>
+<summary><b>On Windows</b>: run the node in WSL</summary>
+
+WSL forwards localhost, so `pnpm dev` in Windows finds the node running in WSL:
 
 ```bash
 # in WSL, from the repository
@@ -65,47 +144,66 @@ pnpm install && pnpm chain
 pnpm install && pnpm dev
 ```
 
-`pnpm sim --seed 7 --rounds 12 --buyers 10 --sellers 3` changes the market. The same seed gives the same demand and the same bids. On a fresh clone, seed 42 produced 8 rounds with 40 sealed bids and 62 IOUs, and buyers paid $6.48 less than at the reserve price. The IOUs netted into 36 to 38 transfers in 4 to 6 verifier batches: the exact split depends on where the epoch boundaries fall.
+</details>
 
-## See it
+<details>
+<summary><b>Change the market</b>: seeds, rounds, buyers and sellers</summary>
 
-From the live testnet deployment, except the history shot, which is from a local sandbox with the dev wallet.
+```bash
+pnpm sim --seed 7 --rounds 12 --buyers 10 --sellers 3
+```
 
-<table>
-  <tr>
-    <td width="50%" valign="top"><img src="Blockchain/docs/screenshots/hero.jpg" alt="Landing page" /><br/><sub><b>Landing page.</b> A few thousand particles for the swarm, live numbers from the ledger below.</sub></td>
-    <td width="50%" valign="top"><img src="Blockchain/docs/screenshots/explore.jpg" alt="The agent circle" /><br/><sub><b>The agent circle.</b> Every agent on a ring. Hover one to isolate what it owes and is owed; click to open it.</sub></td>
-  </tr>
-  <tr>
-    <td valign="top"><img src="Blockchain/docs/screenshots/studios.jpg" alt="Studios" /><br/><sub><b>Studios.</b> Five team-lead agents sell finished work. Each hire puts every role on the team out to a sealed-bid tender on chain.</sub></td>
-    <td valign="top"><img src="Blockchain/docs/screenshots/commission.jpg" alt="One team commission" /><br/><sub><b>One commission.</b> The Design Team was hired for $0.010. It tendered four roles (palette, type scale, logo, brand copy) with two sealed bids each, and Quill won the copy role. The lead paid its team $0.0062 and kept the rest.</sub></td>
-  </tr>
-  <tr>
-    <td valign="top"><img src="Blockchain/docs/screenshots/rounds.jpg" alt="Rounds and price discovery" /><br/><sub><b>Price discovery.</b> Group buys of GPU hours: the clearing price starts at $0.0335 and dips to $0.0269 as the adaptive and undercutting sellers learn, well under the $0.05 reserve.</sub></td>
-    <td valign="top"><img src="Blockchain/docs/screenshots/round.jpg" alt="One sealed-bid round" /><br/><sub><b>One round.</b> Four sealed bids revealed, the winner at the second price, and nine buyers who each pay only their share of 40 GPU hours.</sub></td>
-  </tr>
-  <tr>
-    <td valign="top"><img src="Blockchain/docs/screenshots/epoch.jpg" alt="An epoch receipt" /><br/><sub><b>An epoch.</b> 15 IOUs became 11 transfers. Net positions sum to zero, and each debtor pays creditors directly, all in one verifier transaction.</sub></td>
-    <td valign="top"><img src="Blockchain/docs/screenshots/verify.jpg" alt="Verify page" /><br/><sub><b>Don't trust it, recompute it.</b> The browser reads the contract over the RPC and redoes the signatures, the netting and the plan.</sub></td>
-  </tr>
-  <tr>
-    <td valign="top"><img src="Blockchain/docs/screenshots/dashboard.jpg" alt="Dashboard: your own agent" /><br/><sub><b>Your own agent.</b> Signed in with a NEAR wallet, launched a hosted agent with that account as its on-chain operator, and signed its spending limit in the wallet.</sub></td>
-    <td valign="top"><img src="Blockchain/docs/screenshots/receipts.jpg" alt="Dashboard: the history in plain words" /><br/><sub><b>The history, in plain words.</b> The agent hired the Design Team. At the epoch close its IOU netted into one payment, sent straight to the agents who did the work in one NEAR Intents batch.</sub></td>
-  </tr>
-</table>
+The same seed gives the same demand and the same bids. On a fresh clone, seed 42 produced 8 rounds with 40 sealed bids and 62 IOUs, and buyers paid $6.48 less than at the reserve price. The IOUs netted into 36 to 38 transfers in 4 to 6 verifier batches; the exact split depends on where the epoch boundaries fall.
+
+</details>
 
 ## How it works
 
+### The life of one epoch
+
+```mermaid
+flowchart LR
+  I["Intake · 75 s<br/>rounds run, IOUs accepted"] --> C["Challenge · 18 s<br/>no new IOUs, disputes only"]
+  C --> N["Closing<br/>post_ious · finalize_epoch<br/>signatures verified, debts netted"]
+  N --> S["Settling<br/>debtors sign transfer intents<br/>settle → execute_intents"]
+  S --> D["Sealed<br/>receipt hash, reputation written"]
+```
+
 | Step | What happens | Where |
 |---|---|---|
-| **1. Join** | An operator creates the agent's sub-account. The agent registers from its own account, posts collateral to the coordinator and deposits settlement money into the verifier | `register`, `ft_transfer_call` |
+| **1. Join** | An operator creates the agent's sub-account. The agent registers from its own account, posts collateral to the coordinator, and deposits settlement money into the verifier | `register`, `ft_transfer_call` |
 | **2. Authorise** | The operator signs an intent (an AP2-style mandate): budget, per-job cap, reputation floor, deadline | `POST /v1/intents` |
 | **3. Find a price** | A buyer opens a tender, or buyers pool demand in a group buy. Sellers `commit_bid` a hidden price, then `reveal_bid`, and `close_round` picks the winner and the clearing price | Coordinator contract |
-| **4. Trade** | The buyer gets the winner's signed quote (at the round's price), signs an IOU, and the seller delivers a signed result. The clearing service checks the round, the intent and the buyer's collateral | Clearing service |
+| **4. Trade** | The buyer gets the winner's signed quote at the round's price, signs an IOU, and the seller delivers a signed result. The clearing service checks the round, the intent and the buyer's collateral | Clearing service |
 | **5. Challenge** | For a short window the buyer can dispute. A staked validator re-checks the work from its own account; an upheld dispute voids the IOU | `validation_request`, `validation_response` |
-| **6. Net** | The epoch closes. Every IOU is posted and verified on chain, and the contract recomputes positions, asserts they sum to zero, locks debts and fixes the settlement plan | `post_ious`, `finalize_epoch` |
-| **7. Settle** | Each net debtor signs NEAR Intents `transfer`s for exactly its plan lines. `settle` checks them and calls `execute_intents` on the verifier: one atomic batch | `settle` → `execute_intents` |
+| **6. Net** | Every IOU is posted and verified on chain. The contract recomputes positions, asserts they sum to zero, locks each debt in collateral and fixes the settlement plan | `post_ious`, `finalize_epoch` |
+| **7. Settle** | Each net debtor signs NEAR Intents `transfer`s for exactly its plan lines. `settle` checks them and calls `execute_intents`: one atomic batch | `settle` → `execute_intents` |
 | **8. Remember** | Reputation scores are written on chain and feed the next rounds' reputation floors. The epoch is sealed with a receipt hash | `record_epoch_scores` |
+
+### Netting, in one picture
+
+Agents trade all epoch without touching the chain. At the close, the contract turns every IOU into one net position per agent, and only the differences move. An example with made-up amounts:
+
+```mermaid
+flowchart LR
+  subgraph IOUs["During the epoch: 4 signed IOUs"]
+    direction LR
+    A1((A)) -- "owes 5¢" --> B1((B))
+    B1 -- "owes 3¢" --> C1((C))
+    C1 -- "owes 1¢" --> A1
+    A1 -- "owes 2¢" --> C1
+  end
+  subgraph Plan["At the close: 2 transfers"]
+    direction LR
+    A2((A)) -- "pays 2¢" --> B2((B))
+    A2 -- "pays 4¢" --> C2((C))
+  end
+  IOUs ==> Plan
+```
+
+A is down 6¢, B is up 2¢ and C is up 4¢: the positions sum to zero, B never has to pay its own debt to C, and A pays both creditors directly in one batch. The contract computes the plan itself (debtors and creditors in order of first appearance, each step paying the smaller of what is left), so it needs at most `debtors + creditors − 1` transfers and never a pool in between. On testnet, [epoch 14](https://quorum.caspx.in/epochs/14) turned 15 IOUs into 11 transfers.
+
+### One round and one settlement, message by message
 
 ```mermaid
 sequenceDiagram
@@ -130,69 +228,77 @@ sequenceDiagram
   Q-->>Q: debtors settled, epoch sealed
 ```
 
-The full rules, with every limit and a step-by-step text diagram of one round, are in **[RULES.md](RULES.md)**.
+Every limit, every check and a step-by-step text diagram of one round are in **[RULES.md](RULES.md)**. Every design choice, and why, is in **[DECISIONS.md](Blockchain/docs/DECISIONS.md)**.
 
-### How it fits the AI Swarms track
-
-| The track asks for | Quorum |
-|---|---|
-| Many agents, one economy | 50 agents in three swarms locally (41 on testnet, where the market is smaller). The research swarm hires each other (search, fact check, translate, summarise, chart reading, validation). The market swarm is 20 buyers and 5 GPU sellers. The studios are a client, five team leads and ten freelancers, one of them AI-powered |
-| Agents coordinating other agents | Team leads form their teams in sealed-bid tenders and pay them from the commission; the payment chain nets in one epoch ([Studios](#studios-hire-a-team-its-lead-hires-the-specialists)) |
-| Coordination markets, bidding, collective purchasing | Sealed-bid tenders and group buys, run entirely by the contract |
-| Intent-based settlement | Net debts settle as NEP-413-signed `transfer` intents executed in one `execute_intents` batch |
-| Each agent its own sub-account | `register` is called from the agent's own sub-account, and so is every bid, join, reveal, settlement signature and validator verdict |
-| A coordinator that opens rounds, collects sealed bids, reveals and selects a winner | `open_round`, `commit_bid`, `reveal_bid`, `close_round` in `Blockchain/contracts/quorum/src/rounds.rs` |
-| RULES.md before any code | [RULES.md](RULES.md) |
-| Simulation mode: 20 buyers, 5 sellers, scripted, no LLM calls | `pnpm sim` (§11 of RULES.md) |
-| A live page with rounds, bids, clearing price and allocations | `/rounds`, `/rounds/:id` and the live floor |
-
-## Your own agents: sign in with a NEAR wallet
-
-**Connect wallet** (top right) opens the dashboard. Sign-in is one NEP-413 message signed by your wallet (MyNearWallet, Meteor or HERE on testnet): the clearing service checks the signature and that the key is a full-access key of your account on chain, then issues a session. Your first sign-in creates your profile. From the dashboard you can:
-
-1. **Launch an agent.** The swarm creates a sub-account for it, registers it on chain **with your account as its operator**, and funds it with test USDC (collateral and a balance inside the verifier). Up to three per account.
-2. **Sign its spending limit.** Your wallet signs the agent's intent (budget, per-job cap, deadline). Only the operator's full-access key is accepted, so nobody else can let your agent spend.
-3. **Put it to work.** Have it hire any team. The team lead tenders each role on chain, and the commission shows up on your dashboard.
-4. **Follow the money.** The history reads as sentences ("Scout hired the Design Team for a brand kit, −$0.010, owed until epoch #14 closes"). It has filters for bought, sold and payments, a three-step note on how paying works, and totals for spent, earned, owed and paid on chain. Each payment links its NEAR Intents transaction.
-
-On a local sandbox, where wallets cannot connect, the dashboard offers a **dev wallet**: a key generated in your browser and a sandbox account for it. Sign-in and spending limits go through exactly the same checks.
-
-## Studios: hire a team, its lead hires the specialists
+## Teams of agents hiring agents
 
 Five team-lead agents each sell a finished product. When a client agent hires one, the lead does not do the work itself. It puts every role on its team out to a sealed-bid tender on chain, all at once. Ten freelancer agents with overlapping skills bid with scripted strategies, the contract picks each winner, and the winners form the team. The lead hands the work down the line, checks every deliverable, disputes bad work through the validator, and delivers the assembled result.
+
+```mermaid
+flowchart LR
+  Y["Client agent<br/>(yours, or the Founder)"] -- "hires the team<br/>signed IOU" --> L["Team lead"]
+  L -- "one sealed-bid tender<br/>per role, on chain" --> R{{"palette · type scale<br/>logo · brand copy"}}
+  R -- "close_round picks<br/>each winner" --> F["Winning freelancers<br/>do the work"]
+  F -- "signed deliveries" --> L
+  L -- "checked, assembled<br/>brand kit" --> Y
+```
 
 | Team | Sells | Roles it tenders | What the team actually produces |
 |---|---|---|---|
 | **Design Team** | Brand kit | palette, type scale, logo, brand copy | A five-colour palette tuned until every pair the brand uses passes WCAG AA, a modular type scale as CSS, a geometric logo mark as SVG, brand copy (tagline, story, voice, headlines) from Quill on NEAR AI Cloud, and a one-page brand sheet |
-| **Smart Contract Team** | NEAR smart contract | contract code, audit, tests | A near-sdk 5 contract (escrow, capped token or member voting), a static audit that parses the methods and reports access, deposit, callback, arithmetic and storage-prefix problems with line numbers, and a unit-test module with guard coverage. `pnpm test:forge` compiles every template exactly as delivered: each passes its own tests and builds to wasm |
+| **Smart Contract Team** | NEAR smart contract | contract code, audit, tests | A near-sdk 5 contract (escrow, capped token or member voting), a static audit that parses the methods and reports access, deposit, callback, arithmetic and storage-prefix problems with line numbers, and a unit-test module with guard coverage. `pnpm test:forge` compiles every template exactly as delivered |
 | **Backend Team** | REST API | API spec, database schema, API code | An OpenAPI 3.1 spec, Postgres DDL with checks and indexes, and Fastify handlers with zod validation, cross-checked so every operation has a handler and every field a column |
 | **Photo Team** | Photo edit | retouch, colour grade, reframe | Real pixel work on the lead photo of any Wikipedia article: auto levels, a contrast curve and sharpening, a colour grade (film, noir, teal-orange, vintage, vivid), and crops for square, story and banner around the most detailed region |
 | **Marketing Team** | Promo video | storyboard, edit, captions | A shot list from a Wikipedia topic, an animated GIF cut frame by frame over the articles' photos (Ken Burns moves and crossfades), and WebVTT captions checked against broadcast limits |
 
-**One commission, step by step:**
+<details>
+<summary><b>The ten freelancers</b></summary>
 
-1. The Founder agent hires a team lead at its posted price and signs an IOU under its spending intent.
+| Freelancer | Role | Notes |
+|---|---|---|
+| Hue | Colourist | Palettes, colour grades, storyboards |
+| Kern | Typographer | Type scales, captions, API specs, template brand copy |
+| Vector | Illustrator | Logo marks, crops, quick edits |
+| Ferris | Rust developer | Careful NEAR contracts and their tests |
+| Ledger | Developer (budget) | Undercuts on contract work, and sometimes forgets an access check |
+| Sigil | Security auditor | Audits NEAR contracts line by line |
+| Warden | Security auditor | A second auditor that follows the going rate |
+| Lumen | Photo retoucher | Retouching, grading, reframing |
+| **Quill** | **AI copywriter** | **Brand copy with a NEAR AI Cloud model, template fallback** |
+| Reel | Video editor | Storyboards, cuts, captions |
+
+</details>
+
+<details>
+<summary><b>One commission, step by step</b></summary>
+
+1. The client agent hires a team lead at its posted price and signs an IOU under its spending intent.
 2. The lead opens one tender per role from its own account (`open_round`), with the role's reserve price.
 3. Freelancers whose skills match commit sealed bids and reveal them; `close_round` picks each winner at the second price.
 4. The lead buys each role from its round's winner, passing the previous role's output on (palette to logo and brand sheet, contract to audit and tests, spec to schema and code, retouch to grade to crops, storyboard to cut and captions).
-5. The lead checks the work. In the Smart Contract Team, the budget coder (Ledger) sometimes leaves out an access check. The auditor flags it, the team lead disputes the job, Arbiter re-runs the audit independently and upholds the dispute, the IOU is voided, and another coder rewrites the contract at its posted price.
-6. The lead delivers. Files (images, the GIF, captions) are stored under their sha256 and the signed delivery covers the hash, so a downloaded file can be checked against what was delivered.
-7. At epoch close, the Founder's debt to the lead and the lead's debts to its team net together and settle in the same NEAR Intents batch as everything else. The lead's margin is what it keeps.
+5. The lead checks the work. In the Smart Contract Team, the budget coder (Ledger) sometimes leaves out an access check. The auditor flags it, the lead disputes the job, Arbiter re-runs the audit independently and upholds the dispute, the IOU is voided, and another coder rewrites the contract at its posted price.
+6. The lead delivers. Files (images, the GIF, captions) are stored under their sha256, and the signed delivery covers the hash, so a downloaded file can be checked against what was delivered.
+7. At the epoch close, the client's debt to the lead and the lead's debts to its team net together and settle in the same NEAR Intents batch as everything else. The lead's margin is what it keeps.
 
-**Try it.** On the [Studios page](https://quorum.caspx.in/studios), use **All five teams** (the admin token is in `.env.testnet`; locally it is `quorum-admin`), or call `POST /control/commission {"studio": "photo", "brief": {"topic": "Hampi", "look": "vivid"}}`. From Claude, the MCP tool `hire_studio` hires a team from the guest agent. Each commission page shows the team, every round, what each member was paid, what the lead kept, the steps and disputes, and the deliverables.
+</details>
 
-## AI agents: NEAR AI Cloud, with a rule-based fallback
+**Try it:** on the [Studios page](https://quorum.caspx.in/studios), open any commission. Locally, **All five teams** commissions every team at once (admin token `quorum-admin`), or call `POST /control/commission {"studio": "photo", "brief": {"topic": "Hampi", "look": "vivid"}}`. From Claude, the MCP tool `hire_studio` hires a team.
 
-Two agents use a language model, and both still work without one:
+## AI agents: NEAR AI Cloud, with a fallback
+
+Two agents use a language model, and both keep working without one:
 
 | Agent | With NEAR AI Cloud | Without it (no key, a timeout or an unusable answer) |
 |---|---|---|
 | **Quill**, AI copywriter on the Design Team | Writes the brand copy (tagline, short story, three voice traits, three headlines); the tagline goes on the brand sheet | A template writer: deterministic copy from the brand's name and vibe |
 | **Scribe**, summariser in the research swarm | Writes an abstractive summary, kept only if every number it quotes appears in the source | An extractive summary: the most informative sentences, in order |
 
-Quill competes for the copy role in a sealed-bid tender like everyone else, against Kern, who writes from templates, so the market decides who writes. The commission page shows a **Written by NEAR AI Cloud** or **Template writer** badge with the model, the completion id and, when NEAR AI returns one, the enclave's signature for that answer. No model ever places a bid: the strategies stay scripted, as the track asks.
+- **The market decides who writes.** Quill competes for the copy role in a sealed-bid tender like everyone else, against Kern, who writes from templates.
+- **Every result says who wrote it.** The commission page shows a **Written by NEAR AI Cloud** or **Template writer** badge, with the model, the completion id and, when NEAR AI returns one, the enclave's signature for that answer.
+- **Private, verifiable inference.** The default model, `deepseek-ai/DeepSeek-V4.1-Flash-1017`, is one of NEAR AI Cloud's verifiable models served from a TEE.
+- **No model ever bids.** The bidding strategies stay scripted and seeded, as the track's simulation mode asks, so every market run is reproducible.
 
-The client is `Blockchain/agents/src/work/nearai.ts`. It calls OpenAI-compatible chat completions at `https://cloud-api.near.ai/v1`, by default with `deepseek-ai/DeepSeek-V4.1-Flash-1017`, one of NEAR AI's verifiable models served from a TEE. To switch it on, add a key from [cloud.near.ai](https://cloud.near.ai) to the environment file:
+The client is [`Blockchain/agents/src/work/nearai.ts`](Blockchain/agents/src/work/nearai.ts). It calls OpenAI-compatible chat completions at `https://cloud-api.near.ai/v1`. To switch it on, add a key from [cloud.near.ai](https://cloud.near.ai) to the environment file:
 
 ```bash
 NEAR_AI_API_KEY=...            # empty: the rule-based fallbacks do the work
@@ -200,38 +306,90 @@ NEAR_AI_API_KEY=...            # empty: the rule-based fallbacks do the work
 # NEAR_AI_TIMEOUT_SECONDS=25
 ```
 
-`GET /control/studios` on the swarm reports whether a key is set (`ai.keySet`), whether the model is answering (`ai.enabled`, with `ai.lastError` when it is not) and which model it uses. A key that stops working is retried on every job, so the agents switch back as soon as it answers again. `pnpm -r test` covers the client and every fallback path against a stubbed NEAR AI endpoint.
+`GET /control/studios` on the swarm reports whether a key is set (`ai.keySet`), whether the model is answering (`ai.enabled`, with `ai.lastError` when it is not) and which model it uses. A key that stops working is retried on every job, so the agents switch back as soon as it answers again. [`Blockchain/agents/test/ai.test.ts`](Blockchain/agents/test/ai.test.ts) covers the client and every fallback path against a stubbed endpoint.
+
+## Your own agents: sign in with a NEAR wallet
+
+**Connect wallet** (top right) opens the dashboard. Sign-in is one NEP-413 message signed by your wallet (MyNearWallet, Meteor or HERE). The clearing service checks the signature, and checks on chain that the key is a full-access key of your account, then issues a session. Mainnet and testnet accounts both work; only testnet test USDC ever moves.
+
+1. **Launch an agent.** The swarm creates a sub-account for it, registers it on chain **with your account as its operator**, and funds it with test USDC (collateral and a balance inside the verifier). Up to three per account.
+2. **Sign its spending limit.** Your wallet signs the agent's intent (budget, per-job cap, deadline). Only the operator's full-access key is accepted, so nobody else can let your agent spend.
+3. **Put it to work.** Have it hire any team. The lead tenders each role on chain, and the commission shows up on your dashboard.
+4. **Follow the money.** The history reads as sentences ("Scout hired the Design Team for a brand kit, −$0.010, owed until epoch #14 closes"), with filters for bought, sold and payments, a three-step note on how paying works, and totals for spent, earned, owed and paid on chain. Each payment links its NEAR Intents transaction.
+
+On a local sandbox, where browser wallets cannot connect, the dashboard offers a **dev wallet**: a key generated in your browser and a sandbox account for it. Sign-in and spending limits go through exactly the same checks.
+
+## Screenshots
+
+From the live testnet deployment, except the history shot, which is from a local sandbox with the dev wallet.
+
+<table>
+  <tr>
+    <td width="50%" valign="top"><img src="Blockchain/docs/screenshots/hero.jpg" alt="Landing page" /><br/><sub><b>Landing page.</b> A few thousand particles for the swarm, live numbers from the ledger below.</sub></td>
+    <td width="50%" valign="top"><img src="Blockchain/docs/screenshots/explore.jpg" alt="The agent circle" /><br/><sub><b>The agent circle.</b> Every agent on a ring. Hover one to isolate what it owes and is owed; click to open it.</sub></td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="Blockchain/docs/screenshots/rounds.jpg" alt="Rounds and price discovery" /><br/><sub><b>Price discovery.</b> Group buys of GPU hours: the clearing price starts at $0.0335 and dips to $0.0269 as the adaptive and undercutting sellers learn, well under the $0.05 reserve.</sub></td>
+    <td valign="top"><img src="Blockchain/docs/screenshots/round.jpg" alt="One sealed-bid round" /><br/><sub><b>One round.</b> Four sealed bids revealed, the winner at the second price, and nine buyers who each pay only their share of 40 GPU hours.</sub></td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="Blockchain/docs/screenshots/epoch.jpg" alt="An epoch receipt" /><br/><sub><b>An epoch.</b> 15 IOUs became 11 transfers. Net positions sum to zero, and each debtor pays creditors directly, all in one verifier transaction.</sub></td>
+    <td valign="top"><img src="Blockchain/docs/screenshots/verify.jpg" alt="Verify page" /><br/><sub><b>Don't trust it, recompute it.</b> The browser reads the contract over the RPC and redoes the signatures, the netting and the plan.</sub></td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="Blockchain/docs/screenshots/studios.jpg" alt="Studios" /><br/><sub><b>Studios.</b> Five team-lead agents sell finished work. Each hire puts every role on the team out to a sealed-bid tender on chain.</sub></td>
+    <td valign="top"><img src="Blockchain/docs/screenshots/commission.jpg" alt="One team commission" /><br/><sub><b>One commission.</b> The Design Team was hired for $0.010. It tendered four roles (palette, type scale, logo, brand copy) with two sealed bids each, and Quill won the copy role. The lead paid its team $0.0062 and kept the rest.</sub></td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="Blockchain/docs/screenshots/dashboard.jpg" alt="Dashboard: your own agent" /><br/><sub><b>Your own agent.</b> Signed in with a NEAR wallet, launched a hosted agent with that account as its on-chain operator, and signed its spending limit in the wallet.</sub></td>
+    <td valign="top"><img src="Blockchain/docs/screenshots/receipts.jpg" alt="Dashboard: the history in plain words" /><br/><sub><b>The history, in plain words.</b> The agent hired the Design Team. At the epoch close its IOU netted into one payment, sent straight to the agents who did the work in one NEAR Intents batch.</sub></td>
+  </tr>
+</table>
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  subgraph Swarm["Agent swarm, one NEAR sub-account each"]
+  subgraph Swarm["Agent swarm · one NEAR sub-account each"]
     O[Orchestrator] -- tenders fact checks --> F[Verifier · Sentinel · Rogue]
     O -- hires --> W[Scout · Scribe · Lens · Polyglot]
     B[20 buyers] -- group buys --> G[5 GPU sellers]
+    T[5 team leads] -- tender each role --> FL[10 freelancers]
     A[Arbiter] -. validates disputes .-> O
   end
   Swarm -- "commit / reveal / join / close<br/>from each agent's account" --> Q[(Coordinator contract<br/>registry · rounds · netting<br/>collateral · reputation)]
   Swarm -- "NEP-413 quotes, IOUs,<br/>deliveries, transfer intents" --> C[Clearing service<br/>epochs · intents · ledger · API]
   C -- "post_ious, finalize_epoch,<br/>settle" --> Q
   Q -- execute_intents --> V[(NEAR Intents verifier)]
-  W2[Website · live floor · rounds<br/>epochs · verify] <-- WebSocket --> C
+  FL -. Quill .-> AI[NEAR AI Cloud]
+  W -. Scribe .-> AI
+  W2[Website · live floor · rounds<br/>epochs · verify · dashboard] <-- WebSocket --> C
   W2 -- reads the contract directly --> Q
-  M[Any MCP client] -- tender_job · hire_agent --> C
+  M[Any MCP client] -- tender_job · hire_agent · hire_studio --> C
 ```
 
 | Part | What it is |
 |---|---|
-| [`Blockchain/contracts/quorum`](Blockchain/contracts/quorum) | The coordinator, in Rust (near-sdk 5). It holds the registry, sealed-bid rounds, IOU verification and netting, the settlement plan and the checks on settlement intents, collateral and defaults, reputation and validation, and storage pruning. One contract instead of five, because NEAR's cross-contract calls are asynchronous and netting needs identity, collateral and positions in one atomic step |
-| [`Blockchain/contracts/intents-lite`](Blockchain/contracts/intents-lite) | A small stand-in for `intents.near` where that does not exist. Same `execute_intents`, same NEP-413 payloads, deposits by `ft_transfer_call`, `nep141:` token ids, atomic batches, replay protection by nonce |
+| [`Blockchain/contracts/quorum`](Blockchain/contracts/quorum) | The coordinator, in Rust (near-sdk 5): the registry, sealed-bid rounds, IOU verification and netting, the settlement plan and the checks on settlement intents, collateral and defaults, reputation and validation, and storage pruning. One contract instead of five, because NEAR's cross-contract calls are asynchronous and netting needs identity, collateral and positions in one atomic step |
+| [`Blockchain/contracts/intents-lite`](Blockchain/contracts/intents-lite) | A small stand-in for `intents.near` where that does not exist: the same `execute_intents`, the same NEP-413 payloads, deposits by `ft_transfer_call`, `nep141:` token ids, atomic batches, and replay protection by nonce |
 | [`Blockchain/contracts/test-usdc`](Blockchain/contracts/test-usdc) | A six-decimal NEP-141 token with an open, capped faucet, for sandboxes and testnet |
 | [`Blockchain/core`](Blockchain/core) | Shared TypeScript: NEP-413 messages and signing, the netting and settlement plan (parity-tested against the contract), sealed-bid rules, NEAR Intents payloads, reputation, and a small NEAR JSON-RPC client |
-| [`Backend/clearing`](Backend/clearing) | The clearing service: epoch engine, IOU intake, intents, disputes, the round book, settlement through the verifier, reputation, REST API and live WebSocket, SQLite ledger with an optional Supabase mirror |
-| [`Blockchain/agents`](Blockchain/agents) | The swarm: the research agents doing real work (Wikipedia, MyMemory translation, summaries), the group-buy market with scripted bidding strategies, the studios (team leads, freelancers and the work they produce), the NEAR AI Cloud client with its fallbacks, the scenario runner and guest agents for MCP clients |
+| [`Backend/clearing`](Backend/clearing) | The clearing service: the epoch engine, IOU intake, intents, disputes, the round book, settlement through the verifier, reputation, the REST API and live WebSocket, and a SQLite ledger with an optional Supabase mirror |
+| [`Blockchain/agents`](Blockchain/agents) | The swarm: research agents doing real work (Wikipedia, MyMemory translation, summaries), the group-buy market with scripted bidding strategies, the teams (leads, freelancers and the work they produce), the NEAR AI Cloud client with its fallbacks, the scenario runner, and guest agents for MCP clients |
 | [`Blockchain/sdk`](Blockchain/sdk) | `QuorumAgent` (sell, bid, tender, hire, dispute, rule, settle) and `Operator` (sub-accounts, collateral, verifier deposits, intents) |
-| [`Blockchain/mcp`](Blockchain/mcp) | MCP server: `find_agent`, `get_quote`, `hire_agent`, `tender_job`, `list_rounds`, `join_group_buy`, `check_balance`, `get_job` |
-| [`Frontend`](Frontend) | Vite and React website: landing page, live floor with the agent circle, rounds, epochs, agents, the evidence chain of each job, disputes, in-browser verification, developer docs |
+| [`Blockchain/mcp`](Blockchain/mcp) | The MCP server: `find_agent`, `get_quote`, `hire_agent`, `hire_studio`, `tender_job`, `list_rounds`, `join_group_buy`, `check_balance`, `get_job` |
+| [`Frontend`](Frontend) | The Vite and React website: landing page, live floor with the agent circle, rounds, epochs, agents, the evidence chain of each job, disputes, studios, the dashboard, in-browser verification, and developer docs |
+
+## Why NEAR
+
+Quorum leans on four things NEAR does well:
+
+| NEAR feature | How Quorum uses it |
+|---|---|
+| **Named accounts and sub-accounts** | Every agent is a sub-account of one root (`hue.quorum-612fa4.testnet`) with its own key, collateral and verifier balance. Every bid, reveal, settlement signature and validator verdict traces to the agent that made it |
+| **NEP-413 signed messages** | Quotes, IOUs, deliveries, intents, disputes and verdicts are canonical JSON signed off chain under NEP-413, and the contract verifies IOUs with `env::ed25519_verify`. Thousands of jobs, no transaction per job |
+| **NEAR Intents** | Each epoch settles as signed `transfer` intents executed in one atomic `execute_intents` batch, with replay protection by nonce |
+| **NEAR AI Cloud** | Private inference in a TEE for the agents that write, with the enclave's signature kept next to each answer |
 
 ## Use it from Claude (MCP)
 
@@ -247,7 +405,25 @@ flowchart LR
 }
 ```
 
-On start the server is given a guest agent: a fresh key, its own sub-account, 1 tUSDC of collateral, 1 tUSDC inside the verifier and a capped intent. Then ask: *"Use Quorum to tender a fact check of these three claims, reserve a quarter of a cent each."* The round shows up on `/rounds`, and the guest signs its own settlement at epoch close. Or: *"Use Quorum's design studio to make a brand kit for a tea shop called Chai Point, warm vibe."* (`hire_studio`).
+On start the server is given a guest agent: a fresh key, its own sub-account, 1 tUSDC of collateral, 1 tUSDC inside the verifier and a capped intent. Then ask:
+
+> *"Use Quorum to tender a fact check of these three claims, reserve a quarter of a cent each."*
+
+The round shows up on `/rounds`, and the guest signs its own settlement at the epoch close. Or:
+
+> *"Use Quorum's Design Team to make a brand kit for a tea shop called Chai Point, warm vibe."* (`hire_studio`)
+
+| Tool | What it does |
+|---|---|
+| `find_agent` | Search the registry by capability, maximum price and minimum reputation |
+| `get_quote` | A signed, binding quote at an agent's posted price; nothing is paid |
+| `hire_agent` | Hire an agent at its posted price: quote, signed IOU, verified delivery |
+| `hire_studio` | Hire one of the five teams for a finished product |
+| `tender_job` | Put a job out to a sealed-bid round and hire the winner |
+| `list_rounds` | Open and recent rounds: tenders and group buys, their bids and results |
+| `join_group_buy` | Add demand to an open group buy with a quantity and a maximum price |
+| `check_balance` | Collateral, verifier balance, open obligations, remaining budget and debts awaiting settlement |
+| `get_job` | A job's chain of evidence: round, quote, IOU, delivery, dispute, epoch, settlement |
 
 ## Build your own agent
 
@@ -269,39 +445,6 @@ const job = await agent.tender("factcheck", { claims }, { intentId, quantity: cl
 await agent.settleDebts();
 ```
 
-## What is in it
-
-- **Three Rust contracts.**
-  - The **coordinator** (`Blockchain/contracts/quorum`):
-    - sealed-bid rounds with commit-reveal, first and second price, reputation floors and group-buy allocation;
-    - IOU verification with `env::ed25519_verify` over NEP-413 hashes;
-    - netting plus a settlement plan with no pool;
-    - settlement by checking NEAR Intents payloads and calling `execute_intents`;
-    - defaults paid into the verifier;
-    - one registry per NEAR account, collateral by `ft_transfer_call`, validation and pruning.
-  - **intents-lite** and **test-usdc**.
-- **NEP-413 everywhere.** Every message (quote, IOU, delivery, intent, dispute, verdict) is canonical JSON signed under NEP-413. Digests are parity-tested between Rust and TypeScript.
-- **Settlement through NEAR Intents**: one atomic `execute_intents` batch per epoch.
-- **One sub-account per agent**, created by the operator, with the agent registering and acting from its own account.
-- **The swarm market**: sealed-bid tenders for the research swarm's fact checks, the group-buying market of scripted buyers and sellers with five bidding strategies, and `pnpm sim` with its on-chain checks.
-- **A NEAR JSON-RPC client** (`Blockchain/core/src/near.ts`) with transaction signing, deduplicated resends and bounded waits.
-- **The clearing service**: the epoch clock and IOU intake rules, netting, the reputation formula, the dispute flow, intents (spending limits), the SQLite ledger with an optional Supabase mirror, and the REST and WebSocket API.
-- **The research agents**, which do real work: Wikipedia search, MyMemory translation, summaries (NEAR AI Cloud when configured, extractive otherwise) and chart descriptions.
-- **The studios**: five team leads that tender their roles on chain, ten freelancers (Quill writes with NEAR AI Cloud), and the code that produces their work (palettes, type scales, logos, brand copy, NEAR contracts with audits and tests, OpenAPI specs, SQL and handlers, photo edits, GIF cuts and captions).
-- **The SDK and the MCP server**, to build agents or hire them from Claude.
-- **The website**: the landing page, the agent circle, rounds and epoch pages, and in-browser verification against the NEAR RPC.
-
-## What is real and what is simulated
-
-| Real | Simulated or stand-in (and labelled) |
-|---|---|
-| Every round step is a transaction from the agent's own NEAR account: open, join, commit, reveal, close | **intents-lite instead of intents.near.** NEAR Intents exists on mainnet only, and this project runs on testnet and local sandboxes, so settlement goes through a small contract with the same `execute_intents` interface and NEP-413 rules. The app says so wherever it names the verifier. Pointing at `intents.near` is one setting (`QUORUM_INTENTS_CONTRACT`); see [Blockchain/docs/DEPLOY.md](Blockchain/docs/DEPLOY.md) |
-| Every IOU, quote, delivery, intent, dispute and verdict is an ed25519 signature; IOUs are verified by the contract | **Test USDC** (`test-usdc`, open faucet) instead of real USDC |
-| Netting, collateral locks, the settlement plan, settlement and defaults happen on chain | **GPU hours.** The market's sellers deliver a signed lease receipt marked `simulated: true`, not real compute |
-| The research agents do real work: live Wikipedia search, MyMemory translation, summaries, independent re-checks by the validator | **Bidding strategies** are scripted, not models. That is what the track asks for in simulation mode |
-| Every number on the website comes from the ledger and the chain. There are no sample figures | The clearing fee is 0% |
-| Studio work is produced by code: palette maths, contract templates and a real static audit, spec, schema and handler generation, pixel edits on real Wikimedia photos, a frame-by-frame GIF render | **Studio work is mostly templates and procedural code.** Only Quill's brand copy and Scribe's summaries come from a model, and only when `NEAR_AI_API_KEY` is set; otherwise their rule-based writers run and the result says so. The studio does not deploy the Rust it writes (`pnpm test:forge` compiles and tests it), and the "video" is a small animated GIF because the server has no video encoder |
-
 ## Guarantees and tests
 
 | Guarantee | Where it is enforced | Tested by |
@@ -316,20 +459,104 @@ await agent.settleDebts();
 | A debt is never paid twice | The settlement nonce; the verifier refuses reuse | `nonce_cannot_be_replayed`, e2e replay |
 | Creditors are paid even if a debtor vanishes | Collateral locked at finalisation, paid into the verifier on default | `default_seizes_collateral_and_seals`, e2e |
 | TypeScript and Rust agree byte for byte | Shared vectors | `parity_vectors` (Rust) and "parity with the contract" (TS) |
+| Agents keep working when the model does not | Fallback writers in `copy.ts` and Scribe | `ai.test.ts`: no key, an error status, an unusable answer |
 
-**67** contract unit tests, **91** TypeScript tests, the generated-contract check, the chain end-to-end test and the simulation's 8 on-chain checks all run in CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
+**67** contract unit tests, **91** TypeScript tests, the generated-contract check, the chain end-to-end test and the simulation's 8 on-chain checks all run in CI on every push ([.github/workflows/ci.yml](.github/workflows/ci.yml): jobs `contracts`, `forge`, `typescript`, `chain`).
 
-## NEAR testnet
+## What is real, and what is a stand-in
 
-Deploying to testnet takes three commands. They are explained in [Blockchain/docs/DEPLOY.md](Blockchain/docs/DEPLOY.md):
+| Real | Simulated or stand-in (and labelled as such) |
+|---|---|
+| Every round step is a transaction from the agent's own NEAR account: open, join, commit, reveal, close | **intents-lite instead of `intents.near`.** NEAR Intents exists on mainnet only, and this project runs on testnet and local sandboxes, so settlement goes through a small contract with the same `execute_intents` interface and NEP-413 rules. The site says so wherever it names the verifier. Pointing at `intents.near` is one setting (`QUORUM_INTENTS_CONTRACT`); see [DEPLOY.md](Blockchain/docs/DEPLOY.md) |
+| Every IOU, quote, delivery, intent, dispute and verdict is an ed25519 signature; IOUs are verified by the contract | **Test USDC** (`test-usdc`, open faucet) instead of real USDC. Sign-in accepts mainnet accounts, but only testnet test USDC moves |
+| Netting, collateral locks, the settlement plan, settlement and defaults happen on chain | **GPU hours.** The market's sellers deliver a signed lease receipt marked `simulated: true`, not real compute |
+| The research agents do real work: live Wikipedia search, MyMemory translation, summaries, independent re-checks by the validator | **Bidding strategies** are scripted, never a model, as the track's simulation mode asks |
+| Every number on the website comes from the ledger and the chain. There are no sample figures | **The model is optional.** Quill and Scribe use NEAR AI Cloud only when `NEAR_AI_API_KEY` is set and the model answers; otherwise their rule-based writers run, and each result records which engine wrote it |
+| Team work is produced by code you can read and test: palette maths, contract templates and a real static audit, spec, schema and handler generation, pixel edits on real Wikimedia photos, a frame-by-frame GIF render | **Team work is mostly templates and procedural code.** The Smart Contract Team does not deploy the Rust it writes (`pnpm test:forge` compiles and tests it), and the "video" is a small animated GIF because the server has no video encoder |
 
-```bash
-pnpm wallets testnet      # keys in .env.testnet; create and fund the root account
-pnpm deploy:testnet       # contracts under the root account; writes Blockchain/deployments/testnet.json
-pnpm serve testnet        # clearing service + swarm + one public port
-```
+## How it fits the tracks
 
-### The live testnet deployment
+<details open>
+<summary><b>05 · AI Swarms</b> ("Many agents. One economy.")</summary>
+
+| The track asks for | Quorum |
+|---|---|
+| Many agents, one economy | 50 agents in three swarms locally (over 40 on testnet). The research swarm hires each other (search, fact check, translate, summarise, chart reading, validation). The market swarm is 20 buyers and 5 GPU sellers. The teams are a client, five leads and ten freelancers, one of them AI-powered |
+| Agents coordinating other agents | Team leads form their teams in sealed-bid tenders and pay them from the commission; the whole payment chain nets in one epoch |
+| Coordination markets, bidding, collective purchasing | Sealed-bid tenders and group buys, run entirely by the contract |
+| Intent-based settlement | Net debts settle as NEP-413-signed `transfer` intents executed in one `execute_intents` batch |
+| Each agent its own sub-account | `register` is called from the agent's own sub-account, and so is every bid, join, reveal, settlement signature and validator verdict |
+| A coordinator that opens rounds, collects sealed bids, reveals and selects a winner | `open_round`, `commit_bid`, `reveal_bid`, `close_round` in [`rounds.rs`](Blockchain/contracts/quorum/src/rounds.rs) |
+| RULES.md before any code | [RULES.md](RULES.md) |
+| Simulation mode: 20 buyers, 5 sellers, scripted, no LLM calls | `pnpm sim` ([RULES.md §11](RULES.md#11-simulation-mode)) |
+| A live page with rounds, bids, clearing price and allocations | [`/rounds`](https://quorum.caspx.in/rounds), each round's page, and the [live floor](https://quorum.caspx.in/floor) |
+
+</details>
+
+<details open>
+<summary><b>07 · Agent Economy</b></summary>
+
+| The track asks for | Quorum |
+|---|---|
+| Agents that earn, spend and hire other agents | Every hire is a priced job; team leads earn a commission and pay their team |
+| Paying for APIs, compute or data | Research agents buy search, translation and chart reading from each other; buyers lease (simulated) GPU hours |
+| Payments through NEAR Intents | Every epoch settles through `execute_intents` |
+| A human in control | The wallet-signed spending limit: budget, per-job cap, deadline |
+
+</details>
+
+## FAQ
+
+<details>
+<summary><b>Where is the AI?</b></summary>
+
+Every agent trades on its own, and two of them write with a language model: Quill (brand copy) and Scribe (summaries) call NEAR AI Cloud, with private inference in a TEE and the enclave's signature kept next to each answer. Bidding is deliberately not a model: the track's simulation mode asks for scripted strategies with no LLM calls, and seeded strategies make every market run reproducible. See [AI agents](#ai-agents-near-ai-cloud-with-a-fallback) and [DECISIONS.md §19](Blockchain/docs/DECISIONS.md#19-one-optional-model-with-a-fallback-that-always-works).
+
+</details>
+
+<details>
+<summary><b>Why not settle through <code>intents.near</code> directly?</b></summary>
+
+NEAR Intents exists on mainnet only, and this project runs on testnet. `intents-lite` keeps the same `execute_intents` interface, NEP-413 payload rules, `nep141:` token ids, atomic batches and nonce replay protection. Switching is one setting (`QUORUM_INTENTS_CONTRACT`). See [DECISIONS.md §9](Blockchain/docs/DECISIONS.md#9-intents-lite-where-intentsnear-does-not-exist).
+
+</details>
+
+<details>
+<summary><b>Why one coordinator contract instead of several?</b></summary>
+
+NEAR's cross-contract calls are asynchronous. Netting has to read identity, collateral and positions and lock debts in one atomic step, which is only safe inside one contract. See [DECISIONS.md §1](Blockchain/docs/DECISIONS.md#1-one-coordinator-contract).
+
+</details>
+
+<details>
+<summary><b>Why sealed bids?</b></summary>
+
+With commit-reveal, nobody (other bidders, the buyer or the operator) sees a price before bidding closes, and the contract applies the rule. Price discovery does not depend on trusting whoever runs the market. See [DECISIONS.md §4](Blockchain/docs/DECISIONS.md#4-commit-reveal-rounds-decided-on-chain).
+
+</details>
+
+<details>
+<summary><b>Can the clearing service cheat?</b></summary>
+
+It cannot forge or alter an IOU: the contract verifies every signature with `env::ed25519_verify`, recomputes every position itself, and refuses to finalise if the service's claimed hashes differ from its own. It cannot redirect money either: the contract fixes the settlement plan, and `settle` checks every transfer against it. The Verify page lets anyone recheck an epoch against the chain.
+
+</details>
+
+<details>
+<summary><b>What if an agent never pays?</b></summary>
+
+Its debt was locked in its collateral when the epoch finalised. If it never signs its transfers, the collateral is seized and paid into the verifier for its creditors. See [DECISIONS.md §10](Blockchain/docs/DECISIONS.md#10-defaults-are-paid-into-the-verifier) and `default_seizes_collateral_and_seals`.
+
+</details>
+
+<details>
+<summary><b>Can my agent spend more than I allowed?</b></summary>
+
+No. Every hire is checked against the intent your wallet signed (budget, per-job cap, deadline), and over-limit hires come back `refused`. Only the operator's full-access key can sign that intent.
+
+</details>
+
+## The live testnet deployment
 
 | Role | Account |
 |---|---|
@@ -339,11 +566,17 @@ pnpm serve testnet        # clearing service + swarm + one public port
 | Clearer (posts epochs, settles batches) | [`clearer.quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/clearer.quorum-612fa4.testnet) |
 | Root (every agent is a sub-account of it) | [`quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/quorum-612fa4.testnet) |
 
-The website is at [quorum.caspx.in](https://quorum.caspx.in) (served by Vercel, which also proxies the API and the agent cards), and the backend (clearing service, swarm and live feed) runs on a small server at `https://quorum.16-178-199-139.sslip.io` (health: [`/v1/health`](https://quorum.16-178-199-139.sslip.io/v1/health)). The same accounts are in [`Blockchain/deployments/testnet.json`](Blockchain/deployments/testnet.json). Every round, IOU posting, finalisation and settlement shows up in the coordinator's transaction history, and each agent's commits, reveals and settlement signatures trace to its own sub-account.
+The website is at [quorum.caspx.in](https://quorum.caspx.in) (served by Vercel, which also proxies the API and the agent cards). The backend (clearing service, swarm and live feed) runs on a small server at `https://quorum.16-178-199-139.sslip.io` (health: [`/v1/health`](https://quorum.16-178-199-139.sslip.io/v1/health)). The same accounts are in [`Blockchain/deployments/testnet.json`](Blockchain/deployments/testnet.json).
+
+Deploying your own takes three commands, explained in [DEPLOY.md](Blockchain/docs/DEPLOY.md):
+
+```bash
+pnpm wallets testnet      # keys in .env.testnet; create and fund the root account
+pnpm deploy:testnet       # contracts under the root account; writes Blockchain/deployments/testnet.json
+pnpm serve testnet        # clearing service + swarm + one public port
+```
 
 ## Repository
-
-Three folders: the website, the server, and everything on chain or agent-side.
 
 ```
 Frontend/                    the website (Vite and React)
@@ -356,13 +589,20 @@ Blockchain/
   deployments/               deployed accounts per network
   core/                      protocol primitives: NEP-413 messages, netting, sealed-bid rules, NEAR RPC client
   sdk/                       build or hire agents
-  agents/                    the agent swarm: research agents, the group-buy market, the studios, scenarios
+  agents/                    the agent swarm: research agents, the group-buy market, the teams, NEAR AI client
   mcp/                       MCP server, to hire agents from Claude
   scripts/                   dev, sim, chain, deploy, wallets, serve, publish-web, test:chain, test:forge
   docs/                      DECISIONS (design decisions, and why), DEPLOY, screenshots
+JUDGING.md                   every README claim, how to check it, and where it is implemented
 RULES.md                     the market's rules
 ```
 
-**Third-party code:** near-sdk (Rust), @noble/curves and @noble/hashes (ed25519, sha256), @scure/base, near-sandbox, Fastify, React, Vite, the Model Context Protocol SDK, zod and vitest.
+**Built with:** near-sdk (Rust), @noble/curves and @noble/hashes (ed25519, sha256), @scure/base, near-sandbox, NEAR Wallet Selector, Fastify, React, Vite, the Model Context Protocol SDK, zod and vitest.
+
+<div align="center">
+
+**[Live demo](https://quorum.caspx.in)** · **[Verify an epoch](https://quorum.caspx.in/verify)** · **[For judges](JUDGING.md)** · **[Rules](RULES.md)**
 
 MIT licensed.
+
+</div>
