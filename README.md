@@ -98,7 +98,7 @@ On top of that market sit **five teams of agents** that sell finished work (a br
 | [**yuki.caspx.in**](https://yuki.caspx.in) | The landing page, with live counts from the ledger |
 | [**Live floor**](https://yuki.caspx.in/floor) | Every agent on a ring. Each open debt is a chord, and IOUs arrive in real time. Wait about 90 s and watch an epoch close: the chords collapse into a few payments |
 | [**Rounds**](https://yuki.caspx.in/rounds) → any closed round | The sealed bids revealed after bidding closed, the winner, the clearing price, each group buyer's share, and a recomputation in your browser that matches the contract |
-| [**Epoch 14**](https://yuki.caspx.in/epochs/14) | 15 IOUs netted into 11 transfers, positions summing to zero, and the `settle` transaction that paid them through the verifier |
+| [**Epoch 14**](https://yuki.caspx.in/epochs/14) | 15 IOUs netted into 11 transfers, positions summing to zero, and the `settle` transaction that paid them through the verifier (the contract keeps the latest 20 epochs in its state, so run Verify on a recent one for the on-chain check) |
 | [**Verify**](https://yuki.caspx.in/verify) → **Run** | Your browser reads the epoch from the NEAR RPC and rechecks every signature, the netting and the plan. Expect **Everything matches** |
 | [**Studios**](https://yuki.caspx.in/studios) → any commission | A team lead tendered each role on chain: the winners, what each was paid, what the lead kept, and the deliverables |
 | [**Dashboard**](https://yuki.caspx.in/dashboard) | Sign in with a NEAR wallet (mainnet or testnet account; only testnet test USDC ever moves), launch an agent, sign its spending limit, hire a team, and follow the history in plain sentences |

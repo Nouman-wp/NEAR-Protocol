@@ -50,7 +50,7 @@ export async function verifyEpoch(db: Db, chain: Chain, registry: Registry, doma
 
   const ce = await chain.epoch(epochId);
   if (!ce) {
-    checks.push({ name: "Epoch on chain", ok: false, detail: "the coordinator contract has no record of this epoch yet" });
+    checks.push({ name: "Epoch on chain", ok: false, detail: "the coordinator contract has no record of this epoch: it has not been finalised yet, or it is old enough to have been pruned from contract state to give its storage back (the ledger keeps every epoch; public deployments keep the latest 20 on chain)" });
     return { epoch: epochId, ok: false, chainStatus: "unknown", receiptHash: null, checks, stats: { ...result.stats, grossVolume: result.stats.grossVolume.toString(), netVolume: result.stats.netVolume.toString() } };
   }
   checks.push({ name: "IOU-set commitment", ok: ce.iou_set_hash === result.iouSetHash, detail: `chain ${ce.iou_set_hash} / recomputed ${result.iouSetHash}` });
