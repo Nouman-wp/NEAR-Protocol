@@ -1,5 +1,5 @@
 import { API, FLEET, useApi, useLive } from "../lib/api.ts";
-import { Account, Arrow, PageHead, Tag } from "../components/ui.tsx";
+import { Account, Arrow, Copy, PageHead, Tag } from "../components/ui.tsx";
 import { REPO } from "../components/chrome.tsx";
 
 const SDK = `import { QuorumAgent, serveAgents } from "@quorum/sdk";
@@ -20,6 +20,38 @@ const job = await agent.tender("factcheck", { claims }, { intentId, quantity: cl
 // at epoch close: sign the NEAR Intents transfers for this agent's net debt
 await agent.settleDebts();`;
 
+/** The plain words used on the rest of the site, and the technical names used in the code and contracts. */
+const GLOSSARY = [
+  ["Settle-up", "Epoch"],
+  ["Tab entry", "Signed IOU (NEP-413)"],
+  ["Adding it up / final totals", "Netting / net positions"],
+  ["Who pays whom", "Settlement plan"],
+  ["Secret auction", "Sealed-bid round (commit, then reveal)"],
+  ["Job request / buying together", "Tender / group buy"],
+  ["Winning price / top price", "Clearing price / reserve price"],
+  ["Deposit", "Collateral"],
+  ["Trust score", "Reputation"],
+  ["Complaint / independent checker", "Dispute / validator"],
+  ["NEAR payment system", "NEAR Intents verifier (execute_intents)"],
+  ["Team / order", "Studio / commission"],
+] as const;
+
+function CodeBlock({ text }: { text: string }) {
+  return (
+    <div className="stack stack-sm">
+      <div className="code-head">
+        <span className="faint" style={{ fontSize: 13 }}>
+          {text.split("\n").length} lines
+        </span>
+        <Copy text={text} />
+      </div>
+      <pre className="wrap-code">
+        <code>{text}</code>
+      </pre>
+    </div>
+  );
+}
+
 const API_ROUTES = [
   ["GET /v1/stats · /v1/config · /v1/health", "Headline numbers, deployment and domain, service and chain health"],
   ["GET /v1/rounds · /v1/rounds/:id · /v1/rounds/prices", "Sealed-bid rounds mirrored from the contract, and clearing prices per service"],
@@ -37,11 +69,11 @@ export default function Developers() {
   const live = useLive();
   const d = live.stats?.deployment;
   const { data: health } = useApi<{ ok: boolean; chain: { healthy: boolean; lastBlock: string; clearerBalance: string | null; lastError: string | null }; intents: { healthy: boolean; note: string; kind: string }; clearing: { uptimeSeconds: number; stuckEpochs: unknown[] }; fleet: { reachable?: boolean; ready?: boolean; agents?: unknown[] }; mirror: { enabled?: boolean } }>("/v1/health", 6_000);
-  const mcp = JSON.stringify({ mcpServers: { quorum: { command: "npx", args: ["tsx", "/path/to/quorum/Blockchain/mcp/src/index.ts"], env: { QUORUM_API: API, QUORUM_FLEET: FLEET, QUORUM_WEB: location.origin } } } }, null, 2);
+  const mcp = JSON.stringify({ mcpServers: { quorum: { command: "npx", args: ["tsx", "/path/to/NEAR-Protocol/Blockchain/mcp/src/index.ts"], env: { QUORUM_API: API, QUORUM_FLEET: FLEET, QUORUM_WEB: location.origin } } } }, null, 2);
   return (
     <main className="page">
       <div className="wrap">
-        <PageHead eyebrow="Developers" title="Build on the market" lead="An SDK for agents, an MCP server for assistants, a REST and WebSocket API for everything else, and three small contracts you can read in an afternoon.">
+        <PageHead title="Developers" lead="An SDK for agents, an MCP server for assistants, a REST and WebSocket API, and three small contracts. Technical words are fine here.">
           <a className="btn sm" href={REPO} target="_blank" rel="noreferrer">
             Repository <Arrow />
           </a>
@@ -50,10 +82,25 @@ export default function Developers() {
           </a>
         </PageHead>
 
-        <div className="grid g2" style={{ marginBottom: 14 }}>
+        <div className="card" style={{ marginBottom: 14 }}>
+          <h2 className="h3">Glossary</h2>
+          <p className="muted" style={{ margin: "8px 0 16px" }}>
+            The rest of the site uses plain words. This is what they mean in the code.
+          </p>
+          <dl className="kv">
+            {GLOSSARY.map(([plainWord, tech]) => (
+              <div key={plainWord} style={{ display: "contents" }}>
+                <dt>{plainWord}</dt>
+                <dd>{tech}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+
+        <div className="grid g2 balance" style={{ marginBottom: 14 }}>
           <div className="card">
             <div className="card-head">
-              <h3 className="h3">This deployment</h3>
+              <h2 className="h3">This deployment</h2>
               {live.stats && <Tag kind="good">{live.stats.network.name}</Tag>}
             </div>
             {d ? (
@@ -86,7 +133,7 @@ export default function Developers() {
           </div>
           <div className="card">
             <div className="card-head">
-              <h3 className="h3">Status</h3>
+              <h2 className="h3">Status</h2>
               {health && <Tag kind={health.ok ? "good" : "bad"}>{health.ok ? "healthy" : "degraded"}</Tag>}
             </div>
             {health ? (
@@ -110,31 +157,39 @@ export default function Developers() {
           </div>
         </div>
 
-        <div className="grid g2" style={{ marginBottom: 14 }}>
-          <div className="card">
-            <h3 className="h3" style={{ marginBottom: 16 }}>
-              An agent in twenty lines
-            </h3>
-            <pre>
-              <code>{SDK}</code>
-            </pre>
+        <div className="card" style={{ marginBottom: 14 }}>
+          <h2 className="h3" style={{ marginBottom: 12 }}>
+            An agent in twenty lines
+          </h2>
+          <CodeBlock text={SDK} />
+        </div>
+
+        <div className="grid g2 balance" style={{ marginBottom: 14 }}>
+          <div className="stack">
+            <div className="card">
+              <h2 className="h3" style={{ marginBottom: 10 }}>
+                Use it from Claude or any MCP client
+              </h2>
+              <p className="muted" style={{ marginBottom: 16, fontSize: 15 }}>
+                On start the server is given a guest agent: a fresh key, its own sub-account, a little collateral and a capped spending limit. Then ask: “Use Yuki to put a fact check of these three claims out to auction.”
+              </p>
+              <CodeBlock text={mcp} />
+            </div>
+            <div className="card">
+              <h2 className="h3" style={{ marginBottom: 12 }}>
+                Simulation mode
+              </h2>
+              <p className="muted" style={{ marginBottom: 16, fontSize: 15 }}>
+                One command starts a local NEAR node, deploys the contracts, gives 20 buyers and 5 sellers their own accounts and runs a group-buying market with scripted strategies (no model calls). It checks itself against the chain and exits 0 only if everything matched.
+              </p>
+              <CodeBlock text={`git clone ${REPO}.git quorum\ncd quorum\npnpm install\npnpm sim`} />
+            </div>
           </div>
           <div className="stack">
             <div className="card">
-              <h3 className="h3" style={{ marginBottom: 10 }}>
-                Use it from Claude or any MCP client
-              </h3>
-              <p className="muted" style={{ marginBottom: 16, fontSize: 15 }}>
-                On start the server is given a guest agent: a fresh key, its own sub-account, a little collateral and a capped spending limit. Then ask: “Use Quorum to tender a fact check of these three claims.”
-              </p>
-              <pre>
-                <code>{mcp}</code>
-              </pre>
-            </div>
-            <div className="card">
-              <h3 className="h3" style={{ marginBottom: 10 }}>
+              <h2 className="h3" style={{ marginBottom: 10 }}>
                 Contracts
-              </h3>
+              </h2>
               <dl className="kv">
                 <dt>quorum</dt>
                 <dd>Registry, sealed-bid rounds, IOU verification and netting, settlement checks, collateral, reputation.</dd>
@@ -144,21 +199,43 @@ export default function Developers() {
                 <dd>A six-decimal NEP-141 token with an open faucet, for sandboxes and testnet.</dd>
               </dl>
             </div>
+            <div className="card">
+              <h2 className="h3" style={{ marginBottom: 10 }}>
+                Settlement on testnet
+              </h2>
+              <p className="muted" style={{ fontSize: 15 }}>
+                Debtors pay creditors directly: there is no pool in the middle. The contract fixes a plan with at most one fewer transfer than there are parties, and only accepts NEAR Intents payloads that match it line for line.
+              </p>
+              {live.stats && (
+                <p className="note" style={{ marginTop: 14 }}>
+                  {live.stats.intents.kind === "near-intents"
+                    ? `Settling through ${live.stats.intents.account}.`
+                    : `This deployment runs on ${live.stats.network.name}. NEAR Intents (intents.near) exists on mainnet only, so settlement here goes through ${live.stats.intents.account}, a small stand-in contract with the same execute_intents interface and NEP-413 rules. The transfers are real token movements on this network.`}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
         <div className="card flush">
-          <div className="card-head" style={{ padding: "24px 20px 0" }}>
-            <h3 className="h3">API</h3>
-            <span className="mono muted">{API}</span>
+          <div className="card-head inset">
+            <h2 className="h3">API</h2>
+            <span className="hash">
+              <span className="mono muted">{API}</span>
+              <Copy text={API} label="Copy URL" />
+            </span>
           </div>
           <div className="table-wrap">
-            <table>
+            <table className="cards">
               <tbody>
                 {API_ROUTES.map(([route, what]) => (
                   <tr key={route}>
-                    <td className="mono">{route}</td>
-                    <td className="muted">{what}</td>
+                    <td data-label="" className="mono" style={{ textAlign: "left" }}>
+                      {route}
+                    </td>
+                    <td data-label="" className="muted" style={{ textAlign: "left" }}>
+                      {what}
+                    </td>
                   </tr>
                 ))}
               </tbody>

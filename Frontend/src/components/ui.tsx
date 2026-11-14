@@ -1,19 +1,24 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import type { AgentSummary } from "@quorum/core";
-import { clock, explorerAccount, explorerTx, short } from "../lib/format.ts";
+import { clock, explorerAccount, explorerTx, short, statusName, usd, usdExact } from "../lib/format.ts";
 import { useLive } from "../lib/api.ts";
+import { Avatar, hue } from "./Avatar.tsx";
+import { OnNear } from "./Near.tsx";
 
-/** A stable colour per agent from the brand's range: burgundy through blush to sage. */
-export function hue(id: string | number): string {
-  // mid tones that read on both the off-white and the burgundy ground
-  const palette = ["#c8707f", "#8c2c40", "#7b836e", "#b8956a", "#a35d6c", "#5e6852", "#d9a8b1", "#9aa58a"];
-  return palette[Number(id) % palette.length]!;
-}
+export { Avatar, hue };
 
+/** ↗ : only for links that open somewhere else (GitHub, the NEAR explorer, a download). */
 export const Arrow = () => (
   <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
     <path d="M2 10 10 2M4 2h6v6" />
+  </svg>
+);
+
+/** → : for links and actions that stay on this site. */
+export const Go = () => (
+  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
+    <path d="M1.5 6h9M6.5 2l4 4-4 4" />
   </svg>
 );
 
@@ -33,7 +38,7 @@ export function AgentChip({ id, agents, link = true }: { id: string | null | und
   const a = (agents ?? live.agents).find((x) => x.agentId === id);
   const body = (
     <>
-      <i style={{ background: hue(id) }} />
+      <Avatar id={id} role={a?.role} />
       <span>{a?.name ?? `Agent #${id}`}</span>
     </>
   );
@@ -88,15 +93,80 @@ const STATUS: Record<string, "good" | "warn" | "bad" | "live" | undefined> = {
 };
 
 export function Status({ value }: { value: string }) {
-  return <Tag kind={STATUS[value]}>{value.replace(/_/g, " ")}</Tag>;
+  return <Tag kind={STATUS[value]}>{statusName(value)}</Tag>;
+}
+
+/** An amount, rounded for reading, with the exact value on hover. */
+export function Money({ v, signed = false }: { v: string | number | bigint | null | undefined; signed?: boolean }) {
+  if (v === null || v === undefined) return <span className="faint">—</span>;
+  const n = BigInt(v);
+  const text = signed && n > 0n ? `+${usd(n)}` : usd(n);
+  return (
+    <span className="num" title={usdExact(n)}>
+      {text}
+    </span>
+  );
+}
+
+/** Proof for people who want it: hashes, contract calls, raw data. Closed by default. */
+export function Details({ summary = "Show details", children, className = "" }: { summary?: string; children: ReactNode; className?: string }) {
+  return (
+    <details className={`details ${className}`}>
+      <summary>{summary}</summary>
+      <div className="details-body">{children}</div>
+    </details>
+  );
+}
+
+/** "← All auctions" above a detail page's title. */
+export function Back({ to, children }: { to: string; children: ReactNode }) {
+  return (
+    <Link className="back" to={to}>
+      <span aria-hidden="true">←</span> {children}
+    </Link>
+  );
+}
+
+/** The next step in the tour: Home → Live → Auction → Settle-up → Check it. */
+export function NextStep({ to, title, text }: { to: string; title: string; text: string }) {
+  return (
+    <Link className="card click next-step" to={to}>
+      <span className="eyebrow">Next</span>
+      <span className="h3">{title}</span>
+      <span className="muted">{text}</span>
+    </Link>
+  );
+}
+
+/** Copies text to the clipboard and says so for a moment. */
+export function Copy({ text, label = "Copy" }: { text: string; label?: string }) {
+  const [done, setDone] = useState(false);
+  return (
+    <button
+      type="button"
+      className="copy-btn"
+      aria-label={done ? "Copied" : `${label} to clipboard`}
+      onClick={() => {
+        void navigator.clipboard?.writeText(text).then(() => {
+          setDone(true);
+          setTimeout(() => setDone(false), 1400);
+        });
+      }}
+    >
+      {done ? "Copied" : label}
+    </button>
+  );
 }
 
 /** A transaction hash linked to the explorer when the network has one. */
 export function Tx({ hash, label }: { hash: string | null | undefined; label?: string }) {
   const explorer = useLive().stats?.network.explorer ?? null;
   if (!hash) return <span className="faint">—</span>;
+  // a labelled link ("See on NEAR ↗") is a proof chip; a bare hash stays a short monospace link
+  if (label) return <OnNear tx={hash} label={label.replace(/\s*↗\s*$/, "")} />;
   const url = explorerTx(explorer, hash);
-  const text = <span className="mono nowrap">{label ?? short(hash, 6)}</span>;
+  // a hash reads in monospace; a label like "See on NEAR ↗" reads as normal text
+  const text = <span className={label ? "nowrap" : "mono nowrap"}>{label ?? short(hash, 6)}</span>;
   return url ? (
     <a className="link" href={url} target="_blank" rel="noreferrer" title={hash}>
       {text}
@@ -116,6 +186,19 @@ export function Account({ id }: { id: string | null | undefined }) {
     </a>
   ) : (
     <span className="mono">{id}</span>
+  );
+}
+
+/** A hash, shortened, with the full value on hover and a copy button. */
+export function Hash({ value }: { value: string | null | undefined }) {
+  if (!value) return <span className="faint">—</span>;
+  return (
+    <span className="hash">
+      <span className="mono" title={value}>
+        {short(value, 6)}
+      </span>
+      <Copy text={value} />
+    </span>
   );
 }
 
@@ -158,17 +241,16 @@ export function Empty({ children }: { children: ReactNode }) {
   return <div className="empty">{children}</div>;
 }
 
-export function PageHead({ eyebrow, title, lead, children }: { eyebrow: string; title: ReactNode; lead?: ReactNode; children?: ReactNode }) {
+export function PageHead({ eyebrow, title, lead, back, children }: { eyebrow?: ReactNode; title: ReactNode; lead?: ReactNode; back?: { to: string; label: string }; children?: ReactNode }) {
   return (
     <div className="page-head">
-      <div>
-        <span className="eyebrow">{eyebrow}</span>
-        <h1 className="h2" style={{ marginTop: 16 }}>
-          {title}
-        </h1>
+      <div className="page-head-text">
+        {back && <Back to={back.to}>{back.label}</Back>}
+        {eyebrow && <span className="eyebrow">{eyebrow}</span>}
+        <h1 className="h2">{title}</h1>
         {lead && <p className="lead">{lead}</p>}
       </div>
-      {children && <div className="row">{children}</div>}
+      {children && <div className="row page-actions">{children}</div>}
     </div>
   );
 }
@@ -179,7 +261,7 @@ export function Loading({ error, what }: { error: string | null; what: string })
     <div className="page">
       <div className="wrap">
         <div className="card">
-          <Empty>{error ? `Could not load ${what}: ${error}. Is the clearing service running?` : `Loading ${what}…`}</Empty>
+          <Empty>{error ? `Couldn't load ${what} (${error}). The service may be restarting: this page tries again on its own.` : `Loading ${what}…`}</Empty>
         </div>
       </div>
     </div>

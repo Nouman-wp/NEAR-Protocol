@@ -21,6 +21,7 @@ const Verify = lazy(() => import("./pages/Verify.tsx"));
 const Disputes = lazy(() => import("./pages/Verify.tsx").then((m) => ({ default: m.Disputes })));
 const Developers = lazy(() => import("./pages/Developers.tsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
+const NearPage = lazy(() => import("./pages/Near.tsx"));
 const StudiosPage = lazy(() => import("./pages/Studios.tsx").then((m) => ({ default: m.StudiosPage })));
 const StudioJobPage = lazy(() => import("./pages/Studios.tsx").then((m) => ({ default: m.StudioJobPage })));
 
@@ -60,6 +61,17 @@ function App() {
           <Route path="/developers" element={<Developers />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/status" element={<Developers />} />
+          <Route path="/near" element={<NearPage />} />
+          {/* friendlier names for the same pages; the original routes above stay for links already shared */}
+          <Route path="/live" element={<Floor />} />
+          <Route path="/auctions" element={<RoundList />} />
+          <Route path="/auctions/:id" element={<RoundPage />} />
+          <Route path="/settle-ups" element={<EpochList />} />
+          <Route path="/settle-ups/:id" element={<EpochPage />} />
+          <Route path="/teams" element={<StudiosPage />} />
+          <Route path="/teams/:id" element={<StudioJobPage />} />
+          <Route path="/check" element={<Verify />} />
+          <Route path="/complaints" element={<Disputes />} />
           <Route path="*" element={<Landing />} />
         </Routes>
       </Suspense>
