@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router";
 import { clearRound, type JobView, type RoundView } from "@quorum/core";
 import { agentName, useApi, useLive } from "../lib/api.ts";
 import { pct, plural, serviceName, usd, when } from "../lib/format.ts";
+import { OnNear } from "../components/Near.tsx";
 import { Account, AgentChip, Countdown, Details, Empty, Hash, Loading, Money, NextStep, PageHead, Status, Tx } from "../components/ui.tsx";
 
 const kindName = (r: RoundView) => (r.kind === "GroupBuy" ? "Buying together" : "Job request");
@@ -271,6 +272,7 @@ export function RoundPage() {
           lead={groupBuy ? "Several buyers teamed up. Sellers bid one price per unit, and each buyer pays only for its own share." : "One buyer asked sellers to bid for this job. The lowest bid wins."}
         >
           <Status value={r.phase} />
+          <OnNear tx={r.closeTx ?? r.openTx} label={r.closeTx ? "Closed on NEAR" : "Opened on NEAR"} />
         </PageHead>
 
         <div className="stats" style={{ ["--n" as string]: groupBuy ? 2 : 1 }}>

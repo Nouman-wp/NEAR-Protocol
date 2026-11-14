@@ -4,6 +4,7 @@ import type { AgentSummary } from "@quorum/core";
 import { clock, explorerAccount, explorerTx, short, statusName, usd, usdExact } from "../lib/format.ts";
 import { useLive } from "../lib/api.ts";
 import { Avatar, hue } from "./Avatar.tsx";
+import { OnNear } from "./Near.tsx";
 
 export { Avatar, hue };
 
@@ -161,6 +162,8 @@ export function Copy({ text, label = "Copy" }: { text: string; label?: string })
 export function Tx({ hash, label }: { hash: string | null | undefined; label?: string }) {
   const explorer = useLive().stats?.network.explorer ?? null;
   if (!hash) return <span className="faint">—</span>;
+  // a labelled link ("See on NEAR ↗") is a proof chip; a bare hash stays a short monospace link
+  if (label) return <OnNear tx={hash} label={label.replace(/\s*↗\s*$/, "")} />;
   const url = explorerTx(explorer, hash);
   // a hash reads in monospace; a label like "See on NEAR ↗" reads as normal text
   const text = <span className={label ? "nowrap" : "mono nowrap"}>{label ?? short(hash, 6)}</span>;

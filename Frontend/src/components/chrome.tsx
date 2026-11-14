@@ -4,6 +4,7 @@ import { useLive } from "../lib/api.ts";
 import { useTheme } from "../lib/theme.ts";
 import { connectWallet, network, useAccount, walletsSupported } from "../lib/account.ts";
 import { Arrow, Go, Mark } from "./ui.tsx";
+import { NearGlyph } from "./Near.tsx";
 
 export const REPO = "https://github.com/Nouman-wp/NEAR-Protocol";
 
@@ -104,31 +105,46 @@ export function Header() {
 export function Footer() {
   const live = useLive();
   const s = live.stats;
-  const { pathname } = useLocation();
-  const home = pathname === "/";
+  const explorer = s?.network.explorer ?? null;
+  const contractUrl = explorer && s?.deployment?.contract ? `${explorer}/address/${s.deployment.contract}` : null;
   return (
-    <footer className={`site-footer${home ? " big" : ""}`}>
+    <footer className="site-footer">
       <div className="wrap">
-        {home && (
-          <div className="top">
-            <h2 className="h2" style={{ maxWidth: 520 }}>
-              AI agents keep a tab.
-              <br />
-              Yuki settles it.
-            </h2>
-            <div className="row">
-              <Link className="btn" to="/floor">
-                See it live <Go />
-              </Link>
-              <a className="btn ghost" href={`${REPO}#run-it`} target="_blank" rel="noreferrer">
-                Get the code <Arrow />
-              </a>
-            </div>
+        <div className="foot-top">
+          <div className="foot-brand">
+            <Link to="/" className="brand" aria-label="Yuki home">
+              <Mark />
+              Yuki
+            </Link>
+            <p>AI agents keep a tab. Yuki settles it, on NEAR.</p>
+            <Link to="/near" className="built-on-near">
+              <NearGlyph /> Built on NEAR
+            </Link>
           </div>
-        )}
-        <div className="links">
+          <div className="foot-cta">
+            <Link className="btn" to="/floor">
+              See it live <Go />
+            </Link>
+            <a className="btn ghost" href={`${REPO}#run-it`} target="_blank" rel="noreferrer">
+              Get the code <Arrow />
+            </a>
+          </div>
+        </div>
+
+        <div className="foot-status" aria-live="off">
+          <span className={`pulse${live.connected ? "" : " off"}`} aria-hidden="true" />
+          {s ? (
+            <span>
+              Live on {s.network.name} · {s.agents} agents · {s.transfersAvoided.toLocaleString("en-US")} payments saved · settle-up {s.currentEpoch} open
+            </span>
+          ) : (
+            <span>Connecting to the live service…</span>
+          )}
+        </div>
+
+        <div className="foot-links">
           <nav aria-label="Explore">
-            <span className="eyebrow">Explore</span>
+            <span className="foot-head">Explore</span>
             <Link to="/floor">Live</Link>
             <Link to="/rounds">Auctions</Link>
             <Link to="/epochs">Settle-ups</Link>
@@ -137,34 +153,53 @@ export function Footer() {
             <Link to="/disputes">Complaints</Link>
           </nav>
           <nav aria-label="Check">
-            <span className="eyebrow">Check</span>
+            <span className="foot-head">Check</span>
             <Link to="/verify">Check it yourself</Link>
             <a href={`${REPO}/blob/main/RULES.md`} target="_blank" rel="noreferrer">
-              Rules
+              Rules ↗
             </a>
+            <a href={`${REPO}/blob/main/JUDGING.md`} target="_blank" rel="noreferrer">
+              For judges ↗
+            </a>
+          </nav>
+          <nav aria-label="NEAR">
+            <span className="foot-head">NEAR</span>
+            <Link to="/near">How Yuki uses NEAR</Link>
+            {contractUrl && (
+              <a href={contractUrl} target="_blank" rel="noreferrer">
+                The contract ↗
+              </a>
+            )}
+            {explorer && (
+              <a href={explorer} target="_blank" rel="noreferrer">
+                NEAR explorer ↗
+              </a>
+            )}
           </nav>
           <nav aria-label="Build">
-            <span className="eyebrow">Build</span>
+            <span className="foot-head">Build</span>
             <Link to="/developers">Developers</Link>
-            <a href={REPO} target="_blank" rel="noreferrer">
-              GitHub
-            </a>
             <Link to="/dashboard">Your agents</Link>
+            <a href={REPO} target="_blank" rel="noreferrer">
+              GitHub ↗
+            </a>
           </nav>
         </div>
-        <div className="base">
-          <span>Yuki · built for the NEAR Hackathon</span>
-          {s ? (
+
+        <div className="foot-base">
+          <span>Yuki · built for the NEAR Hackathon, AI Swarms track</span>
+          {s && (
             <details>
-              <summary>Running on {s.network.name}. Show contract addresses</summary>
+              <summary>Contract addresses</summary>
               <span>
                 Coordinator {s.deployment?.contract} · payments through {s.intents.account}
               </span>
             </details>
-          ) : (
-            <span>Connecting to the live service…</span>
           )}
         </div>
+      </div>
+      <div className="foot-word" aria-hidden="true">
+        YUKI
       </div>
     </footer>
   );

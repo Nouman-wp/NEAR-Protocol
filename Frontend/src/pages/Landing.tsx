@@ -1,27 +1,15 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { fleet, useLive } from "../lib/api.ts";
+import { useLive } from "../lib/api.ts";
 import { compact, pct, plural } from "../lib/format.ts";
 import { Sphere } from "../components/Sphere.tsx";
 import { Story } from "../components/Story.tsx";
 import { NightOut } from "../components/NightOut.tsx";
+import { BuiltOnNear, NearCost } from "../components/Near.tsx";
 import { Go, Reveal } from "../components/ui.tsx";
-
-interface AiStatus {
-  enabled: boolean;
-  keySet?: boolean;
-  model: string;
-}
 
 export default function Landing() {
   const live = useLive();
   const s = live.stats;
-  const [ai, setAi] = useState<AiStatus | null | undefined>(undefined);
-  useEffect(() => {
-    fleet<{ ai?: AiStatus }>("/control/studios")
-      .then((d) => setAi(d.ai ?? null))
-      .catch(() => setAi(null));
-  }, []);
 
   const sealed = [...live.epochs.values()].filter((e) => e.phase === "sealed" && e.iouCount > 0);
   // the best recent settle-up: the one that saved the most payments
@@ -61,7 +49,7 @@ export default function Landing() {
           <Reveal className="section-head">
             <span className="eyebrow">How it works</span>
             <h2 className="h2">In five small steps</h2>
-            <p className="lead">Real agents, real numbers from NEAR testnet. Click any step, or let it play.</p>
+            <p className="lead">Real agents and real numbers from NEAR testnet. It plays by itself; hover to pause.</p>
           </Reveal>
           <div className="card flush">{live.agents.length ? <Story mode="tour" /> : <div className="empty">Connecting to the live service…</div>}</div>
         </div>
@@ -132,39 +120,20 @@ export default function Landing() {
 
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="wrap">
-          <div className="grid g2">
-            <Reveal>
-              <div className="card" style={{ height: "100%" }}>
-                <span className="eyebrow">AI</span>
-                <h2 className="h3" style={{ margin: "14px 0 10px" }}>
-                  Uses NEAR AI
-                </h2>
-                <p className="muted">Some agents write with a private AI model on NEAR AI Cloud. When the model is offline, they use built-in rules, and the site says so.</p>
-                <p style={{ marginTop: 14 }}>
-                  {ai === undefined ? (
-                    <span className="faint">Checking the AI model…</span>
-                  ) : ai?.enabled ? (
-                    <span className="tag good">AI model answering · {ai.model.split("/").pop()}</span>
-                  ) : (
-                    <span className="tag">Using built-in rules right now</span>
-                  )}
-                </p>
-              </div>
-            </Reveal>
-            <Reveal delay={90}>
-              <div className="card" style={{ height: "100%" }}>
-                <span className="eyebrow">Why NEAR</span>
-                <ul className="stack stack-sm" style={{ margin: "14px 0 0", paddingLeft: 18 }}>
-                  <li>Every agent has its own NEAR account.</li>
-                  <li>Every tab entry is signed, so nobody can fake one.</li>
-                  <li>One batch pays everyone at once, or nobody.</li>
-                </ul>
-                <p className="faint" style={{ marginTop: 14, fontSize: 14 }}>
-                  Runs on NEAR testnet. No real money moves.
-                </p>
-              </div>
-            </Reveal>
-          </div>
+          <Reveal className="section-head">
+            <span className="eyebrow">Built on NEAR</span>
+            <h2 className="h2">Every step runs on NEAR</h2>
+            <p className="lead">Each line links to a real example on NEAR testnet that you can open and check.</p>
+          </Reveal>
+          <Reveal>
+            <div className="card stack stack-md">
+              <BuiltOnNear compact />
+              <NearCost />
+              <Link className="link" to="/near">
+                All the ways Yuki uses NEAR →
+              </Link>
+            </div>
+          </Reveal>
         </div>
       </section>
     </main>

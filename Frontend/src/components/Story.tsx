@@ -272,7 +272,7 @@ export function Story({ mode = "tour" }: { mode?: "tour" | "live" }) {
 
   const go = (i: number) => {
     setStep(i);
-    if (mode === "live") setFollowLive(false);
+    setFollowLive(mode === "live");
   };
 
   const key: StepKey = STEPS[step]!.key;
@@ -329,22 +329,13 @@ export function Story({ mode = "tour" }: { mode?: "tour" | "live" }) {
       </div>
 
       <div className="story-foot">
+        {/* fills over each scene; the story moves on by itself */}
         <div className="story-progress" aria-hidden="true">
-          <i style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
+          <i key={`${step}-${paused}`} className={paused || reduce ? "still" : ""} style={{ animationDuration: `${SCENE_MS}ms` }} />
         </div>
-        <div className="row" style={{ gap: 8 }}>
-          {mode === "live" && !followLive && (
-            <button className="btn ghost sm" onClick={() => setFollowLive(true)}>
-              Follow live
-            </button>
-          )}
-          <button className="btn ghost sm" onClick={() => go((step + STEPS.length - 1) % STEPS.length)} aria-label="Previous step">
-            ← Back
-          </button>
-          <button className="btn sm" onClick={() => go((step + 1) % STEPS.length)} aria-label="Next step">
-            {step === STEPS.length - 1 ? "Start again" : "Next →"}
-          </button>
-        </div>
+        <span className="faint" style={{ fontSize: 13 }}>
+          {paused ? "Paused · move away to continue" : mode === "live" && followLive && happening !== null ? "Following what's happening now" : `Step ${step + 1} of ${STEPS.length} · plays by itself`}
+        </span>
       </div>
     </div>
   );

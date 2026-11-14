@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { plural } from "../lib/format.ts";
 
 /**
  * "Keep a tab. Settle once." as a worked example that adds up.
@@ -9,7 +10,11 @@ import { useEffect, useRef, useState } from "react";
  *   Chen  −3 +5 −2 =  $0      Dev  −5 +2 −1 = −$4
  * so one payment settles all six: Dev pays Asha $4.
  *
- * It plays by itself (night → settle up → night …), pauses on hover, and has a button.
+ * It plays by itself as a process, then starts again:
+ *   1. the night: the six debts go on the tab one by one
+ *   2. adding up: each person's total appears
+ *   3. settled: the debts are crossed out and one payment is left
+ * Hovering pauses it. With reduced motion it shows the settled result.
  */
 
 type Name = "Asha" | "Ben" | "Chen" | "Dev";
@@ -61,24 +66,39 @@ function arrow(from: Name, to: Name, bend: number) {
   return { d: `M${sx.toFixed(1)},${sy.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}`, cx, cy };
 }
 
+/** phase 0 = empty, 1–6 = that many debts on the tab, 7 = totals worked out, 8 = settled */
+const LAST = DEBTS.length + 2;
+const HOLD: Record<number, number> = { 0: 700, [DEBTS.length]: 1_400, [DEBTS.length + 1]: 2_400, [LAST]: 5_000 };
+
+const STAGES = [
+  { from: 1, label: "The night: debts go on the tab" },
+  { from: DEBTS.length + 1, label: "Adding up each person's total" },
+  { from: LAST, label: "One payment settles it all" },
+];
+
 export function NightOut() {
-  const [settled, setSettled] = useState(false);
+  const reduce = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const [phase, setPhase] = useState(reduce ? LAST : 0);
   const [paused, setPaused] = useState(false);
   const box = useRef<HTMLDivElement>(null);
-  const reduce = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   useEffect(() => {
     if (paused || reduce) return;
-    const t = setTimeout(() => setSettled((s) => !s), settled ? 5_000 : 6_500);
+    const t = setTimeout(() => setPhase((p) => (p >= LAST ? 0 : p + 1)), HOLD[phase] ?? 750);
     return () => clearTimeout(t);
-  }, [settled, paused, reduce]);
+  }, [phase, paused, reduce]);
+
+  const onTab = Math.min(phase, DEBTS.length);
+  const totals = phase > DEBTS.length;
+  const settled = phase >= LAST;
+  const stage = [...STAGES].reverse().find((st) => phase >= st.from);
 
   const payer = (Object.keys(NET) as Name[]).find((n) => NET[n] < 0)!;
   const payee = (Object.keys(NET) as Name[]).find((n) => NET[n] > 0)!;
   const final = arrow(payer, payee, 0);
 
   return (
-    <div className={`night${settled ? " settled" : ""}`} ref={box} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+    <div className={`night${settled ? " settled" : ""}${totals ? " totals" : ""}`} ref={box} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
       <div className="night-text">
         <span className="eyebrow">Like a night out</span>
         <h2 className="h2">Keep a tab. Settle once.</h2>
@@ -87,11 +107,11 @@ export function NightOut() {
         <div className="night-tab" aria-label="The tab">
           <div className="night-tab-head">
             <span>The tab</span>
-            <span className="count">{settled ? "6 debts → 1 payment" : "6 debts"}</span>
+            <span className="count">{settled ? `${DEBTS.length} debts → 1 payment` : plural(onTab, "debt")}</span>
           </div>
           <ul>
             {DEBTS.map((d, i) => (
-              <li key={i} style={{ transitionDelay: settled ? `${i * 0.08}s` : "0s" }}>
+              <li key={i} className={i < onTab ? "in" : ""} style={{ transitionDelay: settled ? `${i * 0.08}s` : "0s" }}>
                 <span>
                   <b>{d.from}</b> owes <b>{d.to}</b>
                 </span>
@@ -124,7 +144,7 @@ export function NightOut() {
             {DEBTS.map((d, i) => {
               const a = arrow(d.from, d.to, d.bend);
               return (
-                <g key={i} className="debt" style={{ transitionDelay: settled ? `${i * 0.08}s` : `${i * 0.12}s` }}>
+                <g key={i} className={`debt${i < onTab ? " in" : ""}`} style={{ transitionDelay: settled ? `${i * 0.08}s` : "0s" }}>
                   <path d={a.d} markerEnd="url(#night-head)" />
                   <g transform={`translate(${a.cx.toFixed(1)},${a.cy.toFixed(1)})`}>
                     <rect x="-17" y="-11" width="34" height="22" rx="11" />
@@ -174,11 +194,16 @@ export function NightOut() {
           })}
         </svg>
 
-        <div className="night-controls">
-          <button className="btn sm" onClick={() => setSettled(!settled)} aria-pressed={settled}>
-            {settled ? "↺ Back to the night" : "Settle up →"}
-          </button>
-          <span className="faint">Example</span>
+        <div className="night-controls" aria-live="polite">
+          <ol className="night-stages">
+            {STAGES.map((st, i) => (
+              <li key={st.label} className={stage === st ? "on" : stage && STAGES.indexOf(stage) > i ? "done" : ""}>
+                <span className="n">{i + 1}</span>
+                {st.label}
+              </li>
+            ))}
+          </ol>
+          <span className="faint">{paused ? "Paused" : "Example"}</span>
         </div>
       </div>
     </div>

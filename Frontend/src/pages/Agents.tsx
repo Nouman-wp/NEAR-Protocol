@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router";
 import type { AgentSummary, DisputeView, IntentView, JobView, PositionView, RoundView, SettlementView, TransferView } from "@quorum/core";
 import { API, useApi, useLive } from "../lib/api.ts";
 import { ago, plural, serviceName, standalone, trust, usd } from "../lib/format.ts";
+import { NearAccount } from "../components/Near.tsx";
 import { Account, AgentChip, Avatar, Details, Empty, Loading, Money, PageHead, Status, Tag } from "../components/ui.tsx";
 
 const isMarket = (a: AgentSummary) => a.role === "Buyer agent" || a.role === "GPU seller";
@@ -61,6 +62,7 @@ export function AgentList() {
                   {a.role}
                 </span>
               </div>
+              <NearAccount id={a.account} link={false} />
               <span className="muted" style={{ fontSize: 15 }}>
                 {a.services.length
                   ? `${a.services
@@ -134,6 +136,7 @@ export function AgentPage() {
           }
           lead={standalone(a.description)}
         >
+          <NearAccount id={a.account} />
           <Status value={a.status} />
           {a.isValidator && <Tag>Independent checker</Tag>}
           <a className="btn ghost sm" href={`${API}/v1/agents/${a.agentId}/export.csv`} aria-label={`Download ${a.name}'s history as a CSV file`}>

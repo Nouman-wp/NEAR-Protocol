@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router";
 import type { EpochView } from "@quorum/core";
 import { agentName, API, useApi, useLive, type EpochDetail } from "../lib/api.ts";
 import { pct, plural, serviceName, usd, usdExact, when } from "../lib/format.ts";
+import { OnNear } from "../components/Near.tsx";
 import { AgentChip, Countdown, Details, Empty, Go, Hash, Loading, Money, NextStep, PageHead, Status, Tx } from "../components/ui.tsx";
 
 const entries = (n: number) => plural(n, "tab entry", "tab entries");
@@ -135,6 +136,7 @@ export function EpochPage() {
       <div className="wrap">
         <PageHead back={{ to: "/epochs", label: "All settle-ups" }} eyebrow={`Settle-up ${e.id}`} title={netted ? `${entries(e.iouCount)} → ${plural(e.settlementTransfers, "payment")}` : `${entries(data.ious.length)} so far`} lead={lead}>
           <Status value={e.phase} />
+          {settleTxs[0] && <OnNear tx={settleTxs[0]} label="Paid on NEAR" />}
           {netted && (
             <Link className="btn sm" to={`/verify?epoch=${e.id}`}>
               Check it yourself <Go />
