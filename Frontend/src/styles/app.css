@@ -4359,3 +4359,226 @@ a.org-node:hover {
   background: rgba(42, 36, 29, 0.07);
   color: rgba(42, 36, 29, 0.7);
 }
+
+/* ───────────────────────────────── home: keep a tab, settle once (worked example) */
+.night {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 36px;
+  align-items: center;
+}
+.night-text {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.night-tab {
+  margin-top: 6px;
+  padding: 16px 18px 14px;
+  border-radius: 6px;
+  background: #fbf9f4;
+  color: #2a241d;
+  box-shadow: 0 16px 30px -20px rgba(42, 36, 29, 0.45);
+  font-size: 14px;
+}
+.night-tab-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(42, 36, 29, 0.6);
+}
+.night-tab-head .count {
+  letter-spacing: 0.04em;
+  color: #8c2c40;
+  font-weight: 600;
+}
+.night-tab ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.night-tab li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px dashed rgba(42, 36, 29, 0.18);
+  transition:
+    opacity 0.4s,
+    color 0.4s;
+}
+.night-tab b {
+  font-weight: 600;
+}
+.night-tab .why {
+  font-size: 12.5px;
+  color: rgba(42, 36, 29, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.night-tab .amt {
+  font-family: var(--mono);
+}
+.night-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #8c2c40;
+  color: #fbf9f4;
+  font-size: 15px;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.5s 0.5s,
+    transform 0.5s 0.5s var(--ease);
+}
+.night.settled .night-tab li {
+  opacity: 0.45;
+  text-decoration: line-through;
+  text-decoration-color: rgba(140, 44, 64, 0.7);
+}
+.night.settled .night-total {
+  opacity: 1;
+  transform: none;
+}
+
+.night-visual svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+.night .debt {
+  color: rgba(var(--blush-rgb), 0.75);
+  transition: opacity 0.5s var(--ease);
+}
+.night .debt path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.night .debt rect {
+  fill: var(--panel-solid);
+  stroke: rgba(var(--blush-rgb), 0.45);
+}
+.night .debt text {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--blush);
+}
+.night.settled .debt {
+  opacity: 0.08;
+}
+.night .final {
+  color: var(--blush);
+  opacity: 0;
+  transition: opacity 0.6s 0.6s var(--ease);
+}
+.night .final path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.night .final rect {
+  fill: var(--blush);
+}
+.night .final text {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 700;
+  fill: var(--panel-solid);
+}
+.night.settled .final {
+  opacity: 1;
+}
+.night .friend circle {
+  stroke: var(--panel-solid);
+  stroke-width: 3;
+}
+.night .friend .initial {
+  font-family: var(--sans);
+  font-size: 22px;
+  font-weight: 700;
+  fill: #fff;
+}
+.night .friend .name {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  fill: var(--text);
+}
+.night .friend .badge {
+  opacity: 0;
+  transition: opacity 0.4s 0.9s;
+}
+.night .friend .badge rect {
+  fill: var(--panel-solid);
+  stroke: var(--line-strong);
+}
+.night .friend .badge text {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: var(--text);
+}
+.night .friend.even .badge rect {
+  stroke: color-mix(in srgb, var(--good) 55%, transparent);
+}
+.night .friend.even .badge text {
+  fill: var(--good);
+}
+.night.settled .friend .badge {
+  opacity: 1;
+}
+.night.settled .friend.even circle {
+  opacity: 0.55;
+  transition: opacity 0.5s 0.9s;
+}
+.night-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+.night-controls .faint {
+  font-size: 13px;
+  padding: 2px 10px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 99px;
+}
+@media (max-width: 1020px) {
+  .night {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .night-visual {
+    max-width: 460px;
+    width: 100%;
+    margin: 0 auto;
+  }
+}
+@media (max-width: 640px) {
+  .night-tab .why {
+    display: none;
+  }
+  .night-tab li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .night *,
+  .night-tab li,
+  .night-total {
+    transition: none !important;
+  }
+}

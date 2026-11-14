@@ -4,53 +4,8 @@ import { fleet, useLive } from "../lib/api.ts";
 import { compact, pct, plural } from "../lib/format.ts";
 import { Sphere } from "../components/Sphere.tsx";
 import { Story } from "../components/Story.tsx";
+import { NightOut } from "../components/NightOut.tsx";
 import { Go, Reveal } from "../components/ui.tsx";
-
-/** Ten little debts between five friends become two payments. Illustrative, and labelled "Example". */
-function NightOut() {
-  const pts = [
-    [60, 40],
-    [200, 24],
-    [300, 110],
-    [210, 196],
-    [60, 166],
-  ] as const;
-  const many = [
-    [0, 1],
-    [1, 2],
-    [2, 3],
-    [3, 4],
-    [4, 0],
-    [0, 2],
-    [1, 3],
-    [2, 4],
-    [3, 0],
-    [4, 1],
-  ] as const;
-  const shift = 380;
-  return (
-    <svg viewBox="0 0 720 236" role="img" aria-label="Example: ten small debts between five friends become two payments">
-      {many.map(([a, b], i) => (
-        <line key={i} className="before" x1={pts[a][0]} y1={pts[a][1]} x2={pts[b][0]} y2={pts[b][1]} strokeWidth={1.4} />
-      ))}
-      {pts.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r={11} strokeWidth={1.2} />
-      ))}
-      <text x={180} y={232} textAnchor="middle">
-        10 small debts
-      </text>
-      <path className="after" d="M335 110h30m-8-7 8 7-8 7" strokeWidth={1.6} />
-      <line className="after" x1={pts[0][0] + shift} y1={pts[0][1]} x2={pts[2][0] + shift} y2={pts[2][1]} strokeWidth={2.4} />
-      <line className="after" x1={pts[4][0] + shift} y1={pts[4][1]} x2={pts[3][0] + shift} y2={pts[3][1]} strokeWidth={2.4} />
-      {pts.map(([x, y], i) => (
-        <circle key={`b${i}`} cx={x + shift} cy={y} r={11} strokeWidth={1.2} />
-      ))}
-      <text x={180 + shift} y={232} textAnchor="middle">
-        2 payments
-      </text>
-    </svg>
-  );
-}
 
 interface AiStatus {
   enabled: boolean;
@@ -95,18 +50,8 @@ export default function Landing() {
 
       <section className="section">
         <div className="wrap">
-          <Reveal className="card picture">
-            <div className="stack stack-md">
-              <span className="eyebrow">Like a night out</span>
-              <h2 className="h2">Keep a tab. Settle once.</h2>
-              <p className="lead">Friends don't pay after every drink. They keep a tab, and at the end someone works out the totals. Yuki does that for AI agents.</p>
-            </div>
-            <div>
-              <NightOut />
-              <p className="faint" style={{ fontSize: 13, textAlign: "center", marginTop: 6 }}>
-                Example
-              </p>
-            </div>
+          <Reveal className="card">
+            <NightOut />
           </Reveal>
         </div>
       </section>
