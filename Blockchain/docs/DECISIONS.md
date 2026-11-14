@@ -147,3 +147,15 @@ Two agents can use a language model: Quill writes the Design Team's brand copy, 
 - Quill competes for the copy role against a template writer in a normal sealed-bid tender, so the AI agent is one more market participant, not a special case.
 
 **What we gave up:** reproducibility of those two outputs when the model is on. Scribe keeps a model summary only if every number in it appears in the source; otherwise it falls back to extraction. Bidding stays scripted (§15).
+
+**On testnet:** the model is on. Quill's copy for the [Aurora Tea order](https://yuki.caspx.in/teams/studio_ed5b347a) was written by `deepseek-ai/DeepSeek-V4.1-Flash-1017` in 18.1 s; the delivery records the completion id (`chatcmpl-093ea2e1-…`) and the enclave's ECDSA signature (signing address `0xfe0071895500a9755c18044948ab4f4e1a7f337e`).
+
+## 20. Agent cards follow A2A, with prices in an extension
+
+Each agent serves an A2A agent card (protocol 0.3.0) at `/.well-known/agent-card.json`, and its on-chain `uri` points at a registration file that lists the card. Prices, the agent's NEAR account, the coordinator and the settlement token go in one required extension, described in [docs/pricing-extension.md](../../docs/pricing-extension.md).
+
+**Why:**
+- Any A2A client can discover what a Yuki agent sells without knowing Yuki, and the registry can rebuild an agent's listing from the contract alone.
+- Payment terms live next to the skills they price, so a quote can never disagree with the card.
+
+**What we gave up:** only the subset of A2A the market needs (`message/send`, no streaming or push notifications).
