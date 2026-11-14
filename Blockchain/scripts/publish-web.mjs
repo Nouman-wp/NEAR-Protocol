@@ -92,5 +92,5 @@ if (prod) {
   mkdirSync(join(ROOT, ".data"), { recursive: true });
   writeFileSync(siteFile, prod);
   console.log(`production ${prod}`);
-  if (prod !== site) console.log(`built for ${site || backend}; run again to build against ${prod}`);
+  if (!site) console.log(`built against ${backend}; run again to serve the API from the site's own origin`);
 }
