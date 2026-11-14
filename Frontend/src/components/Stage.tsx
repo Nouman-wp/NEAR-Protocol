@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import type { AgentSummary, RoundView } from "@quorum/core";
+import type { RoundView } from "@quorum/core";
 import { useApi, useLive, type EpochDetail } from "../lib/api.ts";
 import { openDebts } from "../lib/derive.ts";
 import { clock, plural, serviceName, usd } from "../lib/format.ts";
@@ -8,12 +8,13 @@ import { Avatar } from "./Avatar.tsx";
 import { Tx } from "./ui.tsx";
 
 /**
- * The live floor as a three-part story, played from real events:
- *   1. Auction    — sealed envelopes travel from the bidders to the buyer, open, and the winner lights up.
- *   2. Tab        — every new tab entry draws a thin line between two agents; a counter climbs.
- *   3. Settle-up  — the thin lines fade and a few thick arrows take their place: "23 entries → 6 payments".
- * The stage picks the part that is happening now; you can also pick one yourself.
- * Between demos it replays the last settle-up, labelled "Last time", so it is never empty.
+ * The live floor as a three-part story, played from real events, drawn as a simple flow:
+ * who bids or owes on the left, who is paid on the right, and the lines between them.
+ *   1. Auction    — sealed bids go to the buyer, open together, and the winner lights up.
+ *   2. Tab        — every job on the tab is a thin line from the agent who owes to the one owed.
+ *   3. Settle-up  — the thin lines fade and a few thick payments take their place.
+ * The stage follows whatever is happening; you can also pick a part yourself. Between demos
+ * it replays the last settle-up, labelled "Last time", so it is never empty.
  */
 
 type Mode = "auction" | "tab" | "settle";
@@ -23,73 +24,55 @@ const MODES: [Mode, string][] = [
   ["settle", "Settle-up"],
 ];
 
-/** Three neighbourhoods on the ring, so where an agent sits says what it is. */
-function groupOf(role: string): 0 | 1 | 2 {
-  const r = role.toLowerCase();
-  if (/buyer|seller|client|guest|user/.test(r)) return 2;
-  if (/fact|research|search|summar|translat|chart|validator/.test(r)) return 1;
-  return 0;
-}
-const GROUP_NAMES = ["Teams", "Research", "Buyers & sellers"] as const;
+const ROW = 56; // px per agent row
+const MAX_ROWS = 7;
 
-interface Pos {
-  a: AgentSummary;
-  x: number;
-  y: number;
-  angle: number;
+interface Side {
+  id: string;
+  note?: ReactNode;
+  cls?: string;
 }
-
-function useRing(agents: AgentSummary[]) {
-  return useMemo(() => {
-    const sorted = [...agents].sort((a, b) => groupOf(a.role) - groupOf(b.role) || Number(a.agentId) - Number(b.agentId));
-    const GAP = 2; // empty slots between neighbourhoods
-    const slots = sorted.length + GAP * 3;
-    const R = 40;
-    const pos = new Map<string, Pos>();
-    const arcs: { name: string; mid: number }[] = [];
-    let slot = 0;
-    let last = -1;
-    let first = 0;
-    sorted.forEach((a, i) => {
-      const g = groupOf(a.role);
-      if (g !== last) {
-        if (last !== -1) {
-          arcs.push({ name: GROUP_NAMES[last as 0 | 1 | 2], mid: (first + slot - 1) / 2 });
-          slot += GAP;
-        }
-        first = slot;
-        last = g;
-      }
-      const angle = (slot / slots) * Math.PI * 2 - Math.PI / 2;
-      pos.set(a.agentId, { a, angle, x: 50 + Math.cos(angle) * R, y: 50 + Math.sin(angle) * R });
-      slot++;
-      if (i === sorted.length - 1) arcs.push({ name: GROUP_NAMES[g], mid: (first + slot - 1) / 2 });
-    });
-    const labels = arcs.map((c) => {
-      const angle = (c.mid / slots) * Math.PI * 2 - Math.PI / 2;
-      // just outside the ring, but kept inside the box so long names are never cut off
-      return { name: c.name, x: Math.min(84, Math.max(16, 50 + Math.cos(angle) * 47)), y: Math.min(97, Math.max(3, 50 + Math.sin(angle) * 47)) };
-    });
-    return { pos, labels };
-  }, [agents]);
-}
-
-/** A gentle curve between two ring points, pulled towards the centre so parallel lines fan out. */
-function curve(p: Pos, q: Pos, pull = 0.3): string {
-  const mx = 50 + ((p.x + q.x) / 2 - 50) * pull;
-  const my = 50 + ((p.y + q.y) / 2 - 50) * pull;
-  return `M${p.x.toFixed(2)},${p.y.toFixed(2)} Q${mx.toFixed(2)},${my.toFixed(2)} ${q.x.toFixed(2)},${q.y.toFixed(2)}`;
-}
-
-/** The point a fraction t of the way along that curve (for envelopes and price tags). */
-function along(p: Pos, q: Pos, t: number, pull = 0.3): { x: number; y: number } {
-  const mx = 50 + ((p.x + q.x) / 2 - 50) * pull;
-  const my = 50 + ((p.y + q.y) / 2 - 50) * pull;
-  const u = 1 - t;
-  return { x: u * u * p.x + 2 * u * t * mx + t * t * q.x, y: u * u * p.y + 2 * u * t * my + t * t * q.y };
+interface Line {
+  from: string;
+  to: string;
+  cls: "bid" | "win" | "tab" | "ghost" | "pay";
+  weight?: number;
+  label?: string;
 }
 
 const recently = (ts: number | null | undefined, ms: number, now: number) => !!ts && now - ts < ms;
+
+/** Keep the first MAX_ROWS agents on a side; say how many more there are. */
+function fit(list: Side[]): { shown: Side[]; more: number } {
+  return list.length > MAX_ROWS ? { shown: list.slice(0, MAX_ROWS - 1), more: list.length - (MAX_ROWS - 1) } : { shown: list, more: 0 };
+}
+
+function Column({ title, items, more, align }: { title: string; items: Side[]; more: number; align: "left" | "right" }) {
+  const live = useLive();
+  return (
+    <div className={`flow-col ${align}`}>
+      <span className="flow-title">{title}</span>
+      {items.map((s) => {
+        const a = live.agents.find((x) => x.agentId === s.id);
+        return (
+          <Link key={s.id} to={`/agents/${s.id}`} className={`flow-agent${s.cls ? ` ${s.cls}` : ""}`} style={{ height: ROW }}>
+            <Avatar id={s.id} role={a?.role} size={32} />
+            <span className="who">
+              <strong>{a?.name ?? `Agent #${s.id}`}</strong>
+              <small>{a?.role ?? ""}</small>
+            </span>
+            {s.note && <span className="note-chip">{s.note}</span>}
+          </Link>
+        );
+      })}
+      {more > 0 && (
+        <span className="flow-more" style={{ height: ROW }}>
+          + {more} more
+        </span>
+      )}
+    </div>
+  );
+}
 
 export function Stage() {
   const live = useLive();
@@ -99,7 +82,6 @@ export function Stage() {
     const t = setInterval(() => setNow(Date.now()), 1_000);
     return () => clearInterval(t);
   }, []);
-  const { pos, labels } = useRing(live.agents);
   const debts = openDebts(live);
   const s = live.stats;
 
@@ -112,127 +94,148 @@ export function Stage() {
   const settling = epochs.find((e) => (e.phase === "closing" || e.phase === "settling" || e.phase === "challenge") && e.iouCount > 0 && e.id !== s?.currentEpoch);
   const lastSealed = epochs.find((e) => e.phase === "sealed" && e.iouCount > 0);
   const settleTarget = settling ?? lastSealed;
-  const { data: settleDetail } = useApi<EpochDetail>(settleTarget ? `/v1/epochs/${settleTarget.id}` : null, 6_000);
+  const { data: detail } = useApi<EpochDetail>(settleTarget ? `/v1/epochs/${settleTarget.id}` : null, 6_000);
 
   const auto: Mode = openRound || justClosed ? "auction" : settling ? "settle" : debts.count > 0 ? "tab" : "settle";
   const mode = pinned ?? auto;
   const round: RoundView | undefined = openRound ?? justClosed ?? lastClosed;
-  const replay = mode === "settle" && !settling;
+  const name = (id: string | null | undefined) => live.agents.find((a) => a.agentId === id)?.name ?? (id ? `Agent #${id}` : "");
 
-  // who takes part in this part of the story
-  const active = new Set<string>();
-  if (mode === "auction" && round) {
-    active.add(round.opener);
-    round.demand.forEach((d) => active.add(d.buyer));
-    round.bids.forEach((b) => active.add(b.seller));
-  } else if (mode === "tab") {
-    debts.edges.forEach((e) => (active.add(e.from), active.add(e.to)));
-  } else if (settleDetail) {
-    settleDetail.ious.forEach((i) => (active.add(i.buyer), active.add(i.seller)));
-  }
-  const named = active.size <= 14;
+  // ---- build the two columns and the lines between them, by stage
+  let left: Side[] = [];
+  let right: Side[] = [];
+  let lines: Line[] = [];
+  let titles: [string, string] = ["", ""];
+  let caption: { small: string; big: string; foot?: ReactNode } = { small: "", big: "" };
+  let empty: string | null = null;
 
-  // the caption in the middle
-  let caption: { small: string; big: string; foot?: ReactNode };
   if (mode === "auction") {
-    if (!round) caption = { small: "No auction yet", big: "Press Run demo" };
+    titles = ["Sellers bid", "Buyer"];
+    if (!round) empty = "No auction yet. Press Run demo.";
     else {
+      const closed = round.status === "Closed";
+      left = [...round.bids]
+        .sort((a, b) => (a.price === null ? 1 : b.price === null ? -1 : Number(a.price) - Number(b.price)))
+        .map((b) => ({
+          id: b.seller,
+          cls: closed && round.winner === b.seller ? "winner" : undefined,
+          note:
+            b.price === null ? (
+              <span className="sealed-chip" title="Sealed: nobody can see this price yet">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                  <rect x="3" y="6" width="18" height="12" rx="2" />
+                  <path d="m3.5 7 8.5 6 8.5-6" />
+                </svg>
+                Sealed
+              </span>
+            ) : (
+              <>{usd(b.price)}</>
+            ),
+        }));
+      const buyers = round.kind === "GroupBuy" ? round.demand.map((d) => d.buyer) : [round.opener];
+      right = buyers.map((id) => ({ id, note: round.kind === "GroupBuy" ? `wants ${round.demand.find((d) => d.buyer === id)?.quantity ?? ""}` : undefined }));
+      lines = round.bids.map((b) => ({ from: b.seller, to: buyers[0]!, cls: closed && round.winner === b.seller ? "win" : "bid" }));
       const what = round.title || serviceName(round.service);
       const revealed = round.bids.filter((b) => b.price !== null).length;
-      const winner = live.agents.find((a) => a.agentId === round.winner)?.name;
-      caption =
-        round.status === "Closed"
-          ? { small: `${openRound || justClosed ? "Just finished" : "Last auction"} · ${what}`, big: `${winner ?? "Winner"} wins`, foot: <>at {usd(round.clearingPrice)}</> }
-          : round.phase === "revealing"
-            ? { small: what, big: "Opening the bids", foot: `${revealed} of ${plural(round.bids.length, "bid")} open` }
-            : { small: what, big: `${plural(round.bids.length, "sealed bid")}`, foot: "Nobody can see the prices yet" };
+      caption = closed
+        ? { small: `${openRound || justClosed ? "Just finished" : "Last auction"} · ${what}`, big: `${name(round.winner)} wins`, foot: <>Lowest bid wins · paid {usd(round.clearingPrice)}</> }
+        : round.phase === "revealing"
+          ? { small: what, big: "Opening the bids", foot: `${revealed} of ${plural(round.bids.length, "bid")} open` }
+          : { small: what, big: plural(round.bids.length, "sealed bid"), foot: "Nobody can see the prices yet" };
     }
   } else if (mode === "tab") {
-    const cur = s ? live.epochs.get(s.currentEpoch) : undefined;
-    caption = {
-      small: "On the tab right now",
-      big: plural(debts.count, "entry", "entries"),
-      foot: cur && cur.intakeEndsAt > now ? <>Settle-up in {clock(cur.intakeEndsAt - now)}</> : "Settling up soon",
-    };
-  } else if (settleDetail && settleTarget) {
-    const e = settleDetail.epoch;
-    const tx = settleDetail.transfers.find((t) => t.tx)?.tx;
-    caption = {
-      small: replay ? `Last time · settle-up ${e.id}` : `Settle-up ${e.id}`,
-      big: `${e.iouCount} → ${plural(e.settlementTransfers || settleDetail.transfers.length, "payment")}`,
-      foot:
-        e.phase === "sealed" ? (
-          <span className="stage-paid">
-            Paid on NEAR ✓ {tx && <Tx hash={tx} label="See it ↗" />}
-          </span>
-        ) : (
-          "Adding up who owes whom…"
-        ),
-    };
-  } else caption = { small: "Waiting for the first settle-up", big: "Press Run demo" };
-
-  // the lines, by part of the story
-  const lines: { key: string; d: string; cls: string; style?: CSSProperties }[] = [];
-  const tags: { key: string; x: number; y: number; node: ReactNode; cls: string }[] = [];
-  if (mode === "auction" && round) {
-    const buyers = round.kind === "GroupBuy" ? round.demand.map((d) => d.buyer) : [round.opener];
-    const target = pos.get(buyers[0] ?? round.opener);
-    round.bids.forEach((b, i) => {
-      const p = pos.get(b.seller);
-      if (!p || !target) return;
-      const win = round.winner === b.seller;
-      lines.push({ key: `b${b.seller}`, d: curve(p, target, 0.45), cls: `ln bid${win ? " win" : ""}`, style: { animationDelay: `${i * 0.25}s` } });
-      const at = along(p, target, round.status === "Closed" ? 0.62 : 0.42, 0.45);
-      tags.push({
-        key: `t${b.seller}`,
-        x: at.x,
-        y: at.y,
-        cls: b.price === null ? "env" : win ? "price win" : "price",
-        node:
-          b.price === null ? (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-              <rect x="3" y="6" width="18" height="12" rx="2" />
-              <path d="m3.5 7 8.5 6 8.5-6" />
-            </svg>
+    titles = ["Owes", "Is owed"];
+    if (debts.count === 0) empty = "Nothing on the tab right now. Press Run demo.";
+    else {
+      const owes = new Map<string, bigint>();
+      const owed = new Map<string, bigint>();
+      for (const e of debts.edges) {
+        owes.set(e.from, (owes.get(e.from) ?? 0n) + e.amount);
+        owed.set(e.to, (owed.get(e.to) ?? 0n) + e.amount);
+      }
+      const byAmount = (m: Map<string, bigint>) => [...m.entries()].sort((a, b) => (b[1] > a[1] ? 1 : -1));
+      left = byAmount(owes).map(([id, v]) => ({ id, note: usd(v) }));
+      right = byAmount(owed).map(([id, v]) => ({ id, note: usd(v) }));
+      const max = Math.max(1, ...debts.edges.map((e) => e.count));
+      lines = debts.edges.map((e) => ({ from: e.from, to: e.to, cls: "tab", weight: 1 + (e.count / max) * 2 }));
+      const cur = s ? live.epochs.get(s.currentEpoch) : undefined;
+      caption = {
+        small: "On the tab right now",
+        big: plural(debts.count, "entry", "entries"),
+        foot: cur && cur.intakeEndsAt > now ? <>Settle-up in {clock(cur.intakeEndsAt - now)}</> : "Settling up soon",
+      };
+    }
+  } else {
+    titles = ["Pays", "Gets paid"];
+    if (!detail || !settleTarget) empty = "Nothing settled yet. Press Run demo.";
+    else {
+      const e = detail.epoch;
+      const pay = new Map<string, bigint>();
+      const get = new Map<string, bigint>();
+      for (const t of detail.transfers) {
+        pay.set(t.from, (pay.get(t.from) ?? 0n) + BigInt(t.amount));
+        get.set(t.to, (get.get(t.to) ?? 0n) + BigInt(t.amount));
+      }
+      // agents who only appear in the tab (they came out even) still get a row, so their faded lines have somewhere to go
+      for (const i of detail.ious) {
+        if (!pay.has(i.buyer) && !get.has(i.buyer)) pay.set(i.buyer, 0n);
+        if (!get.has(i.seller) && !pay.has(i.seller)) get.set(i.seller, 0n);
+      }
+      const byAmount = (m: Map<string, bigint>) => [...m.entries()].sort((a, b) => (b[1] > a[1] ? 1 : -1));
+      left = byAmount(pay).map(([id, v]) => ({ id, note: v > 0n ? usd(v) : "even", cls: v === 0n ? "even" : undefined }));
+      right = byAmount(get).map(([id, v]) => ({ id, note: v > 0n ? `+${usd(v)}` : "even", cls: v === 0n ? "even" : "paid" }));
+      const pairs = new Set<string>();
+      const ghosts: Line[] = [];
+      for (const i of detail.ious) {
+        const k = `${i.buyer}>${i.seller}`;
+        if (pairs.has(k)) continue;
+        pairs.add(k);
+        ghosts.push({ from: i.buyer, to: i.seller, cls: "ghost" });
+      }
+      lines = [...ghosts, ...detail.transfers.map((t) => ({ from: t.from, to: t.to, cls: "pay" as const, label: usd(t.amount) }))];
+      const tx = detail.transfers.find((t) => t.tx)?.tx;
+      const replay = !settling;
+      caption = {
+        small: replay ? `Last time · settle-up ${e.id}` : `Settle-up ${e.id}`,
+        big: `${plural(e.iouCount, "entry", "entries")} → ${plural(e.settlementTransfers || detail.transfers.length, "payment")}`,
+        foot:
+          e.phase === "sealed" ? (
+            <span className="stage-paid">
+              Paid on NEAR ✓ {tx && <Tx hash={tx} label="See it ↗" />}
+            </span>
           ) : (
-            <>{usd(b.price)}</>
+            "Adding up who owes whom…"
           ),
-      });
-    });
-    round.demand.slice(1).forEach((d) => {
-      const p = pos.get(d.buyer);
-      if (p && target) lines.push({ key: `j${d.buyer}`, d: curve(p, target, 0.6), cls: "ln join" });
-    });
-  } else if (mode === "tab") {
-    debts.edges.forEach((e, i) => {
-      const p = pos.get(e.from);
-      const q = pos.get(e.to);
-      if (p && q) lines.push({ key: `e${e.from}>${e.to}`, d: curve(p, q), cls: "ln tab", style: { animationDelay: `${Math.min(i, 20) * 0.05}s` } });
-    });
-  } else if (settleDetail) {
-    const pairs = new Set<string>();
-    settleDetail.ious.forEach((i) => {
-      const k = `${i.buyer}>${i.seller}`;
-      if (pairs.has(k)) return;
-      pairs.add(k);
-      const p = pos.get(i.buyer);
-      const q = pos.get(i.seller);
-      if (p && q) lines.push({ key: `g${k}`, d: curve(p, q), cls: "ln ghost" });
-    });
-    settleDetail.transfers.forEach((t, i) => {
-      const p = pos.get(t.from);
-      const q = pos.get(t.to);
-      if (p && q) lines.push({ key: `p${t.from}>${t.to}${i}`, d: curve(p, q, 0.15), cls: "ln pay", style: { animationDelay: `${1.1 + i * 0.18}s` } });
-    });
+      };
+    }
   }
 
-  const sceneKey = `${mode}-${mode === "auction" ? `${round?.id}-${round?.phase}` : mode === "settle" ? `${settleTarget?.id}-${settleDetail?.epoch.phase}` : "tab"}`;
+  const L = fit(left);
+  const R = fit(right);
+  const rows = Math.max(L.shown.length + (L.more ? 1 : 0), R.shown.length + (R.more ? 1 : 0), 1);
+  const H = rows * ROW;
+  const yOf = (list: Side[], id: string) => {
+    const i = list.findIndex((x) => x.id === id);
+    return i < 0 ? null : i * ROW + ROW / 2;
+  };
+  const W = 100;
+  const drawn = lines
+    .map((l, i) => {
+      const y1 = yOf(L.shown, l.from);
+      const y2 = yOf(R.shown, l.to);
+      if (y1 === null || y2 === null) return null;
+      return { ...l, i, y1, y2, d: `M0,${y1} C${W * 0.5},${y1} ${W * 0.5},${y2} ${W},${y2}` };
+    })
+    .filter((x): x is NonNullable<typeof x> => !!x);
+  // only label the payments when there are few enough to read
+  const labelPays = drawn.filter((l) => l.cls === "pay").length <= 5;
+  const sceneKey = `${mode}-${mode === "auction" ? `${round?.id}-${round?.phase}` : mode === "settle" ? `${settleTarget?.id}-${detail?.epoch.phase}` : debts.count}`;
 
   return (
     <div className="stage">
       <div className="stage-steps" role="tablist" aria-label="What the stage shows">
         {MODES.map(([m, label], i) => (
-          <button key={m} role="tab" aria-selected={mode === m} className={`${mode === m ? "on" : ""}${auto === m ? " live" : ""}`} onClick={() => setPinned(pinned === m ? null : m)}>
+          <button key={m} role="tab" aria-selected={mode === m} className={mode === m ? "on" : ""} onClick={() => setPinned(pinned === m ? null : m)}>
             <span className="n">{i + 1}</span> {label}
             {auto === m && <span className="dot" title="Happening now" />}
           </button>
@@ -244,57 +247,47 @@ export function Stage() {
         )}
       </div>
 
-      <div className="stage-ring" key={sceneKey}>
-        <svg viewBox="0 0 100 100" aria-hidden="true">
-          <defs>
-            <marker id="stage-arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
-              <path d="M0 0 10 5 0 10Z" fill="var(--blush)" />
-            </marker>
-          </defs>
-          <circle cx="50" cy="50" r="40" className="ring" />
-          {lines.map((l) => (
-            <path key={l.key} d={l.d} className={l.cls} style={l.style} pathLength={1} markerEnd={l.cls.includes("pay") ? "url(#stage-arrow)" : undefined} />
-          ))}
-        </svg>
-        {labels.map((g) => (
-          <span key={g.name} className="arc-label" style={{ left: `${g.x}%`, top: `${g.y}%` }}>
-            {g.name}
-          </span>
-        ))}
-        {[...pos.values()].map(({ a, x, y }) => {
-          const on = active.has(a.agentId);
-          return (
-            <Link
-              key={a.agentId}
-              to={`/agents/${a.agentId}`}
-              className={`node${on ? " on" : ""}${mode === "auction" && round?.winner === a.agentId && round.status === "Closed" ? " winner" : ""}`}
-              style={{ left: `${x}%`, top: `${y}%` }}
-              title={`${a.name} · ${a.role}`}
-              aria-label={`${a.name}, ${a.role}`}
-              tabIndex={on ? 0 : -1}
-            >
-              <Avatar id={a.agentId} role={a.role} size={on ? 30 : 12} />
-              {on && named && <span className="name">{a.name}</span>}
-            </Link>
-          );
-        })}
-        {tags.map((t) => (
-          <span key={t.key} className={`tag-on-line ${t.cls}`} style={{ left: `${t.x}%`, top: `${t.y}%` }}>
-            {t.node}
-          </span>
-        ))}
-        <div className="stage-caption" aria-live="polite">
-          <span className="small">{caption.small}</span>
-          <span className="big">{caption.big}</span>
-          {caption.foot && <span className="foot">{caption.foot}</span>}
+      {empty ? (
+        <div className="stage-empty">
+          <p className="h3">{empty}</p>
         </div>
-      </div>
+      ) : (
+        <div key={sceneKey}>
+          <div className="stage-head" aria-live="polite">
+            <span className="small">{caption.small}</span>
+            <span className="big">{caption.big}</span>
+            {caption.foot && <span className="foot">{caption.foot}</span>}
+          </div>
+          <div className="flow">
+            <Column title={titles[0]} items={L.shown} more={L.more} align="left" />
+            <div className="flow-mid" style={{ height: H + 30 }}>
+              {/* the tab's faint lines, then (for a settle-up) the payments drawn over them, left to right */}
+              {[drawn.filter((l) => l.cls === "ghost"), drawn.filter((l) => l.cls !== "ghost")].map((group, gi) => (
+                <svg key={gi} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className={gi === 0 ? "fl-layer ghosts" : `fl-layer fl-draw${mode === "settle" ? " late" : ""}`} style={{ top: 30, height: H }} aria-hidden="true">
+                  {group.map((l) => (
+                    <path key={`${l.cls}${l.from}>${l.to}${l.i}`} d={l.d} className={`fl ${l.cls}`} vectorEffect="non-scaling-stroke" style={{ strokeWidth: l.cls === "pay" || l.cls === "win" ? 3 : l.cls === "ghost" ? 1.2 : (l.weight ?? 1.5) }} />
+                  ))}
+                </svg>
+              ))}
+              {labelPays &&
+                drawn
+                  .filter((l) => l.cls === "pay" && l.label)
+                  .map((l) => (
+                    <span key={`lab${l.i}`} className="flow-label" style={{ top: 30 + (l.y1 + l.y2) / 2 }}>
+                      {l.label}
+                    </span>
+                  ))}
+            </div>
+            <Column title={titles[1]} items={R.shown} more={R.more} align="right" />
+          </div>
+        </div>
+      )}
       <p className="stage-hint">
         {mode === "auction"
           ? "Sellers send sealed bids to the buyer. The bids open together, and the lowest one wins."
           : mode === "tab"
-            ? "Each line is one job put on the tab: who owes whom. No money has moved yet."
-            : "All those little debts become a few payments, paid on NEAR in one go."}
+            ? "Each line is a job on the tab: who owes whom. No money has moved yet."
+            : "The faint lines were the tab. The thick ones are the few real payments, made on NEAR in one go."}
       </p>
     </div>
   );

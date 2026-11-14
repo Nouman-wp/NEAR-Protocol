@@ -3555,3 +3555,271 @@ a.org-node:hover {
     height: 22px !important;
   }
 }
+
+/* ───────────────────────────────── live stage v2: a two-column flow, no ring */
+.stage-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+  margin: 18px 0 22px;
+}
+.stage-head .small {
+  font-size: 14px;
+  color: var(--muted);
+}
+.stage-head .big {
+  font-size: clamp(26px, 3vw, 40px);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  animation: fadein 0.5s var(--ease) both;
+}
+.stage-head .foot {
+  font-size: 14px;
+  color: var(--muted);
+}
+.stage-empty {
+  display: grid;
+  place-items: center;
+  min-height: 320px;
+  text-align: center;
+  color: var(--muted);
+}
+.flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(60px, 0.7fr) minmax(0, 1fr);
+  align-items: start;
+}
+.flow-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.flow-title {
+  height: 30px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.flow-col.right .flow-title {
+  text-align: right;
+}
+.flow-agent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border-radius: 12px;
+  color: inherit;
+  min-width: 0;
+  animation: fadein 0.4s var(--ease) both;
+  transition: background 0.2s;
+}
+.flow-agent:hover {
+  background: rgba(var(--fg), 0.05);
+}
+.flow-col.right .flow-agent {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+.flow-agent .who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.flow-agent strong {
+  font-weight: 500;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.flow-agent small {
+  font-size: 12px;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.note-chip {
+  flex: none;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  background: var(--ground);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.flow-agent.winner {
+  background: rgba(var(--blush-rgb), 0.1);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--blush-rgb), 0.6);
+}
+.flow-agent.winner .note-chip {
+  background: var(--blush);
+  border-color: var(--blush);
+  color: var(--panel-solid);
+  font-weight: 600;
+}
+
+.flow-agent.paid .note-chip {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 40%, transparent);
+}
+.flow-agent.even {
+  opacity: 0.55;
+}
+.sealed-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+}
+.sealed-chip svg {
+  width: 15px;
+  height: 15px;
+}
+.flow-more {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 14px;
+  color: var(--faint);
+}
+.flow-col.right .flow-more {
+  justify-content: flex-end;
+}
+.flow-mid {
+  position: relative;
+}
+.flow-mid svg {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  overflow: visible;
+}
+.fl {
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 0.8s var(--ease) forwards;
+}
+.fl.bid {
+  stroke: rgba(var(--fg), 0.3);
+  stroke-dasharray: 0.03 0.025;
+  stroke-dashoffset: 0;
+  animation: fadein 0.5s var(--ease) both;
+}
+.fl.win {
+  stroke: var(--blush);
+}
+.fl.tab {
+  stroke: rgba(var(--blush-rgb), 0.5);
+}
+.fl.ghost {
+  stroke: rgba(var(--blush-rgb), 0.45);
+  stroke-width: 1.2px;
+  stroke-dasharray: none;
+  stroke-dashoffset: 0;
+  animation: fadeout 1.2s 0.2s var(--ease) forwards;
+}
+.fl.pay {
+  stroke: var(--blush);
+}
+.flow-label {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 1px 7px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  background: var(--panel-solid);
+  border: 1px solid rgba(var(--blush-rgb), 0.4);
+  color: var(--blush);
+  white-space: nowrap;
+  animation: fadein 0.4s 1.4s var(--ease) both;
+}
+@media (max-width: 640px) {
+  .flow {
+    grid-template-columns: minmax(0, 1fr) 36px minmax(0, 1fr);
+  }
+  .flow-agent {
+    gap: 6px;
+    padding: 0 4px;
+  }
+  .flow-agent small {
+    display: none;
+  }
+  .flow-agent strong {
+    font-size: 13px;
+  }
+  .flow-agent .avatar {
+    width: 26px !important;
+    height: 26px !important;
+  }
+  .note-chip {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+  .flow-agent.winner .note-chip::before {
+    content: "";
+  }
+  .flow-label {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fl,
+  .fl.ghost,
+  .flow-agent,
+  .flow-label,
+  .stage-head .big {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .fl.ghost {
+    opacity: 0.15;
+  }
+}
+/* lines appear by fading (ghosts) or by sweeping left to right (bids, tab, payments) */
+.fl,
+.fl.bid,
+.fl.ghost {
+  stroke-dasharray: none;
+  stroke-dashoffset: 0;
+  animation: none;
+}
+.fl.bid {
+  stroke-dasharray: 5 5;
+}
+.fl-layer.ghosts {
+  animation: fadeout 1.2s 0.4s var(--ease) forwards;
+}
+.fl-layer.fl-draw {
+  transform-origin: left center;
+  animation: grow 0.9s var(--ease) both;
+}
+.fl-layer.fl-draw.late {
+  animation-delay: 1s;
+}
+@keyframes grow {
+  from {
+    opacity: 0;
+    transform: scaleX(0.05);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fl-layer.ghosts {
+    animation: none;
+    opacity: 0.15;
+  }
+  .fl-layer.fl-draw {
+    animation: none;
+  }
+}
