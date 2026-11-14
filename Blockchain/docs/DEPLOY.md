@@ -93,8 +93,8 @@ This builds the website and deploys it to Vercel (the Vercel CLI must be logged 
 | Do this | You should see |
 |---|---|
 | `curl https://yuki-api.example.org/v1/health` | `ok: true`: the chain is reachable, the verifier answers, and the swarm is ready |
-| Open the website, then Live floor | The swarm trading. Run a scenario with the `ADMIN_TOKEN` from `.env.testnet` |
-| Open Verify | "Everything matches", read from `rpc.testnet.fastnear.com` |
+| Open the website, then Live | The swarm trading. Run a demo with the `ADMIN_TOKEN` from `.env.testnet` |
+| Open Check it | "Everything matches", read from `rpc.testnet.fastnear.com` |
 | `https://testnet.nearblocks.io/address/clearing.<root>` | Every round, posting, finalisation and settlement transaction |
 
 ## Optional: Supabase mirror

@@ -7,106 +7,162 @@
 ### Many agents. One economy.
 
 **A market and clearing house for AI agent swarms, on NEAR.**<br/>
-Agents find prices in sealed-bid rounds, pay each other with signed IOUs,<br/>
-and every epoch nets into a handful of transfers settled in one NEAR Intents batch.
+Agents find prices in sealed-bid auctions run by a Rust contract, pay each other with NEP-413 signed IOUs,<br/>
+and every epoch nets into a handful of transfers settled atomically in one NEAR Intents batch.
 
 [![CI](https://github.com/Nouman-wp/NEAR-Protocol/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Nouman-wp/NEAR-Protocol/actions/workflows/ci.yml)
 [![Live on NEAR testnet](https://img.shields.io/badge/NEAR-live%20on%20testnet-4c1624)](https://yuki.caspx.in)
+[![Demo video](https://img.shields.io/badge/demo-watch%20%283%3A49%29-ffd27a)](https://x.com/Nouman_wp/status/2121723079638569246)
 [![Tests](https://img.shields.io/badge/tests-67%20Rust%20%C2%B7%2091%20TypeScript-2b7a4b)](#guarantees-and-tests)
-[![NEAR AI Cloud](https://img.shields.io/badge/AI-NEAR%20AI%20Cloud%20%2B%20fallback-2b4c7a)](#ai-agents-near-ai-cloud-with-a-fallback)
-[![Node](https://img.shields.io/badge/node-%E2%89%A522.13-555)](#run-it-locally)
+[![NEAR AI Cloud](https://img.shields.io/badge/AI-NEAR%20AI%20Cloud%20%C2%B7%20TEE-2b4c7a)](#near-ai-cloud-private-verifiable-inference)
+[![MCP](https://img.shields.io/badge/MCP-9%20tools-555)](#use-it-from-claude-mcp)
 [![License: MIT](https://img.shields.io/badge/license-MIT-555)](LICENSE)
 
-**[Live demo](https://yuki.caspx.in)** · **[Verify an epoch](https://yuki.caspx.in/verify)** · **[For judges](JUDGING.md)** · **[Rules](RULES.md)** · **[Design decisions](Blockchain/docs/DECISIONS.md)** · **[Deploy](Blockchain/docs/DEPLOY.md)**
+**[Live app](https://yuki.caspx.in)** · **[Demo video](https://x.com/Nouman_wp/status/2121723079638569246)** · **[Check it yourself](https://yuki.caspx.in/check)** · **[On-chain proof](#proof-on-near-testnet)** · **[For judges](JUDGING.md)** · **[Rules](RULES.md)** · **[Design decisions](Blockchain/docs/DECISIONS.md)**
+
+<br/>
+
+<a href="https://x.com/Nouman_wp/status/2121723079638569246" title="Watch the Yuki demo (3:49)"><img src="Blockchain/docs/media/yuki-demo-thumbnail.jpg" width="100%" alt="Watch the Yuki demo video (3:49): AI agents hire agents, and NEAR settles the tab. 68 signed IOUs became 11 payments in one transaction." /></a>
+
+<sub>▶ <b><a href="https://x.com/Nouman_wp/status/2121723079638569246">Watch the 3:49 demo</a></b>: a real wallet signs a spending limit, an agent hires a team of agents, Quill writes on NEAR AI Cloud, and the epoch settles on NEAR testnet.</sub>
 
 </div>
 
-<p align="center"><img src="Blockchain/docs/screenshots/floor.jpg" width="100%" alt="The live floor: every agent on a ring, every open debt a chord between two agents, and signed IOUs arriving in real time" /></p>
-
 > [!TIP]
-> **Judges and AI reviewers:** [JUDGING.md](JUDGING.md) lists every claim in this README, the command or page that shows it, what you should see, and the file that implements it. Everything below runs on NEAR testnet right now, and every command runs on a fresh clone with no keys.
+> **Judges and reviewers:** [JUDGING.md](JUDGING.md) lists every claim in this README with the page, command or transaction that proves it and the file that implements it. Everything below runs on NEAR testnet right now, and every command runs on a fresh clone with no keys.
 
-Built for **NEAR HACKATHON**, track **05 · AI Swarms** (main) and **07 · Agent Economy**.
+Built at **NEAR HACKATHON** for track **05 · AI Swarms** (main) and track **07 · Agent Economy**.
 
 ---
+
+## TL;DR
+
+| | |
+|---|---|
+| **What** | A coordination market for multi-agent systems: sealed-bid auctions, group buys (collective purchasing), signed IOUs, multilateral netting and intent-based settlement through NEAR Intents |
+| **Who trades** | 45 agents live on testnet (50 on a local node), **each its own NEAR sub-account** under `quorum-612fa4.testnet`, plus agents that people launch from their own NEAR wallet |
+| **On chain** | One Rust coordinator contract (near-sdk 5): registry, `open_round` · `join_round` · `commit_bid` · `reveal_bid` · `close_round`, `post_ious` (every signature checked with `env::ed25519_verify`), `finalize_epoch` (zero-sum netting, collateral locks), `settle` → `execute_intents`, `record_epoch_scores` |
+| **Best epoch** | **68 IOUs → 11 transfers, 84% fewer payments**, settled in [one transaction](https://testnet.nearblocks.io/txns/4LDVBnfZWXxqB4RZNctS6iHTr7rWY27PThEVRdctzi8D) |
+| **AI** | Quill, a copywriter agent, writes on **NEAR AI Cloud**: private inference in a TEE, with the enclave's signature stored next to the answer. [Real order](https://yuki.caspx.in/teams/studio_ed5b347a) · [code](Blockchain/agents/src/work/nearai.ts) |
+| **Humans in charge** | Sign in with a NEAR wallet (NEP-413), launch your own agent and sign its spending limit. Over-limit hires are refused |
+| **Trust** | [Check it](https://yuki.caspx.in/check) reads the contract over NEAR RPC and recomputes every signature, position and payment in your browser. `pnpm sim` does the same from the command line |
+| **Tests** | 67 Rust contract tests, 91 TypeScript tests, a chain end-to-end test, a build-and-test check of every generated contract, and 8 on-chain checks in the simulation, all in CI |
 
 ## Contents
 
-- [The problem](#the-problem)
-- [How Yuki answers it](#how-yuki-answers-it)
-- [At a glance](#at-a-glance)
+- [Proof on NEAR testnet](#proof-on-near-testnet)
+- [The problem](#the-problem) · [How Yuki answers it](#how-yuki-answers-it)
 - [Try it live, nothing to install](#try-it-live-nothing-to-install)
-- [Run it locally](#run-it-locally)
+- [Run it](#run-it)
 - [How it works](#how-it-works)
+- [NEAR AI Cloud: private, verifiable inference](#near-ai-cloud-private-verifiable-inference)
 - [Teams of agents hiring agents](#teams-of-agents-hiring-agents)
-- [AI agents: NEAR AI Cloud, with a fallback](#ai-agents-near-ai-cloud-with-a-fallback)
+- [Reputation, scored every epoch and written on chain](#reputation-scored-every-epoch-and-written-on-chain)
 - [Your own agents: sign in with a NEAR wallet](#your-own-agents-sign-in-with-a-near-wallet)
 - [Screenshots](#screenshots)
-- [Architecture](#architecture)
-- [Why NEAR](#why-near)
-- [Use it from Claude (MCP)](#use-it-from-claude-mcp)
-- [Build your own agent](#build-your-own-agent)
+- [Architecture](#architecture) · [How Yuki uses NEAR](#how-yuki-uses-near)
+- [Use it from Claude (MCP)](#use-it-from-claude-mcp) · [Build your own agent](#build-your-own-agent)
 - [Guarantees and tests](#guarantees-and-tests)
 - [What is real, and what is a stand-in](#what-is-real-and-what-is-a-stand-in)
-- [How it fits the tracks](#how-it-fits-the-tracks)
-- [FAQ](#faq)
-- [The live testnet deployment](#the-live-testnet-deployment)
-- [Repository](#repository)
+- [How it fits the tracks](#how-it-fits-the-tracks) · [FAQ](#faq)
+- [The live testnet deployment](#the-live-testnet-deployment) · [Repository](#repository)
 
 ---
 
+## Proof on NEAR testnet
+
+Every step of the protocol is a real transaction on NEAR testnet, and each one is signed by **the agent that acted, from its own sub-account**. Click any hash.
+
+**One auction, end to end** ([auction #100](https://yuki.caspx.in/auctions/100): the Design Team buys brand copy for "Aurora Tea"; Quill bids $0.000896, Kern bids $0.00144; Quill wins at the second price)
+
+| Step | Signed by | Transaction |
+|---|---|---|
+| `open_round` (tender, second price, reserve $0.0015) | `atelier.quorum-612fa4.testnet` (Design Team lead) | [`9tQHDWv6…`](https://testnet.nearblocks.io/txns/9tQHDWv6XinaznqVKG8hLvZh5yNM5edAUpYvZdSDXwpU) |
+| `commit_bid` (sealed hash of the price) | `quill.quorum-612fa4.testnet` | [`9o2X9Bwn…`](https://testnet.nearblocks.io/txns/9o2X9BwnzhbmsETFQySp9fDt23BAKtUYPkrCEqXei3uq) |
+| `commit_bid` | `kern.quorum-612fa4.testnet` | [`CPBBSSZ8…`](https://testnet.nearblocks.io/txns/CPBBSSZ86tdHTCR8Ga3TJfGeRVB9bwxLNTpJ4ywo4qpK) |
+| `reveal_bid` (price + salt, after bidding closed) | `quill.quorum-612fa4.testnet` | [`5nR3bwEc…`](https://testnet.nearblocks.io/txns/5nR3bwEcqJcUneurRZTHVmtAcQsFFyAWWtrT9Wpssq4Q) |
+| `reveal_bid` | `kern.quorum-612fa4.testnet` | [`5XQcy4C9…`](https://testnet.nearblocks.io/txns/5XQcy4C9VpSZqgdoNKPzbXmbBKDETMKApLtmMotrrqi3) |
+| `close_round` (contract picks the winner and the price) | `atelier.quorum-612fa4.testnet` | [`4KgCrZfk…`](https://testnet.nearblocks.io/txns/4KgCrZfkPntVjot2rfUc2HC1srKix5peNwFUpW73Mr13) |
+| `settle` → `execute_intents` (the job is paid in epoch 40's batch) | `clearer.quorum-612fa4.testnet` | [`5DFo57e2…`](https://testnet.nearblocks.io/txns/5DFo57e2d72xssKa8LC4sPF7A5gW2WUoYPcYVHE1aEd1) |
+
+**Collective purchasing** (a group buy of GPU hours by 20 buyer agents against 5 sellers)
+
+| Step | Signed by | Transaction |
+|---|---|---|
+| `open_round` (group buy, `gpu-hour`) | `buyer-05.quorum-612fa4.testnet` | [`JDX7guLQ…`](https://testnet.nearblocks.io/txns/JDX7guLQMtmh5kTC2BsQtNzLvfqjwKoVAAS353rMganJ) |
+| `join_round` (5 GPU hours, max price $0.0485) | `buyer-02.quorum-612fa4.testnet` | [`3Vf6QKLx…`](https://testnet.nearblocks.io/txns/3Vf6QKLx8R7LYXr6ZRuBuw5UWKkBoGFxXJnXDz2vTVse) |
+| `commit_bid` / `reveal_bid` | `seller-1.quorum-612fa4.testnet` (Atlas Compute) | [`EY31nR5J…`](https://testnet.nearblocks.io/txns/EY31nR5JyabZUKKfyuDe9HRHxUzHEajLJ2T3bB8LJU3e) / [`8rcEZBS6…`](https://testnet.nearblocks.io/txns/8rcEZBS6YiYcowg6FaXPyzfiGzG8WbwSPsa3JWSCb1zu) |
+| `close_round` (each buyer is allocated only its share) | `buyer-05.quorum-612fa4.testnet` | [`E9u5mB5o…`](https://testnet.nearblocks.io/txns/E9u5mB5ozYVYwP3fUQnWVcgWKnHT8aNmA9MCNpDXDaxN) |
+
+**Netting and settlement**
+
+| Epoch ("settle-up") | IOUs → transfers | `finalize_epoch` | `settle` → `execute_intents` |
+|---|---|---|---|
+| [**#4**](https://yuki.caspx.in/settle-ups/4) | **68 → 11** (8 debtors, 5 creditors, 57 payments avoided) | [`FcMtJEcw…`](https://testnet.nearblocks.io/txns/FcMtJEcw8BiQ4yxHmf1LezxnT3Khrp16ss7ayy8CFc1J) | [`4LDVBnfZ…`](https://testnet.nearblocks.io/txns/4LDVBnfZWXxqB4RZNctS6iHTr7rWY27PThEVRdctzi8D) |
+| [#38](https://yuki.caspx.in/settle-ups/38) | 25 → 6, with 3 disputes upheld and voided | [`D1UttwM3…`](https://testnet.nearblocks.io/txns/D1UttwM3EUS2u9dV2ZqQ2j44TKdVS8qtGkRya9q4Nh9u) | [`BZGcrP4F…`](https://testnet.nearblocks.io/txns/BZGcrP4FUwRdt9f8FgbrrSF3XCW3B981PSp1sQwm2Dkm) |
+| [#39](https://yuki.caspx.in/settle-ups/39) | 19 → 5 | [`8WKJ61vN…`](https://testnet.nearblocks.io/txns/8WKJ61vNbFZvKGDXnvimeqovedU2kM2FXP5a6566jGBo) | [`5jT7mtq2…`](https://testnet.nearblocks.io/txns/5jT7mtq2PZ9GhLq5wX3g5suAXr4G4F3gHoqHLV5wkyCy) |
+| [#14](https://yuki.caspx.in/settle-ups/14) | 15 → 11 | [`4fiezu7N…`](https://testnet.nearblocks.io/txns/4fiezu7NpwR9Nn2EW6a3GBwEeYJYYBzeXaGR9S52QQZv) | [`Ai1QcHT3…`](https://testnet.nearblocks.io/txns/Ai1QcHT3EGvyT27UHzvwuecYjT4BdqbMZJTbwrSjE1nv) |
+
+| Also on chain | Transaction |
+|---|---|
+| `post_ious`: every IOU of epoch 41, each NEP-413 signature verified with `env::ed25519_verify` | [`ZM3Mk13Z…`](https://testnet.nearblocks.io/txns/ZM3Mk13ZLJi2ca4FjXEUxbb79eD9XXmP4XNrM83c9jF) |
+| `record_epoch_scores`: reputation for epoch 41 (Rogue, the cheating agent, scores 446 of 1000, below the usual 700 floor) | [`2xtDEAif…`](https://testnet.nearblocks.io/txns/2xtDEAifvWnoU9owyinxNZMQdBVwCZA18z9DoxJoMzPw) |
+| `validation_request`: a dispute sent to Arbiter, the staked validator | [`CvnrdamQ…`](https://testnet.nearblocks.io/txns/CvnrdamQvgSrjezySs1uASbcbvShK4ohRsn4uqWZtfLG) |
+| All coordinator calls | [`clearing.quorum-612fa4.testnet` on nearblocks](https://testnet.nearblocks.io/address/clearing.quorum-612fa4.testnet) |
+
+<details>
+<summary><b>The 11 transfers inside epoch 4's single settlement transaction</b></summary>
+
+<img src="Blockchain/docs/screenshots/explorer.jpg" alt="Explorer view of settle-up 4: one transaction carrying 11 test-USDC transfers from debtors straight to creditors" />
+
+Eight debtors pay five creditors directly, with no pool in between: orchestrator → verifier, scout, scribe and polyglot; lens → polyglot; six buyer agents → seller-1 (Atlas Compute). All in one atomic `execute_intents` batch.
+
+</details>
+
+**Live totals** (from [`/v1/stats`](https://yuki.16-178-199-139.sslip.io/v1/stats) on 14 Nov 2026): 45 agents, 95 auctions closed, 238 IOUs cleared, 41 epochs sealed on chain, 115 settlement transfers instead of 238 payments.
+
 ## The problem
 
-Your next customer isn't human. It's an AI agent with a budget, a deadline and a job to get done, and it will hire other agents to do parts of it. Multiply that by thousands of agents buying from each other all day, and four questions come up that no single agent can answer alone:
+AI agents are starting to buy work from each other: search, translation, compute, code, design. Multiply that by thousands of agents trading all day and four questions come up that no single agent can answer:
 
 | Question | Why it is hard |
 |---|---|
 | **Who sets the price?** | An open order book leaks every bid, and a central operator can pick favourites |
 | **How do you pay for a two-cent job?** | One on-chain transfer per job costs more than the job and floods the chain |
-| **How does anyone check what happened?** | Agents trade off chain and fast; logs from an operator prove nothing |
+| **How does anyone check what happened?** | Agents trade off chain and fast; an operator's logs prove nothing |
 | **Who keeps a human in charge?** | An agent with a wallet can spend everything in it |
 
 ## How Yuki answers it
 
 | | Yuki's answer | Where it happens |
 |---|---|---|
-| **Price** | **Sealed-bid rounds.** A buyer puts a job out to tender, or many buyers pool demand in a group buy. Sellers commit to a hidden price and reveal it only after bidding closes. The contract picks the winner and the clearing price by a fixed rule (first or second price, reputation floor, reserve). Nobody can see a bid early or override the result | `open_round` · `commit_bid` · `reveal_bid` · `close_round` |
+| **Price** | **Sealed-bid auctions.** A buyer puts a job out to tender, or many buyers pool demand in a group buy. Sellers commit to a hidden price and reveal it only after bidding closes. The contract picks the winner and the clearing price by a fixed rule (first or second price, reputation floor, reserve). Nobody can see a bid early or override the result | `open_round` · `join_round` · `commit_bid` · `reveal_bid` · `close_round` |
 | **Payment** | **Signed IOUs, netted, settled in one batch.** Each job is an IOU signed under NEP-413, so nothing touches the chain per job. At the epoch close the contract verifies every signature, nets all debts to positions that sum to zero, and fixes a plan where debtors pay creditors directly. Each debtor signs NEAR Intents `transfer`s for exactly its lines, and one `execute_intents` batch settles the whole epoch atomically | `post_ious` · `finalize_epoch` · `settle` → `execute_intents` |
-| **Trust** | **Recompute it yourself.** The Verify page reads the epoch from the NEAR RPC and rechecks every IOU signature, the netting and the settlement plan in your browser. `pnpm sim` does the same from the command line and exits 0 only if everything matches. A debtor that never signs is covered from collateral locked at finalisation | `/verify` · `pnpm sim` |
-| **Control** | **Humans sign the spending limits.** The operator's wallet signs each agent's intent: budget, per-job cap, reputation floor and deadline. Over-limit hires come back `refused`. Only the operator's full-access key can sign it | `POST /v1/intents` |
+| **Trust** | **Recompute it yourself.** The [Check it](https://yuki.caspx.in/check) page reads the epoch from NEAR RPC and rechecks every IOU signature, the netting and the settlement plan in your browser. `pnpm sim` does the same from the command line and exits 0 only if everything matches. A debtor that never signs is covered from collateral locked at finalisation | `/check` · `pnpm sim` |
+| **Control** | **Humans sign the spending limits.** The operator's wallet signs each agent's intent (an AP2-style mandate): budget, per-job cap, reputation floor and deadline. Over-limit hires come back `refused`. Only the operator's full-access key can sign it | `POST /v1/intents` |
 
-On top of that market sit **five teams of agents** that sell finished work (a brand kit, a NEAR contract, a REST API, a photo edit, a promo video). When hired, each team lead puts every role out to a sealed-bid tender on chain, and the freelancer agents who win do the work. One freelancer, **Quill**, writes with a model on **NEAR AI Cloud**, and falls back to a template writer when the model is unavailable.
-
-## At a glance
-
-| | |
-|---|---|
-| **Agents** | 50 in three swarms on a local node, over 40 live on testnet, each its own NEAR sub-account |
-| **Contracts** | 3 in Rust (near-sdk 5): the coordinator, `intents-lite` (the verifier stand-in) and `test-usdc` |
-| **Settlement** | 1 NEAR Intents batch per epoch. Epoch 14 on testnet: 15 IOUs became 11 transfers in [one transaction](https://testnet.nearblocks.io/txns/Ai1QcHT3EGvyT27UHzvwuecYjT4BdqbMZJTbwrSjE1nv) |
-| **Epoch clock** | About 90 s on testnet: 75 s of intake, 18 s for disputes, then netting and settlement |
-| **Teams** | 5 team leads and 10 freelancers; 1 freelancer writes with NEAR AI Cloud |
-| **Bidding** | 5 scripted, seeded strategies: cost-plus, undercutter, adaptive, opportunist, noisy. No model ever bids |
-| **Tests** | 67 contract unit tests, 91 TypeScript tests, a chain end-to-end test, a build-and-test check of every generated contract, and 8 on-chain checks in the simulation. All in CI |
-| **MCP tools** | 9, to hire agents and teams from Claude or any MCP client |
-| **Clearing fee** | 0% |
+On top of that market sit **five teams of agents** that sell finished work (a brand kit, a NEAR smart contract, a REST API, a photo edit, a promo video). When hired, each team lead puts every role out to a sealed-bid tender on chain, and the freelancer agents who win do the work. One freelancer, **Quill**, writes with a model on **NEAR AI Cloud**.
 
 ## Try it live, nothing to install
+
+The website uses plain words; the protocol words are in brackets. Both paths work (`/auctions` = `/rounds`, `/settle-ups` = `/epochs`, `/teams` = `/studios`, `/check` = `/verify`, `/live` = `/floor`).
 
 | Open | What you will see |
 |---|---|
 | [**yuki.caspx.in**](https://yuki.caspx.in) | The landing page, with live counts from the ledger |
-| [**Live floor**](https://yuki.caspx.in/floor) | Every agent on a ring. Each open debt is a chord, and IOUs arrive in real time. Wait about 90 s and watch an epoch close: the chords collapse into a few payments |
-| [**Rounds**](https://yuki.caspx.in/rounds) → any closed round | The sealed bids revealed after bidding closed, the winner, the clearing price, each group buyer's share, and a recomputation in your browser that matches the contract |
-| [**Epoch 14**](https://yuki.caspx.in/epochs/14) | 15 IOUs netted into 11 transfers, positions summing to zero, and the `settle` transaction that paid them through the verifier (the contract keeps the latest 20 epochs in its state, so run Verify on a recent one for the on-chain check) |
-| [**Verify**](https://yuki.caspx.in/verify) → **Run** | Your browser reads the epoch from the NEAR RPC and rechecks every signature, the netting and the plan. Expect **Everything matches** |
-| [**Studios**](https://yuki.caspx.in/studios) → any commission | A team lead tendered each role on chain: the winners, what each was paid, what the lead kept, and the deliverables |
-| [**Dashboard**](https://yuki.caspx.in/dashboard) | Sign in with a NEAR wallet (mainnet or testnet account; only testnet test USDC ever moves), launch an agent, sign its spending limit, hire a team, and follow the history in plain sentences |
-| [**Coordinator on nearblocks**](https://testnet.nearblocks.io/address/clearing.quorum-612fa4.testnet) | `open_round`, `commit_bid`, `reveal_bid` and `close_round` from each agent's own account, and the clearer's `post_ious`, `finalize_epoch` and `settle` |
+| [**Live**](https://yuki.caspx.in/live) (live floor) | A five-step story of how a job is priced, put on the tab and settled, the tab entries (IOUs) arriving in real time, and a countdown to the next settle-up. **Run demo** runs a full cycle in about a minute |
+| [**Auction #100**](https://yuki.caspx.in/auctions/100) (round) | The sealed bids revealed after bidding closed, the winner, the clearing price, the timeline, and a recomputation in your browser that matches the contract |
+| [**Settle-up #4**](https://yuki.caspx.in/settle-ups/4) (epoch) | 68 tab entries netted into 11 payments, net positions that sum to zero, who paid whom, and the `settle` transaction. Download the CSV, or press **Check it yourself** |
+| [**Check it**](https://yuki.caspx.in/check) (verify) | Your browser reads the epoch from NEAR RPC and runs 10 checks: records found, every signature real, every entry untouched, totals sum to zero, the plan matches. Expect **✓ Everything matches** |
+| [**Aurora Tea order**](https://yuki.caspx.in/teams/studio_ed5b347a) (team commission) | The Design Team lead hired four specialists by sealed bid: who did the work, where the $0.01 went, the brand kit, and brand copy **written by NEAR AI** with the enclave's signature |
+| [**Teams**](https://yuki.caspx.in/teams) | The five teams, what each sells, and who bids on each part |
+| [**How Yuki uses NEAR**](https://yuki.caspx.in/near) | Each NEAR feature, linked to a real example you can open |
+| [**Agents**](https://yuki.caspx.in/agents) | Every agent with its NEAR account, trust score, jobs done and bought |
+| [**Your agents**](https://yuki.caspx.in/dashboard) | Sign in with a NEAR wallet (mainnet or testnet; only testnet test USDC ever moves), launch an agent, sign its spending limit, hire a team, and follow the history in plain sentences |
 
-Backend health: [`/v1/health`](https://yuki.16-178-199-139.sslip.io/v1/health).
+Backend health: [`/v1/health`](https://yuki.16-178-199-139.sslip.io/v1/health) · NEAR AI status: [`/control/studios`](https://yuki.16-178-199-139.sslip.io/control/studios)
 
-## Run it locally
+## Run it
 
 **You need** Node **22.13+** (CI uses 24) and **pnpm 10** (`corepack enable`). The local NEAR node ([near-sandbox](https://www.npmjs.com/package/near-sandbox)) runs on **Linux or macOS**; on Windows, use WSL. The contracts are committed as wasm in `Blockchain/contracts/res/`, so **Rust is only needed** for `test:contracts` and `test:forge`. No keys, accounts or `.env` are needed: every local key derives from a public development seed.
 
@@ -118,7 +174,7 @@ pnpm install
 
 | Command | What you will see | Time |
 |---|---|---|
-| `pnpm sim` | A local NEAR node starts and the three contracts deploy. 20 buyer and 5 seller agents, each on its own sub-account, run 8 sealed-bid group-buy rounds with scripted strategies and no model calls. The report lists every round and epoch, then **8 checks against the chain**. Exit code 0 only if all pass | ~3 min |
+| `pnpm sim` | A local NEAR node starts and the three contracts deploy. 20 buyer and 5 seller agents, each on its own sub-account, run 8 sealed-bid group-buy rounds with scripted strategies and **no LLM calls**. The report lists every round and epoch, then **8 checks against the chain**. Exit code 0 only if all pass | ~3 min |
 | `pnpm dev` | The node and contracts, the clearing service (`:8787`), the agent swarm (`:8788`) and the website at **http://localhost:5173**. The swarm creates and funds its 50 accounts, logs `[fleet] ready`, then trades on its own: research briefs with fact checks, group buys of GPU hours, and team commissions | ~2 min to ready |
 | `pnpm -r typecheck` | No errors in any of the six packages | ~30 s |
 | `pnpm -r test` | **91 tests pass**: core 37, clearing 18, agents 36 | ~15 s |
@@ -128,9 +184,9 @@ pnpm install
 
 **With `pnpm dev` running**, try this on the local site:
 
-1. On the **Live floor**, click **Run** next to *Swarm minute* (admin token `yuki-admin`): six group buys and four research briefs in a minute, then one epoch netted and settled through the verifier.
-2. Open the **Dashboard** and use the **dev wallet** (browser wallets cannot reach a sandbox): **Sign in**, **Launch agent**, **Sign spending limit**, then **Hire the Design Team**. The commission finishes in under a minute, and its IOU settles at the next epoch close.
-3. Open **Verify** and press **Run**.
+1. On **Live**, press **Run demo** (admin token `yuki-admin`): six group buys and four research briefs in a minute, then one epoch netted and settled through the verifier.
+2. Open **Your agents** and use the **dev wallet** (browser wallets cannot reach a sandbox): **Sign in**, **Launch agent**, **Sign spending limit**, then **Hire the Design Team**. The commission finishes in under a minute, and its IOU settles at the next epoch close.
+3. Open **Check it**: it checks the latest settle-up on its own, and **Check again** reruns it.
 
 <details>
 <summary><b>On Windows</b>: run the node in WSL</summary>
@@ -180,6 +236,8 @@ flowchart LR
 | **7. Settle** | Each net debtor signs NEAR Intents `transfer`s for exactly its plan lines. `settle` checks them and calls `execute_intents`: one atomic batch | `settle` → `execute_intents` |
 | **8. Remember** | Reputation scores are written on chain and feed the next rounds' reputation floors. The epoch is sealed with a receipt hash | `record_epoch_scores` |
 
+<p align="center"><img src="Blockchain/docs/diagrams/4-epochs-netting.png" width="88%" alt="Epochs: intake, challenge, close, settle, sealed; a netting example where 3 IOUs become 2 payments; settlement through NEAR Intents, and a default path where locked collateral still pays the creditors" /></p>
+
 ### Netting, in one picture
 
 Agents trade all epoch without touching the chain. At the close, the contract turns every IOU into one net position per agent, and only the differences move. An example with made-up amounts:
@@ -201,9 +259,11 @@ flowchart LR
   IOUs ==> Plan
 ```
 
-A is down 6¢, B is up 2¢ and C is up 4¢: the positions sum to zero, B never has to pay its own debt to C, and A pays both creditors directly in one batch. The contract computes the plan itself (debtors and creditors in order of first appearance, each step paying the smaller of what is left), so it needs at most `debtors + creditors − 1` transfers and never a pool in between. On testnet, [epoch 14](https://yuki.caspx.in/epochs/14) turned 15 IOUs into 11 transfers.
+A is down 6¢, B is up 2¢ and C is up 4¢: the positions sum to zero, B never has to pay its own debt to C, and A pays both creditors directly in one batch. The contract computes the plan itself (debtors and creditors in order of first appearance, each step paying the smaller of what is left), so it needs at most `debtors + creditors − 1` transfers and never a pool in between. On testnet, [settle-up #4](https://yuki.caspx.in/settle-ups/4) had 8 debtors and 5 creditors: 68 IOUs became 11 transfers, under the bound of 12.
 
 ### One round and one settlement, message by message
+
+The text sequence diagram of one round that the track asks for:
 
 ```mermaid
 sequenceDiagram
@@ -228,20 +288,51 @@ sequenceDiagram
   Q-->>Q: debtors settled, epoch sealed
 ```
 
-Every limit, every check and a step-by-step text diagram of one round are in **[RULES.md](RULES.md)**. Every design choice, and why, is in **[DECISIONS.md](Blockchain/docs/DECISIONS.md)**.
+<p align="center"><img src="Blockchain/docs/diagrams/3-sealed-bid-rounds.png" width="100%" alt="Price discovery: buyers open a round or pool demand, sellers commit a sealed hash and reveal after bidding closes, close_round picks the lowest valid bid and sets the price; after the round, the winner signs a quote, the buyer signs an IOU, the clearing service checks limits and collateral, the seller delivers, and the IOU settles at the epoch close" /></p>
+
+Every limit, every check and a step-by-step text diagram of one round are in **[RULES.md](RULES.md)**, written before any code. Every design choice, and why, is in **[DECISIONS.md](Blockchain/docs/DECISIONS.md)**.
+
+## NEAR AI Cloud: private, verifiable inference
+
+Two agents use a language model, and both keep working without one:
+
+| Agent | With NEAR AI Cloud | Without it (no key, a timeout or an unusable answer) |
+|---|---|---|
+| **Quill**, AI copywriter on the Design Team | Writes the brand copy (tagline, short story, three voice traits, three headlines); the tagline goes on the brand sheet | A template writer: deterministic copy from the brand's name and vibe |
+| **Scribe**, summariser in the research swarm | Writes an abstractive summary, kept only if every number it quotes appears in the source | An extractive summary: the most informative sentences, in order |
+
+**A real answer, written on NEAR AI Cloud on testnet** ([open the order](https://yuki.caspx.in/teams/studio_ed5b347a)):
+
+<img src="Blockchain/docs/screenshots/near-ai.jpg" alt="Aurora Tea brand copy, badged 'Written by NEAR AI · DeepSeek-V4.1-Flash-1017' and 'Signed by the AI service', written privately on NEAR AI Cloud in 18.1 s, with the completion id and the enclave's signing key" />
+
+| | |
+|---|---|
+| Order | [`studio_ed5b347a`](https://yuki.caspx.in/teams/studio_ed5b347a): brand kit for "Aurora Tea", hired for $0.01 |
+| How Quill got the job | Won [auction #100](https://yuki.caspx.in/auctions/100) against Kern (a template writer) by sealed bid: [commit](https://testnet.nearblocks.io/txns/9o2X9BwnzhbmsETFQySp9fDt23BAKtUYPkrCEqXei3uq), [reveal](https://testnet.nearblocks.io/txns/5nR3bwEcqJcUneurRZTHVmtAcQsFFyAWWtrT9Wpssq4Q), [close](https://testnet.nearblocks.io/txns/4KgCrZfkPntVjot2rfUc2HC1srKix5peNwFUpW73Mr13) |
+| Model | `deepseek-ai/DeepSeek-V4.1-Flash-1017`, one of NEAR AI Cloud's verifiable models served from a TEE |
+| Completion | `chatcmpl-093ea2e1-0b79-4567-bee2-6b821f869357`, 18.1 s |
+| Enclave signature | ECDSA, signing address `0xfe0071895500a9755c18044948ab4f4e1a7f337e`, fetched from `/v1/signature/{chat_id}` and stored with the delivery |
+| Paid | In epoch 40's NEAR Intents batch: [`5DFo57e2…`](https://testnet.nearblocks.io/txns/5DFo57e2d72xssKa8LC4sPF7A5gW2WUoYPcYVHE1aEd1) |
+
+- **The market decides who writes.** Quill competes for the copy role in a sealed-bid tender like everyone else, against Kern, who writes from templates.
+- **Every result says who wrote it.** The order page shows **Written by NEAR AI** or **Template writer**, with the model, the completion id, the time taken and, when NEAR AI returns one, the enclave's signature.
+- **No model ever bids.** The bidding strategies stay scripted and seeded, as the track's simulation mode asks, so every market run is reproducible.
+
+**The implementation** is [`Blockchain/agents/src/work/nearai.ts`](Blockchain/agents/src/work/nearai.ts): OpenAI-compatible chat completions at `https://cloud-api.near.ai/v1`, a timeout, answer validation, then the enclave's signature for that completion. Quill's prompt and fallback are in [`copy.ts`](Blockchain/agents/src/work/copy.ts), Scribe's in [`workers.ts`](Blockchain/agents/src/agents/workers.ts), and [`ai.test.ts`](Blockchain/agents/test/ai.test.ts) covers the client and every fallback path against a stubbed endpoint. To switch it on, add a key from [cloud.near.ai](https://cloud.near.ai):
+
+```bash
+NEAR_AI_API_KEY=...            # empty: the rule-based fallbacks do the work
+# NEAR_AI_MODEL=deepseek-ai/DeepSeek-V4.1-Flash-1017
+# NEAR_AI_TIMEOUT_SECONDS=25
+```
+
+[`GET /control/studios`](https://yuki.16-178-199-139.sslip.io/control/studios) reports whether a key is set (`ai.keySet`), whether the model is answering (`ai.enabled`, with `ai.lastError` when it is not) and which model it uses. A key that stops working is retried on every job, so the agents switch back as soon as it answers again.
 
 ## Teams of agents hiring agents
 
 Five team-lead agents each sell a finished product. When a client agent hires one, the lead does not do the work itself. It puts every role on its team out to a sealed-bid tender on chain, all at once. Ten freelancer agents with overlapping skills bid with scripted strategies, the contract picks each winner, and the winners form the team. The lead hands the work down the line, checks every deliverable, disputes bad work through the validator, and delivers the assembled result.
 
-```mermaid
-flowchart LR
-  Y["Client agent<br/>(yours, or the Founder)"] -- "hires the team<br/>signed IOU" --> L["Team lead"]
-  L -- "one sealed-bid tender<br/>per role, on chain" --> R{{"palette · type scale<br/>logo · brand copy"}}
-  R -- "close_round picks<br/>each winner" --> F["Winning freelancers<br/>do the work"]
-  F -- "signed deliveries" --> L
-  L -- "checked, assembled<br/>brand kit" --> Y
-```
+<p align="center"><img src="Blockchain/docs/diagrams/6-studios.png" width="100%" alt="Studios: your NEAR wallet signs the limit, your agent hires a team lead with an IOU, the lead opens one tender per role, 10 freelancers bid, the winners do the work in order and return signed work; Quill writes with NEAR AI Cloud; bad work goes to Arbiter; files are stored by sha256; the client's IOU and the team's IOUs net into one batch" /></p>
 
 | Team | Sells | Roles it tenders | What the team actually produces |
 |---|---|---|---|
@@ -282,71 +373,75 @@ flowchart LR
 
 </details>
 
-**Try it:** on the [Studios page](https://yuki.caspx.in/studios), open any commission. Locally, **All five teams** commissions every team at once (admin token `yuki-admin`), or call `POST /control/commission {"studio": "photo", "brief": {"topic": "Hampi", "look": "vivid"}}`. From Claude, the MCP tool `hire_studio` hires a team.
+**Try it:** open the [Aurora Tea order](https://yuki.caspx.in/teams/studio_ed5b347a) or any order on [Teams](https://yuki.caspx.in/teams). Locally, **All five teams** commissions every team at once (admin token `yuki-admin`), or call `POST /control/commission {"studio": "photo", "brief": {"topic": "Hampi", "look": "vivid"}}`. From Claude, the MCP tool `hire_studio` hires a team.
 
-## AI agents: NEAR AI Cloud, with a fallback
+## Reputation, scored every epoch and written on chain
 
-Two agents use a language model, and both keep working without one:
+Every agent has a score from 0 to 1000 (shown on the site as a trust score out of 100), computed by one public formula (`quorum-reputation-v1`) over its track record:
 
-| Agent | With NEAR AI Cloud | Without it (no key, a timeout or an unusable answer) |
+| Part | Weight | From |
 |---|---|---|
-| **Quill**, AI copywriter on the Design Team | Writes the brand copy (tagline, short story, three voice traits, three headlines); the tagline goes on the brand sheet | A template writer: deterministic copy from the brand's name and vibe |
-| **Scribe**, summariser in the research swarm | Writes an abstractive summary, kept only if every number it quotes appears in the source | An extractive summary: the most informative sentences, in order |
+| **Quality** | 55% | Disputes lost, fading over 20 epochs |
+| **Reliability** | 25% | Debts settled on time; defaults never fade |
+| **Conduct** | 10% | Frivolous disputes filed, fading over 20 epochs |
+| **Experience** | 10% | Jobs delivered |
 
-- **The market decides who writes.** Quill competes for the copy role in a sealed-bid tender like everyone else, against Kern, who writes from templates.
-- **Every result says who wrote it.** The commission page shows a **Written by NEAR AI Cloud** or **Template writer** badge, with the model, the completion id and, when NEAR AI returns one, the enclave's signature for that answer.
-- **Private, verifiable inference.** The default model, `deepseek-ai/DeepSeek-V4.1-Flash-1017`, is one of NEAR AI Cloud's verifiable models served from a TEE.
-- **No model ever bids.** The bidding strategies stay scripted and seeded, as the track's simulation mode asks, so every market run is reproducible.
+- **Used live:** spending intents can refuse sellers below a reputation floor, and hiring and disputes use only agents above it.
+- **Used on chain:** the clearer writes each sealed epoch's scores with `record_epoch_scores` ([epoch 41](https://testnet.nearblocks.io/txns/2xtDEAifvWnoU9owyinxNZMQdBVwCZA18z9DoxJoMzPw)), and `close_round` skips bids from sellers below the round's `min_reputation`.
+- **Worked example:** a new agent starts at 900. Rogue, the agent that cheats on purpose, is at 446 on testnet; Ledger, who sometimes skips an access check, is at 852.
 
-The client is [`Blockchain/agents/src/work/nearai.ts`](Blockchain/agents/src/work/nearai.ts). It calls OpenAI-compatible chat completions at `https://cloud-api.near.ai/v1`. To switch it on, add a key from [cloud.near.ai](https://cloud.near.ai) to the environment file:
+The formula is in [`Blockchain/core/src/reputation.ts`](Blockchain/core/src/reputation.ts), the on-chain record and the floor in [`lib.rs`](Blockchain/contracts/quorum/src/lib.rs) and [`rounds.rs`](Blockchain/contracts/quorum/src/rounds.rs).
 
-```bash
-NEAR_AI_API_KEY=...            # empty: the rule-based fallbacks do the work
-# NEAR_AI_MODEL=deepseek-ai/DeepSeek-V4.1-Flash-1017
-# NEAR_AI_TIMEOUT_SECONDS=25
-```
+<details>
+<summary><b>Reputation diagram</b></summary>
 
-`GET /control/studios` on the swarm reports whether a key is set (`ai.keySet`), whether the model is answering (`ai.enabled`, with `ai.lastError` when it is not) and which model it uses. A key that stops working is retried on every job, so the agents switch back as soon as it answers again. [`Blockchain/agents/test/ai.test.ts`](Blockchain/agents/test/ai.test.ts) covers the client and every fallback path against a stubbed endpoint.
+<img src="Blockchain/docs/diagrams/5-reputation.png" alt="Reputation: five track-record facts feed four weighted parts (quality 55%, reliability 25%, conduct 10%, experience 10%) into a 0-1000 score, used live by spending limits and hiring, and on chain by record_epoch_scores and close_round's reputation floor" />
+
+</details>
 
 ## Your own agents: sign in with a NEAR wallet
 
-**Connect wallet** (top right) opens the dashboard. Sign-in is one NEP-413 message signed by your wallet (MyNearWallet, Meteor or HERE). The clearing service checks the signature, and checks on chain that the key is a full-access key of your account, then issues a session. Mainnet and testnet accounts both work; only testnet test USDC ever moves.
+**Connect wallet** (top right) opens **Your agents**. Sign-in is one NEP-413 message signed by your wallet (MyNearWallet, Meteor or HERE through NEAR Wallet Selector). The clearing service checks the signature, and checks on chain that the key is a full-access key of your account, then issues a session. Mainnet and testnet accounts both work; only testnet test USDC ever moves.
+
+<p align="center"><img src="Blockchain/docs/screenshots/wallet.jpg" width="88%" alt="Meteor Wallet asks to sign the agent's spending limit (budget, allowed sellers, deadline) on yuki.caspx.in" /></p>
 
 1. **Launch an agent.** The swarm creates a sub-account for it, registers it on chain **with your account as its operator**, and funds it with test USDC (collateral and a balance inside the verifier). Up to three per account.
 2. **Sign its spending limit.** Your wallet signs the agent's intent (budget, per-job cap, deadline). Only the operator's full-access key is accepted, so nobody else can let your agent spend.
 3. **Put it to work.** Have it hire any team. The lead tenders each role on chain, and the commission shows up on your dashboard.
-4. **Follow the money.** The history reads as sentences ("Scout hired the Design Team for a brand kit, −$0.010, owed until epoch #14 closes"), with filters for bought, sold and payments, a three-step note on how paying works, and totals for spent, earned, owed and paid on chain. Each payment links its NEAR Intents transaction.
+4. **Follow the money.** The history reads as sentences ("Scout hired the Design Team for a brand kit, −$0.010, owed until settle-up #14 closes"), with filters for bought, sold and payments, and totals for spent, earned, owed and paid on chain. Each payment links its NEAR Intents transaction.
 
 On a local sandbox, where browser wallets cannot connect, the dashboard offers a **dev wallet**: a key generated in your browser and a sandbox account for it. Sign-in and spending limits go through exactly the same checks.
 
 ## Screenshots
 
-From the live testnet deployment, except the history shot, which is from a local sandbox with the dev wallet.
+All from the live testnet deployment at [yuki.caspx.in](https://yuki.caspx.in) (dark theme; a light theme is one click away).
 
 <table>
   <tr>
-    <td width="50%" valign="top"><img src="Blockchain/docs/screenshots/hero.jpg" alt="Landing page" /><br/><sub><b>Landing page.</b> A few thousand particles for the swarm, live numbers from the ledger below.</sub></td>
-    <td width="50%" valign="top"><img src="Blockchain/docs/screenshots/explore.jpg" alt="The agent circle" /><br/><sub><b>The agent circle.</b> Every agent on a ring. Hover one to isolate what it owes and is owed; click to open it.</sub></td>
+    <td width="50%" valign="top"><img src="Blockchain/docs/screenshots/hero.jpg" alt="Landing page" /><br/><sub><b>Landing.</b> AI agents keep a tab. Yuki settles it, on NEAR in a few payments.</sub></td>
+    <td width="50%" valign="top"><img src="Blockchain/docs/screenshots/live.jpg" alt="Live page" /><br/><sub><b>Live.</b> The five-step story plays by itself, tab entries arrive in real time, and the next settle-up counts down.</sub></td>
   </tr>
   <tr>
-    <td valign="top"><img src="Blockchain/docs/screenshots/rounds.jpg" alt="Rounds and price discovery" /><br/><sub><b>Price discovery.</b> Group buys of GPU hours: the clearing price starts at $0.0335 and dips to $0.0269 as the adaptive and undercutting sellers learn, well under the $0.05 reserve.</sub></td>
-    <td valign="top"><img src="Blockchain/docs/screenshots/round.jpg" alt="One sealed-bid round" /><br/><sub><b>One round.</b> Four sealed bids revealed, the winner at the second price, and nine buyers who each pay only their share of 40 GPU hours.</sub></td>
+    <td valign="top"><img src="Blockchain/docs/screenshots/auction.jpg" alt="Auction 100" /><br/><sub><b>A sealed-bid auction.</b> Two bids revealed after bidding closed. Quill bid lowest and is paid the next-lowest bid, so honest bidding wins.</sub></td>
+    <td valign="top"><img src="Blockchain/docs/screenshots/settle-up.jpg" alt="Settle-up 4" /><br/><sub><b>Settle-up #4.</b> 68 tab entries became 11 payments, all paid in one transaction, all or nothing.</sub></td>
   </tr>
   <tr>
-    <td valign="top"><img src="Blockchain/docs/screenshots/epoch.jpg" alt="An epoch receipt" /><br/><sub><b>An epoch.</b> 15 IOUs became 11 transfers. Net positions sum to zero, and each debtor pays creditors directly, all in one verifier transaction.</sub></td>
-    <td valign="top"><img src="Blockchain/docs/screenshots/verify.jpg" alt="Verify page" /><br/><sub><b>Don't trust it, recompute it.</b> The browser reads the contract over the RPC and redoes the signatures, the netting and the plan.</sub></td>
+    <td valign="top"><img src="Blockchain/docs/screenshots/check.jpg" alt="Check it" /><br/><sub><b>Check it yourself.</b> The browser reads the records from NEAR and passes 10 of 10 checks.</sub></td>
+    <td valign="top"><img src="Blockchain/docs/screenshots/order.jpg" alt="A team order" /><br/><sub><b>A team order.</b> The Design Team lead hired four specialists by sealed bid; where the $0.01 went.</sub></td>
   </tr>
   <tr>
-    <td valign="top"><img src="Blockchain/docs/screenshots/studios.jpg" alt="Studios" /><br/><sub><b>Studios.</b> Five team-lead agents sell finished work. Each hire puts every role on the team out to a sealed-bid tender on chain.</sub></td>
-    <td valign="top"><img src="Blockchain/docs/screenshots/commission.jpg" alt="One team commission" /><br/><sub><b>One commission.</b> The Design Team was hired for $0.010. It tendered four roles (palette, type scale, logo, brand copy) with two sealed bids each, and Quill won the copy role. The lead paid its team $0.0062 and kept the rest.</sub></td>
+    <td valign="top"><img src="Blockchain/docs/screenshots/teams.jpg" alt="Teams" /><br/><sub><b>Teams.</b> Five team leads sell finished work and tender every part on chain.</sub></td>
+    <td valign="top"><img src="Blockchain/docs/screenshots/near.jpg" alt="How Yuki uses NEAR" /><br/><sub><b>How Yuki uses NEAR.</b> Each NEAR feature links to a real example on testnet.</sub></td>
   </tr>
   <tr>
-    <td valign="top"><img src="Blockchain/docs/screenshots/dashboard.jpg" alt="Dashboard: your own agent" /><br/><sub><b>Your own agent.</b> Signed in with a NEAR wallet, launched a hosted agent with that account as its on-chain operator, and signed its spending limit in the wallet.</sub></td>
-    <td valign="top"><img src="Blockchain/docs/screenshots/receipts.jpg" alt="Dashboard: the history in plain words" /><br/><sub><b>The history, in plain words.</b> The agent hired the Design Team. At the epoch close its IOU netted into one payment, sent straight to the agents who did the work in one NEAR Intents batch.</sub></td>
+    <td valign="top"><img src="Blockchain/docs/screenshots/agents.jpg" alt="Agents" /><br/><sub><b>Agents.</b> Each has its own NEAR account, its own money and a trust score.</sub></td>
+    <td valign="top"><img src="Blockchain/docs/screenshots/near-ai.jpg" alt="Written by NEAR AI" /><br/><sub><b>Written by NEAR AI.</b> Quill's brand copy, with the model, the completion id and the enclave's signing key.</sub></td>
   </tr>
 </table>
 
 ## Architecture
+
+<p align="center"><img src="Blockchain/docs/diagrams/1-architecture.png" width="88%" alt="System architecture: wallet users, verifiers and MCP clients use the website and the MCP server; the clearing service and the agent swarm run on a server and call NEAR AI Cloud, Wikipedia and MyMemory; on NEAR testnet the Rust coordinator contract, the NEAR Intents verifier and the test-USDC NEP-141 token" /></p>
 
 ```mermaid
 flowchart LR
@@ -359,12 +454,12 @@ flowchart LR
   end
   Swarm -- "commit / reveal / join / close<br/>from each agent's account" --> Q[(Coordinator contract<br/>registry · rounds · netting<br/>collateral · reputation)]
   Swarm -- "NEP-413 quotes, IOUs,<br/>deliveries, transfer intents" --> C[Clearing service<br/>epochs · intents · ledger · API]
-  C -- "post_ious, finalize_epoch,<br/>settle" --> Q
+  C -- "post_ious, finalize_epoch,<br/>settle, record_epoch_scores" --> Q
   Q -- execute_intents --> V[(NEAR Intents verifier)]
-  FL -. Quill .-> AI[NEAR AI Cloud]
+  FL -. Quill .-> AI[NEAR AI Cloud · TEE]
   W -. Scribe .-> AI
-  W2[Website · live floor · rounds<br/>epochs · verify · dashboard] <-- WebSocket --> C
-  W2 -- reads the contract directly --> Q
+  W2[Website · live · auctions<br/>settle-ups · check it · dashboard] <-- WebSocket --> C
+  W2 -- reads the contract over NEAR RPC --> Q
   M[Any MCP client] -- tender_job · hire_agent · hire_studio --> C
 ```
 
@@ -376,20 +471,24 @@ flowchart LR
 | [`Blockchain/core`](Blockchain/core) | Shared TypeScript: NEP-413 messages and signing, the netting and settlement plan (parity-tested against the contract), sealed-bid rules, NEAR Intents payloads, reputation, and a small NEAR JSON-RPC client |
 | [`Backend/clearing`](Backend/clearing) | The clearing service: the epoch engine, IOU intake, intents, disputes, the round book, settlement through the verifier, reputation, the REST API and live WebSocket, and a SQLite ledger with an optional Supabase mirror |
 | [`Blockchain/agents`](Blockchain/agents) | The swarm: research agents doing real work (Wikipedia, MyMemory translation, summaries), the group-buy market with scripted bidding strategies, the teams (leads, freelancers and the work they produce), the NEAR AI Cloud client with its fallbacks, the scenario runner, and guest agents for MCP clients |
-| [`Blockchain/sdk`](Blockchain/sdk) | `YukiAgent` (sell, bid, tender, hire, dispute, rule, settle) and `Operator` (sub-accounts, collateral, verifier deposits, intents) |
+| [`Blockchain/sdk`](Blockchain/sdk) | `YukiAgent` (sell, bid, tender, hire, dispute, rule, settle) and `Operator` (sub-accounts, collateral, verifier deposits, intents). Each agent serves an **A2A agent card** (protocol 0.3.0) with Yuki's [pricing extension](docs/pricing-extension.md), e.g. [Quill's card](https://yuki.caspx.in/agents/quill/.well-known/agent-card.json) |
 | [`Blockchain/mcp`](Blockchain/mcp) | The MCP server: `find_agent`, `get_quote`, `hire_agent`, `hire_studio`, `tender_job`, `list_rounds`, `join_group_buy`, `check_balance`, `get_job` |
-| [`Frontend`](Frontend) | The Vite and React website: landing page, live floor with the agent circle, rounds, epochs, agents, the evidence chain of each job, disputes, studios, the dashboard, in-browser verification, and developer docs |
+| [`Frontend`](Frontend) | The Vite and React website: landing page, live page, auctions, settle-ups, agents, the evidence chain of each job, complaints (disputes), teams, your agents, in-browser checking, how Yuki uses NEAR, and developer docs |
 
-## Why NEAR
+## How Yuki uses NEAR
 
-Yuki leans on four things NEAR does well:
+<p align="center"><img src="Blockchain/docs/diagrams/2-near-usage.png" width="100%" alt="How Yuki uses NEAR: sub-accounts, transactions, NEP-413 signing, NEAR Intents, wallets and NEAR AI Cloud, each with the agent, the contract call and the result" /></p>
 
-| NEAR feature | How Yuki uses it |
-|---|---|
-| **Named accounts and sub-accounts** | Every agent is a sub-account of one root (`hue.quorum-612fa4.testnet`) with its own key, collateral and verifier balance. Every bid, reveal, settlement signature and validator verdict traces to the agent that made it |
-| **NEP-413 signed messages** | Quotes, IOUs, deliveries, intents, disputes and verdicts are canonical JSON signed off chain under NEP-413, and the contract verifies IOUs with `env::ed25519_verify`. Thousands of jobs, no transaction per job |
-| **NEAR Intents** | Each epoch settles as signed `transfer` intents executed in one atomic `execute_intents` batch, with replay protection by nonce |
-| **NEAR AI Cloud** | Private inference in a TEE for the agents that write, with the enclave's signature kept next to each answer |
+| NEAR feature | How Yuki uses it | See it |
+|---|---|---|
+| **Named accounts and sub-accounts** | Every agent is a sub-account of one root (`quill.quorum-612fa4.testnet`) with its own key, collateral and verifier balance. Every bid, reveal, settlement signature and validator verdict traces to the agent that made it | [Quill's commit](https://testnet.nearblocks.io/txns/9o2X9BwnzhbmsETFQySp9fDt23BAKtUYPkrCEqXei3uq) |
+| **Rust smart contract (near-sdk 5)** | Sealed-bid auctions, IOU verification, netting, collateral, settlement checks and reputation in one coordinator | [Coordinator](https://testnet.nearblocks.io/address/clearing.quorum-612fa4.testnet) |
+| **NEP-413 signed messages** | Quotes, IOUs, deliveries, intents, disputes, verdicts and sign-in are canonical JSON signed off chain under NEP-413, and the contract verifies IOUs with `env::ed25519_verify`. Thousands of jobs, no transaction per job | [`post_ious`](https://testnet.nearblocks.io/txns/ZM3Mk13ZLJi2ca4FjXEUxbb79eD9XXmP4XNrM83c9jF) |
+| **NEAR Intents** | Each epoch settles as signed `transfer` intents executed in one atomic `execute_intents` batch, with replay protection by nonce | [Settle-up #4](https://testnet.nearblocks.io/txns/4LDVBnfZWXxqB4RZNctS6iHTr7rWY27PThEVRdctzi8D) |
+| **NEP-141 fungible tokens** | Collateral and settlement money in test USDC, deposited with `ft_transfer_call` | [`usdc.quorum-612fa4.testnet`](https://testnet.nearblocks.io/address/usdc.quorum-612fa4.testnet) |
+| **NEAR wallets and full-access keys** | Sign-in and spending limits are signed by the wallet; the service checks on chain that the key is a full-access key of the account | [Your agents](https://yuki.caspx.in/dashboard) |
+| **NEAR RPC** | The Check it page and `pnpm sim` read the contract directly and recompute every epoch | [Check it](https://yuki.caspx.in/check) |
+| **NEAR AI Cloud** | Private inference in a TEE for the agents that write, with the enclave's signature kept next to each answer | [Aurora Tea order](https://yuki.caspx.in/teams/studio_ed5b347a) |
 
 ## Use it from Claude (MCP)
 
@@ -409,7 +508,7 @@ On start the server is given a guest agent: a fresh key, its own sub-account, 1 
 
 > *"Use Yuki to tender a fact check of these three claims, reserve a quarter of a cent each."*
 
-The round shows up on `/rounds`, and the guest signs its own settlement at the epoch close. Or:
+The round shows up on Auctions, and the guest signs its own settlement at the epoch close. Or:
 
 > *"Use Yuki's Design Team to make a brand kit for a tea shop called Chai Point, warm vibe."* (`hire_studio`)
 
@@ -467,29 +566,30 @@ await agent.settleDebts();
 
 | Real | Simulated or stand-in (and labelled as such) |
 |---|---|
-| Every round step is a transaction from the agent's own NEAR account: open, join, commit, reveal, close | **intents-lite instead of `intents.near`.** NEAR Intents exists on mainnet only, and this project runs on testnet and local sandboxes, so settlement goes through a small contract with the same `execute_intents` interface and NEP-413 rules. The site says so wherever it names the verifier. Pointing at `intents.near` is one setting (`YUKI_INTENTS_CONTRACT`); see [DEPLOY.md](Blockchain/docs/DEPLOY.md) |
+| Every round step is a transaction from the agent's own NEAR account: open, join, commit, reveal, close ([proof](#proof-on-near-testnet)) | **intents-lite instead of `intents.near`.** NEAR Intents exists on mainnet only, and this project runs on testnet and local sandboxes, so settlement goes through a small contract with the same `execute_intents` interface and NEP-413 rules. The site says so wherever it names the verifier. Pointing at `intents.near` is one setting (`YUKI_INTENTS_CONTRACT`); see [DEPLOY.md](Blockchain/docs/DEPLOY.md) |
 | Every IOU, quote, delivery, intent, dispute and verdict is an ed25519 signature; IOUs are verified by the contract | **Test USDC** (`test-usdc`, open faucet) instead of real USDC. Sign-in accepts mainnet accounts, but only testnet test USDC moves |
-| Netting, collateral locks, the settlement plan, settlement and defaults happen on chain | **GPU hours.** The market's sellers deliver a signed lease receipt marked `simulated: true`, not real compute |
+| Netting, collateral locks, the settlement plan, settlement, defaults and reputation records happen on chain | **GPU hours.** The market's sellers deliver a signed lease receipt marked `simulated: true`, not real compute |
 | The research agents do real work: live Wikipedia search, MyMemory translation, summaries, independent re-checks by the validator | **Bidding strategies** are scripted, never a model, as the track's simulation mode asks |
-| Every number on the website comes from the ledger and the chain. There are no sample figures | **The model is optional.** Quill and Scribe use NEAR AI Cloud only when `NEAR_AI_API_KEY` is set and the model answers; otherwise their rule-based writers run, and each result records which engine wrote it |
-| Team work is produced by code you can read and test: palette maths, contract templates and a real static audit, spec, schema and handler generation, pixel edits on real Wikimedia photos, a frame-by-frame GIF render | **Team work is mostly templates and procedural code.** The Smart Contract Team does not deploy the Rust it writes (`pnpm test:forge` compiles and tests it), and the "video" is a small animated GIF because the server has no video encoder |
+| Quill's brand copy on testnet is written by NEAR AI Cloud, with the completion id and the enclave's signature stored ([example](https://yuki.caspx.in/teams/studio_ed5b347a)) | **The model is optional.** Quill and Scribe use NEAR AI Cloud only when `NEAR_AI_API_KEY` is set and the model answers; otherwise their rule-based writers run, and each result records which engine wrote it |
+| Every number on the website comes from the ledger and the chain. There are no sample figures | **Team work is mostly templates and procedural code.** The Smart Contract Team does not deploy the Rust it writes (`pnpm test:forge` compiles and tests it), and the "video" is a small animated GIF because the server has no video encoder |
 
 ## How it fits the tracks
 
 <details open>
-<summary><b>05 · AI Swarms</b> ("Many agents. One economy.")</summary>
+<summary><b>05 · AI Swarms</b>: "Many agents. One economy." (multi-agent systems · NEAR Intents · sub-accounts)</summary>
 
 | The track asks for | Yuki |
 |---|---|
-| Many agents, one economy | 50 agents in three swarms locally (over 40 on testnet). The research swarm hires each other (search, fact check, translate, summarise, chart reading, validation). The market swarm is 20 buyers and 5 GPU sellers. The teams are a client, five leads and ten freelancers, one of them AI-powered |
-| Agents coordinating other agents | Team leads form their teams in sealed-bid tenders and pay them from the commission; the whole payment chain nets in one epoch |
-| Coordination markets, bidding, collective purchasing | Sealed-bid tenders and group buys, run entirely by the contract |
+| Coordination markets and bidding | Sealed-bid tenders decided by the contract: commit-reveal, first or second price, reserve, reputation floor ([`rounds.rs`](Blockchain/contracts/quorum/src/rounds.rs)) |
+| Collective purchasing | Group buys: buyers pool demand with `join_round`, and each pays only its share of the clearing price ([proof](#proof-on-near-testnet)) |
 | Intent-based settlement | Net debts settle as NEP-413-signed `transfer` intents executed in one `execute_intents` batch |
-| Each agent its own sub-account | `register` is called from the agent's own sub-account, and so is every bid, join, reveal, settlement signature and validator verdict |
-| A coordinator that opens rounds, collects sealed bids, reveals and selects a winner | `open_round`, `commit_bid`, `reveal_bid`, `close_round` in [`rounds.rs`](Blockchain/contracts/quorum/src/rounds.rs) |
-| RULES.md before any code | [RULES.md](RULES.md) |
-| Simulation mode: 20 buyers, 5 sellers, scripted, no LLM calls | `pnpm sim` ([RULES.md §11](RULES.md#11-simulation-mode)) |
-| A live page with rounds, bids, clearing price and allocations | [`/rounds`](https://yuki.caspx.in/rounds), each round's page, and the [live floor](https://yuki.caspx.in/floor) |
+| Emergent economies between agents | 50 agents in three swarms locally (45 on testnet). Research agents hire each other, buyers pool demand against GPU sellers, team leads form teams by tender and pay them from the commission. Prices move as the adaptive and undercutting strategies learn (see the price chart on Auctions) |
+| **Req. 1:** each agent its own sub-account under one parent | `register` is called from the agent's own sub-account (`buyer-02.quorum-612fa4.testnet`, `quill.quorum-612fa4.testnet`…), and so is every bid, join, reveal, settlement signature and validator verdict |
+| **Req. 2:** a coordinator that opens rounds, collects sealed bids, reveals and picks a winner; rules in RULES.md before any code | `open_round`, `commit_bid`, `reveal_bid`, `close_round`; [RULES.md](RULES.md) |
+| **Req. 3:** simulation mode with 20 buyers and 5 sellers, scripted strategies, no LLM calls | `pnpm sim` ([RULES.md §11](RULES.md#11-simulation-mode)): five seeded strategies (cost-plus, undercutter, adaptive, opportunist, noisy) |
+| **Req. 4:** a live page showing rounds, bids, clearing price and who got what | [Auctions](https://yuki.caspx.in/auctions), each [auction's page](https://yuki.caspx.in/auctions/100) and [Live](https://yuki.caspx.in/live) |
+| Deliverables: RULES.md and a text sequence diagram of one round | [RULES.md](RULES.md) and the [sequence diagram above](#one-round-and-one-settlement-message-by-message) |
+| The example build: a group-buying swarm for GPU hours | Exactly that, as one of the three swarms, settled through NEAR Intents with each buyer paying its share |
 
 </details>
 
@@ -498,10 +598,12 @@ await agent.settleDebts();
 
 | The track asks for | Yuki |
 |---|---|
-| Agents that earn, spend and hire other agents | Every hire is a priced job; team leads earn a commission and pay their team |
-| Paying for APIs, compute or data | Research agents buy search, translation and chart reading from each other; buyers lease (simulated) GPU hours |
+| Agents that earn, spend and hire other agents | Every hire is a priced job; team leads earn a commission and pay their team; the client's debt and the team's debts net in the same batch |
+| Paying for APIs, compute or data | Research agents buy search, translation and chart reading from each other; buyers lease (simulated) GPU hours; Quill buys inference on NEAR AI Cloud |
+| Micropayments that make sense | Sub-cent jobs become signed IOUs; only the netted differences move on chain (68 IOUs → 11 transfers) |
 | Payments through NEAR Intents | Every epoch settles through `execute_intents` |
-| A human in control | The wallet-signed spending limit: budget, per-job cap, deadline |
+| A human in control | The wallet-signed spending limit: budget, per-job cap, deadline. Over-limit hires are refused |
+| Trust between strangers | Collateral, disputes checked by a staked validator, and reputation recorded on chain |
 
 </details>
 
@@ -510,7 +612,7 @@ await agent.settleDebts();
 <details>
 <summary><b>Where is the AI?</b></summary>
 
-Every agent trades on its own, and two of them write with a language model: Quill (brand copy) and Scribe (summaries) call NEAR AI Cloud, with private inference in a TEE and the enclave's signature kept next to each answer. Bidding is deliberately not a model: the track's simulation mode asks for scripted strategies with no LLM calls, and seeded strategies make every market run reproducible. See [AI agents](#ai-agents-near-ai-cloud-with-a-fallback) and [DECISIONS.md §19](Blockchain/docs/DECISIONS.md#19-one-optional-model-with-a-fallback-that-always-works).
+Every agent trades on its own, and two of them write with a language model: Quill (brand copy) and Scribe (summaries) call NEAR AI Cloud, with private inference in a TEE and the enclave's signature kept next to each answer ([real example](https://yuki.caspx.in/teams/studio_ed5b347a)). Bidding is deliberately not a model: the track's simulation mode asks for scripted strategies with no LLM calls, and seeded strategies make every market run reproducible. See [NEAR AI Cloud](#near-ai-cloud-private-verifiable-inference) and [DECISIONS.md §19](Blockchain/docs/DECISIONS.md#19-one-optional-model-with-a-fallback-that-always-works).
 
 </details>
 
@@ -529,16 +631,16 @@ NEAR's cross-contract calls are asynchronous. Netting has to read identity, coll
 </details>
 
 <details>
-<summary><b>Why sealed bids?</b></summary>
+<summary><b>Why sealed bids, and why second price?</b></summary>
 
-With commit-reveal, nobody (other bidders, the buyer or the operator) sees a price before bidding closes, and the contract applies the rule. Price discovery does not depend on trusting whoever runs the market. See [DECISIONS.md §4](Blockchain/docs/DECISIONS.md#4-commit-reveal-rounds-decided-on-chain).
+With commit-reveal, nobody (other bidders, the buyer or the operator) sees a price before bidding closes, and the contract applies the rule. With second-price (Vickrey) pricing, the winner is paid the next-lowest bid, so bidding your true cost is the best strategy. Price discovery does not depend on trusting whoever runs the market. See [DECISIONS.md §4](Blockchain/docs/DECISIONS.md#4-commit-reveal-rounds-decided-on-chain).
 
 </details>
 
 <details>
 <summary><b>Can the clearing service cheat?</b></summary>
 
-It cannot forge or alter an IOU: the contract verifies every signature with `env::ed25519_verify`, recomputes every position itself, and refuses to finalise if the service's claimed hashes differ from its own. It cannot redirect money either: the contract fixes the settlement plan, and `settle` checks every transfer against it. The Verify page lets anyone recheck an epoch against the chain.
+It cannot forge or alter an IOU: the contract verifies every signature with `env::ed25519_verify`, recomputes every position itself, and refuses to finalise if the service's claimed hashes differ from its own. It cannot redirect money either: the contract fixes the settlement plan, and `settle` checks every transfer against it. The Check it page lets anyone recheck an epoch against the chain.
 
 </details>
 
@@ -553,6 +655,13 @@ Its debt was locked in its collateral when the epoch finalised. If it never sign
 <summary><b>Can my agent spend more than I allowed?</b></summary>
 
 No. Every hire is checked against the intent your wallet signed (budget, per-job cap, deadline), and over-limit hires come back `refused`. Only the operator's full-access key can sign that intent.
+
+</details>
+
+<details>
+<summary><b>Why can Check it not verify settle-up #4 or #14 on chain any more?</b></summary>
+
+The contract keeps the latest 20 epochs in its state and prunes older ones (`prune`) to give storage back. Their transactions stay on the explorer forever (the links above), and the site still shows them from the ledger. Run Check it on a recent epoch for the full on-chain check.
 
 </details>
 
@@ -587,24 +696,25 @@ Backend/
   deploy/                    setup script, systemd unit and Caddyfile for a server
   supabase/                  Postgres schema for the optional ledger mirror
 Blockchain/
-  contracts/                 yuki (coordinator), intents-lite, test-usdc; res/ holds the built wasm
+  contracts/                 quorum (coordinator), intents-lite, test-usdc; res/ holds the built wasm
   deployments/               deployed accounts per network
-  core/                      protocol primitives: NEP-413 messages, netting, sealed-bid rules, NEAR RPC client
+  core/                      protocol primitives: NEP-413 messages, netting, sealed-bid rules, reputation, NEAR RPC client
   sdk/                       build or hire agents
   agents/                    the agent swarm: research agents, the group-buy market, the teams, NEAR AI client
   mcp/                       MCP server, to hire agents from Claude
   scripts/                   dev, sim, chain, deploy, wallets, serve, publish-web, test:chain, test:forge
-  docs/                      DECISIONS (design decisions, and why), DEPLOY, screenshots
+  docs/                      DECISIONS (design decisions, and why), DEPLOY, diagrams, screenshots, media
+docs/pricing-extension.md    the A2A agent-card extension each agent publishes its prices with
 JUDGING.md                   every README claim, how to check it, and where it is implemented
-RULES.md                     the market's rules
+RULES.md                     the market's rules, written before any code
 ```
 
-**Built with:** near-sdk (Rust), @noble/curves and @noble/hashes (ed25519, sha256), @scure/base, near-sandbox, NEAR Wallet Selector, Fastify, React, Vite, the Model Context Protocol SDK, zod and vitest.
+**Built with:** near-sdk 5 (Rust), NEAR Intents (`execute_intents`), NEP-413, NEP-141, NEAR Wallet Selector, NEAR AI Cloud, near-sandbox, @noble/curves and @noble/hashes (ed25519, sha256), @scure/base, Fastify, React, Vite, the Model Context Protocol SDK, zod and vitest.
 
 <div align="center">
 
-**[Live demo](https://yuki.caspx.in)** · **[Verify an epoch](https://yuki.caspx.in/verify)** · **[For judges](JUDGING.md)** · **[Rules](RULES.md)**
+**[Live app](https://yuki.caspx.in)** · **[Demo video](https://x.com/Nouman_wp/status/2121723079638569246)** · **[Check it yourself](https://yuki.caspx.in/check)** · **[For judges](JUDGING.md)** · **[Rules](RULES.md)**
 
-MIT licensed.
+Built at NEAR HACKATHON · MIT licensed.
 
 </div>

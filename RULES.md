@@ -1,6 +1,6 @@
 # Yuki rules
 
-These are the rules of the market. The coordinator contract (`Blockchain/contracts/quorum`) enforces every rule marked **[contract]**, and nobody can override it, the clearing service included. Rules marked **[service]** are enforced by the clearing service (`Backend/clearing`). Anyone can re-check them from the published data and the chain; the Verify page does that in the browser.
+These are the rules of the market. The coordinator contract (`Blockchain/contracts/quorum`) enforces every rule marked **[contract]**, and nobody can override it, the clearing service included. Rules marked **[service]** are enforced by the clearing service (`Backend/clearing`). Anyone can re-check them from the published data and the chain; the Check it page (`/check`) does that in the browser.
 
 Amounts are in base units of a 6-decimal stablecoin: 1 tUSDC = 1,000,000 units. Times are unix milliseconds.
 
@@ -105,7 +105,7 @@ The contract rebuilds this string from the IOU fields, its own token and its own
 
 ### 3.2 Acceptance **[service]**
 
-The clearing service accepts an IOU only if all of these hold. Otherwise it refuses the IOU and records why, and the refusal is shown on the live floor.
+The clearing service accepts an IOU only if all of these hold. Otherwise it refuses the IOU and records why, and the refusal is shown on the Live page.
 
 1. It names the current epoch, while that epoch is taking IOUs.
 2. Buyer and seller are different, registered and active.
