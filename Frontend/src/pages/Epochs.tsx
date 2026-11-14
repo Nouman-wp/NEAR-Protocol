@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import type { EpochView } from "@quorum/core";
-import { API, useApi, useLive, type EpochDetail } from "../lib/api.ts";
-import { pct, plural, serviceName, usd, when } from "../lib/format.ts";
+import { agentName, API, useApi, useLive, type EpochDetail } from "../lib/api.ts";
+import { pct, plural, serviceName, usd, usdExact, when } from "../lib/format.ts";
 import { AgentChip, Countdown, Details, Empty, Go, Hash, Loading, Money, NextStep, PageHead, Status, Tx } from "../components/ui.tsx";
 
 const entries = (n: number) => plural(n, "tab entry", "tab entries");
@@ -145,165 +145,130 @@ export function EpochPage() {
           </a>
         </PageHead>
 
-        <div className="stats" style={{ ["--n" as string]: e.defaults > 0 ? 3 : 2 }}>
-          {netted && e.transfersAvoided > 0 ? (
-            <div className="card light stat">
-              <span className="label">Payments saved</span>
-              <div className="fig">
-                {e.transfersAvoided}
-                <small>{pct(e.transferReduction)} fewer than paying for every job</small>
-              </div>
-            </div>
-          ) : (
-            <div className="card light stat">
-              <span className="label">{netted ? "Total paid" : e.phase === "intake" ? "Tab closes in" : "Adding up"}</span>
-              <div className="fig">{netted ? <Money v={e.netVolume} /> : e.phase === "intake" ? <Countdown to={e.intakeEndsAt} done="closing" /> : "…"}</div>
-            </div>
-          )}
-          <div className="card stat">
-            <span className="label">Total traded</span>
-            <div className="fig">
-              <Money v={e.grossVolume} />
-            </div>
-          </div>
-          {e.phase === "settling" ? (
-            <div className="card stat">
-              <span className="label">Time left to pay</span>
-              <div className="fig">
-                <Countdown to={e.settleDeadline} done="deadline" />
-              </div>
-            </div>
-          ) : netted && e.transfersAvoided > 0 ? (
-            <div className="card stat">
-              <span className="label">Actually paid</span>
-              <div className="fig">
-                <Money v={e.netVolume} />
-              </div>
-            </div>
-          ) : (
-            <div className="card stat">
-              <span className="label">Payments saved</span>
-              <div className="fig">{netted ? e.transfersAvoided : "–"}</div>
-            </div>
-          )}
-          {e.defaults > 0 && (
-            <div className="card stat">
-              <span className="label">Didn't pay</span>
-              <div className="fig">{e.defaults}</div>
-            </div>
-          )}
-        </div>
         {e.error && (
           <p className="note" style={{ borderColor: "var(--bad)", marginBottom: 14 }}>
             The last try to move this settle-up on failed and is being retried: {e.error}
           </p>
         )}
 
-        {netted && (
-          <div className="grid g2 balance" style={{ marginBottom: 14 }}>
-            <div className="card flush">
-              <div className="card-head inset">
-                <h2 className="h3">Final totals</h2>
-                <span className="label">Everyone's totals add up to zero ✓</span>
-              </div>
-              <div className="table-wrap">
-                <table className="tight cards">
-                  <thead>
-                    <tr>
-                      <th scope="col">Agent</th>
-                      <th scope="col" className="r">
-                        Sold
-                      </th>
-                      <th scope="col" className="r">
-                        Bought
-                      </th>
-                      <th scope="col" className="r">
-                        Owes / is owed
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.positions.map((p) => {
-                      const n = BigInt(p.net);
-                      return (
-                        <tr key={p.agentId}>
-                          <td data-label="">
-                            <AgentChip id={p.agentId} />
-                          </td>
-                          <td data-label="Sold" className="r muted">
-                            <Money v={p.credit} />
-                          </td>
-                          <td data-label="Bought" className="r muted">
-                            <Money v={p.debit} />
-                          </td>
-                          <td data-label="Owes / is owed" className="r">
-                            {n === 0n ? (
-                              <span className="faint">Even</span>
-                            ) : n > 0n ? (
-                              <span className="owed">
-                                is owed <Money v={n} />
-                              </span>
-                            ) : (
-                              <span className="owes">
-                                owes <Money v={-n} />
-                              </span>
-                            )}
-                          </td>
+        <div className="receipt-layout">
+          <Receipt e={e} detail={data} />
+          <div className="stack">
+            {netted ? (
+              <>
+                <div className="card flush">
+                  <div className="card-head inset">
+                    <h2 className="h3">Who paid whom</h2>
+                  </div>
+                  {settleTxs.length > 0 && (
+                    <div className="callout">
+                      <span>{settleTxs.length === 1 ? "All paid in one transaction, all or nothing:" : `Paid in ${settleTxs.length} transactions, each all or nothing:`}</span>
+                      {settleTxs.map((t) => (
+                        <Tx key={t} hash={t} label="See on NEAR ↗" />
+                      ))}
+                    </div>
+                  )}
+                  <div className="table-wrap">
+                    <table className="tight cards">
+                      <thead>
+                        <tr>
+                          <th scope="col">Pays</th>
+                          <th scope="col">Receives</th>
+                          <th scope="col" className="r">
+                            Amount
+                          </th>
+                          <th scope="col">Status</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div className="card flush">
-              <div className="card-head inset">
-                <h2 className="h3">Who paid whom</h2>
-              </div>
-              {settleTxs.length > 0 && (
-                <div className="callout">
-                  <span>{settleTxs.length === 1 ? "All paid in one transaction, all or nothing:" : `Paid in ${settleTxs.length} transactions, each all or nothing:`}</span>
-                  {settleTxs.map((t) => (
-                    <Tx key={t} hash={t} label="See on NEAR ↗" />
-                  ))}
+                      </thead>
+                      <tbody>
+                        {data.transfers.map((t, i) => (
+                          <tr key={i}>
+                            <td data-label="Pays">
+                              <AgentChip id={t.from} />
+                            </td>
+                            <td data-label="Receives">
+                              <AgentChip id={t.to} />
+                            </td>
+                            <td data-label="Amount" className="r">
+                              <Money v={t.amount} />
+                            </td>
+                            <td data-label="Status">
+                              <Status value={t.status} />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {data.transfers.length === 0 && <Empty>Everyone came out even: nothing had to be paid.</Empty>}
+                  </div>
                 </div>
-              )}
-              <div className="table-wrap">
-                <table className="tight cards">
-                  <thead>
-                    <tr>
-                      <th scope="col">Pays</th>
-                      <th scope="col">Receives</th>
-                      <th scope="col" className="r">
-                        Amount
-                      </th>
-                      <th scope="col">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.transfers.map((t, i) => (
-                      <tr key={i}>
-                        <td data-label="Pays">
-                          <AgentChip id={t.from} />
-                        </td>
-                        <td data-label="Receives">
-                          <AgentChip id={t.to} />
-                        </td>
-                        <td data-label="Amount" className="r">
-                          <Money v={t.amount} />
-                        </td>
-                        <td data-label="Status">
-                          <Status value={t.status} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {data.transfers.length === 0 && <Empty>Everyone came out even: nothing had to be paid.</Empty>}
+      <div className="card flush">
+                  <div className="card-head inset">
+                    <h2 className="h3">Final totals</h2>
+                    <span className="label">Everyone's totals add up to zero ✓</span>
+                  </div>
+                  <div className="table-wrap">
+                    <table className="tight cards">
+                      <thead>
+                        <tr>
+                          <th scope="col">Agent</th>
+                          <th scope="col" className="r">
+                            Sold
+                          </th>
+                          <th scope="col" className="r">
+                            Bought
+                          </th>
+                          <th scope="col" className="r">
+                            Owes / is owed
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.positions.map((p) => {
+                          const n = BigInt(p.net);
+                          return (
+                            <tr key={p.agentId}>
+                              <td data-label="">
+                                <AgentChip id={p.agentId} />
+                              </td>
+                              <td data-label="Sold" className="r muted">
+                                <Money v={p.credit} />
+                              </td>
+                              <td data-label="Bought" className="r muted">
+                                <Money v={p.debit} />
+                              </td>
+                              <td data-label="Owes / is owed" className="r">
+                                {n === 0n ? (
+                                  <span className="faint">Even</span>
+                                ) : n > 0n ? (
+                                  <span className="owed">
+                                    is owed <Money v={n} />
+                                  </span>
+                                ) : (
+                                  <span className="owes">
+                                    owes <Money v={-n} />
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="card">
+                <h2 className="h3">Who pays whom</h2>
+                <p className="muted" style={{ marginTop: 8 }}>
+                  This appears once the tab closes and Yuki adds it up.
+                </p>
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </div>
+
 
         <div className="grid split balance">
           <div className="card flush">
@@ -414,5 +379,98 @@ export function EpochPage() {
         {netted && <NextStep to={`/verify?epoch=${e.id}`} title="Check it yourself" text="Your browser reads this settle-up from NEAR and redoes every number. It takes a few seconds." />}
       </div>
     </main>
+  );
+}
+
+/** The settle-up as a bar tab: every entry, a dotted line, the totals, and a stamp once it is paid. */
+function Receipt({ e, detail }: { e: EpochView; detail: EpochDetail }) {
+  const live = useLive();
+  const name = (id: string) => agentName(live.agents, id);
+  const SHOW = 8;
+  const shown = detail.ious.slice(0, SHOW);
+  const tx = detail.transfers.find((t) => t.tx)?.tx;
+  const paid = e.phase === "sealed";
+  const netted = e.phase === "settling" || e.phase === "sealed";
+  return (
+    <div className="receipt-wrap">
+      <article className="receipt" aria-label={`Receipt for settle-up ${e.id}`}>
+        <header className="receipt-head">
+          <strong>YUKI</strong>
+          <span>Settle-up {e.id}</span>
+          <span>{when(e.startsAt)}</span>
+        </header>
+        <div className="receipt-rule" />
+        <p className="receipt-section">The tab</p>
+        {detail.ious.length === 0 ? (
+          <p className="receipt-empty">Nothing on the tab yet.</p>
+        ) : (
+          <ul className="receipt-lines">
+            {shown.map((i) => (
+              <li key={i.digest}>
+                <span className="who">
+                  {name(i.buyer)} → {name(i.seller)}
+                </span>
+                <span className="dots" aria-hidden="true" />
+                <span className="amt" title={usdExact(i.amount)}>
+                  {usd(i.amount)}
+                </span>
+              </li>
+            ))}
+            {detail.ious.length > SHOW && <li className="more">+ {entries(detail.ious.length - SHOW)} more</li>}
+          </ul>
+        )}
+        <div className="receipt-rule" />
+        <dl className="receipt-totals">
+          <dt>Tab entries</dt>
+          <dd>{e.iouCount || detail.ious.length}</dd>
+          <dt>Total on the tab</dt>
+          <dd>{usd(e.grossVolume)}</dd>
+          {netted && (
+            <>
+              <dt>Payments needed</dt>
+              <dd>{e.settlementTransfers}</dd>
+              <dt>Payments saved</dt>
+              <dd>
+                {e.transfersAvoided}
+                {e.transfersAvoided > 0 && ` (${pct(e.transferReduction)})`}
+              </dd>
+            </>
+          )}
+        </dl>
+        <div className="receipt-rule double" />
+        <div className="receipt-grand">
+          <span>{netted ? "Total paid" : "Still open"}</span>
+          <strong>{netted ? usd(e.netVolume) : e.phase === "intake" ? <Countdown to={e.intakeEndsAt} done="closing" /> : "…"}</strong>
+        </div>
+        {e.defaults > 0 && <p className="receipt-note">{plural(e.defaults, "agent")} didn't pay in time. Their deposit paid instead.</p>}
+        {netted && <p className="receipt-note">Everyone's totals add up to zero ✓</p>}
+        <div className={`stamp${paid ? "" : " pending"}`} aria-hidden="true">
+          {paid ? (
+            <>
+              Paid
+              <small>on NEAR</small>
+            </>
+          ) : netted ? (
+            <>
+              Paying
+              <small>now</small>
+            </>
+          ) : (
+            <>
+              Tab
+              <small>open</small>
+            </>
+          )}
+        </div>
+        <footer className="receipt-foot">
+          {paid && tx ? <Tx hash={tx} label="See the payment on NEAR ↗" /> : <span>{paid ? "Paid on NEAR" : netted ? "Payments going through…" : "Settles when the timer runs out"}</span>}
+          {netted && (
+            <Link className="link" to={`/verify?epoch=${e.id}`}>
+              Check it yourself →
+            </Link>
+          )}
+        </footer>
+      </article>
+    </div>
   );
 }

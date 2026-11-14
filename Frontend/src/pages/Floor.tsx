@@ -4,7 +4,7 @@ import type { EpochView } from "@quorum/core";
 import { api, useApi, useLive } from "../lib/api.ts";
 import { openDebts } from "../lib/derive.ts";
 import { ago, clock, PHASE_NAMES, plural, serviceName, usd } from "../lib/format.ts";
-import { Orbit } from "../components/Orbit.tsx";
+import { Stage } from "../components/Stage.tsx";
 import { AgentChip, Details, Empty, Go, NextStep, PageHead, Status, Tag, Tx } from "../components/ui.tsx";
 import { RoundCard } from "./Rounds.tsx";
 
@@ -183,17 +183,8 @@ export default function Floor() {
 
         {/* the orbit on the left; what you can do and what is happening on the right, so neither column runs long */}
         <div className="grid split balance">
-          <div className="card dots flush" style={{ aspectRatio: "1 / 1" }}>
-            {live.agents.length ? (
-              <Orbit
-                agents={live.agents}
-                edges={debts.edges}
-                active={debts.active}
-                centre={debts.count ? { label: "On the tab this round", value: usd(debts.gross) } : { label: "Waiting for the first tab entry", value: "Press Run demo" }}
-              />
-            ) : (
-              <Empty>{live.connected ? "No agents yet. They sign up in their first minute." : "Connecting to the live service…"}</Empty>
-            )}
+          <div className="card dots flush">
+            {live.agents.length ? <Stage /> : <Empty>{live.connected ? "No agents yet. They sign up in their first minute." : "Connecting to the live service…"}</Empty>}
           </div>
           <div className="stack live-side">
             <TryIt running={fleetState?.scenario?.name ?? null} />

@@ -130,7 +130,7 @@ export function plainLog(text: string): string {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-function OrderForm({ studios }: { studios: StudioInfo[] }) {
+function OrderForm({ studios, kind, setKind }: { studios: StudioInfo[]; kind: string; setKind: (k: string) => void }) {
   const [token, setToken] = useState(() => {
     try {
       return localStorage.getItem("quorum-admin") ?? "quorum-admin";
@@ -138,7 +138,6 @@ function OrderForm({ studios }: { studios: StudioInfo[] }) {
       return "quorum-admin";
     }
   });
-  const [kind, setKind] = useState<string>(studios[0]?.kind ?? "design");
   const [text, setText] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [sending, setSending] = useState(false);
@@ -154,7 +153,7 @@ function OrderForm({ studios }: { studios: StudioInfo[] }) {
     }
     try {
       const r = await fleet<{ ok?: boolean; message?: string }>(path, { method: "POST", body: JSON.stringify(body), headers: { "x-admin-token": token } });
-      setMsg({ ok: r.ok !== false, text: r.ok !== false ? "Order placed. It appears in the list below in a few seconds." : (r.message ?? "That didn't go through.") });
+      setMsg({ ok: r.ok !== false, text: r.ok !== false ? "Order placed. It appears under Recent orders in a few seconds." : (r.message ?? "That didn't go through.") });
       setText("");
     } catch (e) {
       const m = (e as Error).message;
@@ -167,7 +166,7 @@ function OrderForm({ studios }: { studios: StudioInfo[] }) {
     all ? post("/control/start", { scenario: "studio-rush" }) : post("/control/commission", { studio: kind, brief: text.trim() && brief ? { [brief.field]: text.trim(), ...brief.extra } : null });
   const total = studios.reduce((n, s) => n + BigInt(s.price), 0n);
   return (
-    <div className="card stack stack-md">
+    <div className="card stack stack-md" id="order">
       <h2 className="h3">Place an order</h2>
       <p className="muted" style={{ margin: 0 }}>
         A demo buyer pays from its own NEAR account, inside a spending limit its owner signed.
@@ -188,12 +187,12 @@ function OrderForm({ studios }: { studios: StudioInfo[] }) {
       {!all && brief && (
         <label className="stack stack-sm" style={{ maxWidth: 420 }}>
           <span className="label">{brief.label} (optional)</span>
-          <input value={text} maxLength={60} placeholder={brief.placeholder} onChange={(e) => setText(e.target.value)} />
+          <input id="order-input" value={text} maxLength={60} placeholder={brief.placeholder} onChange={(e) => setText(e.target.value)} />
         </label>
       )}
       <div className="row">
         <button className="btn" disabled={sending} onClick={() => void order()}>
-          {sending ? "Ordering…" : all ? `Order from all five teams · ${usd(total)}` : `Order a ${(team?.product ?? "job").replace(/^\w+/, (w) => (w === w.toUpperCase() ? w : w.toLowerCase()))} · ${usd(team?.price)}`} <Go />
+          {sending ? "Ordering…" : all ? `Order from all five teams · ${usd(total)}` : `Order a ${productName(team?.product)} · ${usd(team?.price)}`} <Go />
         </button>
       </div>
       <Details summary="Demo key">
@@ -213,8 +212,12 @@ function OrderForm({ studios }: { studios: StudioInfo[] }) {
   );
 }
 
+/** "Brand kit" → "brand kit", but "REST API" and "NEAR smart contract" keep their capitals. */
+const productName = (p: string | undefined) => (p ?? "job").replace(/^\w+/, (w) => (w === w.toUpperCase() ? w : w.toLowerCase()));
+
 /** The one picture that sums up each kind of order, if it has one. */
-function cover(kind: string, d: Record<string, unknown> | null | undefined): { url: string; contain: boolean } | null {
+type Cover = { url: string; contain: boolean };
+function cover(kind: string, d: Record<string, unknown> | null | undefined): Cover | null {
   if (!d) return null;
   const m = (x: unknown) => (x && typeof x === "object" && "url" in x ? (x as Media).url : null);
   if (kind === "design") return m(d.logo) ? { url: m(d.logo)!, contain: true } : null;
@@ -223,21 +226,26 @@ function cover(kind: string, d: Record<string, unknown> | null | undefined): { u
   return null;
 }
 
-/** Recent work: thumbnails from the latest finished orders that produce pictures. */
-function RecentWork({ jobs, studios }: { jobs: StudioJob[]; studios: StudioInfo[] }) {
-  const picks = jobs.filter((j) => j.status === "done" && ["design", "photo", "video"].includes(j.studio)).slice(0, 8);
+/**
+ * Pictures for the latest finished orders that make pictures. The list endpoint leaves the
+ * deliverables out, so each one is fetched once; the gallery, the team cards and the order
+ * cards all share the result.
+ */
+function useCovers(jobs: StudioJob[] | undefined): Map<string, Cover> | null {
+  const picks = (jobs ?? []).filter((j) => j.status === "done" && ["design", "photo", "video"].includes(j.studio)).slice(0, 12);
   const key = picks.map((j) => j.id).join(",");
-  const [items, setItems] = useState<{ job: StudioJob; url: string; contain: boolean }[] | null>(null);
+  const [covers, setCovers] = useState<Map<string, Cover> | null>(null);
   useEffect(() => {
+    if (!jobs) return;
     let alive = true;
     Promise.all(picks.map((j) => fleet<StudioJob>(`/control/studios/${j.id}`).catch(() => null))).then((full) => {
       if (!alive) return;
-      setItems(
-        full.flatMap((j) => {
-          const c = j ? cover(j.studio, j.deliverables) : null;
-          return j && c ? [{ job: j, ...c }] : [];
-        }),
-      );
+      const m = new Map<string, Cover>();
+      for (const j of full) {
+        const c = j ? cover(j.studio, j.deliverables) : null;
+        if (j && c) m.set(j.id, c);
+      }
+      setCovers(m);
     });
     return () => {
       alive = false;
@@ -245,7 +253,14 @@ function RecentWork({ jobs, studios }: { jobs: StudioJob[]; studios: StudioInfo[
     // only refetch when the set of finished orders changes, not on every poll
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
+  return covers;
+}
+
+/** Recent work: thumbnails from the latest finished orders that produce pictures. */
+function RecentWork({ jobs, studios, covers }: { jobs: StudioJob[]; studios: StudioInfo[]; covers: Map<string, Cover> | null }) {
+  const picks = jobs.filter((j) => j.status === "done" && ["design", "photo", "video"].includes(j.studio)).slice(0, 8);
   if (picks.length === 0) return null;
+  const items = covers ? picks.flatMap((job) => (covers.get(job.id) ? [{ job, ...covers.get(job.id)! }] : [])) : null;
   return (
     <section className="stack stack-md">
       <h2 className="h3">Recent work</h2>
@@ -282,9 +297,49 @@ function aiLabel(ai: AiStatus): string {
   return ai.enabled ? `NEAR AI on · ${ai.model.split("/").pop()}` : "AI offline · using the template";
 }
 
+/** "about 40 s" / "about 2 min", from how long finished orders of this kind took. */
+function typicalTime(jobs: StudioJob[], kind: string): string | null {
+  const t = jobs
+    .filter((j) => j.studio === kind && j.status === "done" && j.finishedAt)
+    .map((j) => j.finishedAt! - j.startedAt)
+    .sort((a, b) => a - b);
+  if (!t.length) return null;
+  const mid = t[Math.floor(t.length / 2)]! / 1000;
+  return mid < 90 ? `about ${Math.max(5, Math.round(mid / 5) * 5)} s` : `about ${Math.round(mid / 60)} min`;
+}
+
+/** An icon for teams whose result is code, not a picture. */
+function ResultIcon({ kind }: { kind: string }) {
+  return (
+    <span className="result-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        {kind === "contracts" ? (
+          <>
+            <path d="M7 3h7l4 4v14H7Z" />
+            <path d="m10 12-2 2 2 2M14 12l2 2-2 2" />
+          </>
+        ) : (
+          <>
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="M7 10h4M7 14h10" />
+          </>
+        )}
+      </svg>
+    </span>
+  );
+}
+
 export function StudiosPage() {
   const { data, error } = useFleet<StudiosView>("/control/studios", 3_000);
   const [all, setAll] = useState(false);
+  const [kind, setKind] = useState<string>("design");
+  const covers = useCovers(data?.jobs);
+  const who: Who = new Map((data?.freelancers ?? []).map((f) => [f.slug, { agentId: f.agentId, role: f.role, name: f.name }]));
+  const startOrder = (k: string) => {
+    setKind(k);
+    document.getElementById("order")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    setTimeout(() => document.getElementById("order-input")?.focus({ preventScroll: true }), 400);
+  };
   return (
     <div className="page">
       <div className="wrap stack stack-lg">
@@ -299,8 +354,21 @@ export function StudiosPage() {
           </div>
         ) : (
           <>
-            <OrderForm studios={data.studios} />
-            <RecentWork jobs={data.jobs} studios={data.studios} />
+            <section className="stack stack-md">
+              <h2 className="h3">Pick a team</h2>
+              <div className="team-grid">
+                {data.studios.map((s, i) => {
+                  const latest = data.jobs.find((j) => j.studio === s.kind && covers?.has(j.id));
+                  return (
+                    <Reveal key={s.kind} delay={i * 60}>
+                      <TeamCard s={s} who={who} time={typicalTime(data.jobs, s.kind)} result={latest ? covers!.get(latest.id)! : null} onOrder={() => startOrder(s.kind)} />
+                    </Reveal>
+                  );
+                })}
+              </div>
+            </section>
+            <OrderForm studios={data.studios} kind={kind} setKind={setKind} />
+            <RecentWork jobs={data.jobs} studios={data.studios} covers={covers} />
             <section className="stack stack-md">
               <h2 className="h3">Recent orders</h2>
               {data.jobs.length === 0 ? (
@@ -310,7 +378,7 @@ export function StudiosPage() {
               ) : (
                 <div className="stack stack-sm">
                   {data.jobs.slice(0, all ? 40 : 6).map((j) => (
-                    <JobRow key={j.id} j={j} studio={data.studios.find((s) => s.kind === j.studio)} />
+                    <OrderCard key={j.id} j={j} studio={data.studios.find((s) => s.kind === j.studio)} cover={covers?.get(j.id) ?? null} />
                   ))}
                   {data.jobs.length > 6 && (
                     <button className="btn ghost sm" style={{ alignSelf: "flex-start" }} onClick={() => setAll(!all)}>
@@ -319,16 +387,6 @@ export function StudiosPage() {
                   )}
                 </div>
               )}
-            </section>
-            <section className="stack stack-md">
-              <h2 className="h3">The teams</h2>
-              <div className="fill-grid">
-                {data.studios.map((s, i) => (
-                  <Reveal key={s.kind} delay={i * 60}>
-                    <StudioCard s={s} who={new Map(data.freelancers.map((f) => [f.slug, { agentId: f.agentId, role: f.role, name: f.name }]))} />
-                  </Reveal>
-                ))}
-              </div>
             </section>
             <section className="stack stack-md">
               <h2 className="h3">Specialists</h2>
@@ -375,79 +433,139 @@ export function StudiosPage() {
   );
 }
 
-function StudioCard({ s, who }: { s: StudioInfo; who: Who }) {
-  // everyone this team invites to bid, once each
-  const crew = [...new Map(s.roles.flatMap((r) => r.bidders).map((b) => [b.slug, b])).values()];
+/** A team as a recipe: what you give → who does it → what you get, with price, time and an order button. */
+function TeamCard({ s, who, time, result, onOrder }: { s: StudioInfo; who: Who; time: string | null; result: Cover | null; onOrder: () => void }) {
+  const brief = BRIEF[s.kind];
+  const example = brief ? (s.examples[0]?.[brief.field] as string | undefined) : undefined;
   return (
-    <div className="card stack stack-md" style={{ height: "100%" }}>
-      <div className="spread">
-        <span className="label">{s.product[0]!.toUpperCase() + s.product.slice(1)}</span>
-        <span className="num" title={usdExact(s.price)}>
-          {usd(s.price)}
+    <div className="card team-card">
+      <div className="team-card-head">
+        {s.agentId && <Avatar id={s.agentId} role="Team lead" size={40} />}
+        <div className="stack" style={{ gap: 0, minWidth: 0 }}>
+          <h3 className="h3">{s.name}</h3>
+          <span className="faint" style={{ fontSize: 14 }}>
+            Makes a {productName(s.product)}
+          </span>
+        </div>
+        <span className="team-price">
+          <strong title={usdExact(s.price)}>{usd(s.price)}</strong>
+          {time && <small>{time}</small>}
         </span>
       </div>
-      <div className="row" style={{ gap: 12, flexWrap: "nowrap" }}>
-        {s.agentId && <Avatar id={s.agentId} role="Team lead" size={44} />}
-        <h3 className="h3">{s.name}</h3>
-      </div>
-      <p className="muted" style={{ margin: 0 }}>
-        {s.description}
-      </p>
-      <div className="row" style={{ gap: 10 }}>
-        <span className="avatars">
-          {crew.map((b) => {
-            const w = who.get(b.slug);
-            return <Avatar key={b.slug} id={w?.agentId ?? b.slug.length} role={w?.role} size={28} title={`${b.name}${w ? ` · ${w.role}` : ""}`} />;
-          })}
+
+      <div className="recipe">
+        <div className="recipe-step">
+          <span className="recipe-label">You give</span>
+          <span className="recipe-input">“{example ?? brief?.placeholder.replace(/^e\.g\. /, "") ?? "a brief"}”</span>
+          <small className="faint">{brief?.label.toLowerCase()}</small>
+        </div>
+        <span className="recipe-arrow" aria-hidden="true">
+          →
         </span>
-        <span className="faint" style={{ fontSize: 14 }}>
-          Hires from {plural(crew.length, "specialist")}
+        <div className="recipe-step">
+          <span className="recipe-label">The team</span>
+          <span className="avatars">
+            {s.roles.map((r) => {
+              const first = r.bidders[0];
+              const w = first ? who.get(first.slug) : undefined;
+              return <Avatar key={r.service} id={w?.agentId ?? r.service.length} role={w?.role} size={30} title={`${r.name}: ${r.bidders.map((b) => b.name).join(" or ")}`} />;
+            })}
+          </span>
+          <small className="faint">{plural(s.roles.length, "specialist")}</small>
+        </div>
+        <span className="recipe-arrow" aria-hidden="true">
+          →
         </span>
+        <div className="recipe-step">
+          <span className="recipe-label">You get</span>
+          {result ? <img className={`recipe-result${result.contain ? " contain" : ""}`} src={result.url} alt={`Example ${s.product}`} loading="lazy" /> : <ResultIcon kind={s.kind} />}
+          <small className="faint">{productName(s.product)}</small>
+        </div>
       </div>
-      <dl className="kv" style={{ gridTemplateColumns: "auto 1fr" }}>
+
+      <ul className="checklist">
         {s.roles.map((r) => (
-          <Fragment key={r.service}>
-            <dt>{r.name}</dt>
-            <dd className="faint">
-              {plural(r.bidders.length, "bidder")} · up to {usd(r.reserve)}
-            </dd>
-          </Fragment>
+          <li key={r.service}>{r.name}</li>
         ))}
-      </dl>
-      {s.agentId && (
-        <Link className="link" to={`/agents/${s.agentId}`}>
-          View team lead →
-        </Link>
-      )}
+      </ul>
+
+      <div className="team-card-foot">
+        <button className="btn sm" onClick={onOrder}>
+          Order a {productName(s.product)} <Go />
+        </button>
+        {s.agentId && (
+          <Link className="link" to={`/agents/${s.agentId}`}>
+            Team lead →
+          </Link>
+        )}
+      </div>
+      <Details summary="Who bids on each part" className="bare">
+        <dl className="kv" style={{ gridTemplateColumns: "auto 1fr" }}>
+          {s.roles.map((r) => (
+            <Fragment key={r.service}>
+              <dt>{r.name}</dt>
+              <dd className="faint">
+                {r.bidders.map((b) => b.name).join(", ")} · up to {usd(r.reserve)}
+              </dd>
+            </Fragment>
+          ))}
+        </dl>
+      </Details>
     </div>
   );
 }
 
-function JobRow({ j, studio }: { j: StudioJob; studio?: StudioInfo }) {
+const STAGES = ["Ordered", "Hiring", "Working", "Delivered"] as const;
+function stageOf(j: StudioJob): number {
+  if (j.status === "done") return 3;
+  if (j.status === "working") return 2;
+  if (j.status === "forming") return j.team.some((t) => t.winner) ? 1 : 1;
+  return 0;
+}
+
+/** A recent order: what was made, where it is, who made it, and where the money went. */
+function OrderCard({ j, studio, cover: c }: { j: StudioJob; studio?: StudioInfo; cover: Cover | null }) {
+  const live = useLive();
+  const failed = j.status === "failed";
+  const stage = stageOf(j);
+  const total = BigInt(j.price);
+  const spent = BigInt(j.spent);
+  const share = total > 0n ? Number((spent * 1000n) / total) / 10 : 0;
+  const role = (id: string) => live.agents.find((a) => a.agentId === id)?.role;
   return (
-    <Link to={`/studios/${j.id}`} className="card job-row">
-      <div className="stack" style={{ gap: 6 }}>
-        <span className="label">
-          {studio?.name ?? teamName(j.studio)} · {studio?.product ?? ""}
-        </span>
-        <strong>{titleCase(j.label)}</strong>
-        <span className="faint">
-          Ordered by {j.client?.name ?? "a buyer"} · {ago(j.startedAt)}
-        </span>
-      </div>
-      <div className="row" style={{ flexWrap: "wrap", gap: 6 }}>
-        {j.team.map((t) => (
-          <Tag key={t.role} kind={t.winner ? undefined : "live"}>
-            {t.winner ? `${t.name} by ${t.winner.name}` : `${t.name}: ${t.roundId ? `auction #${t.roundId}` : "hiring…"}`}
-          </Tag>
-        ))}
-        {j.disputes.length > 0 && <Tag kind="warn">{plural(j.disputes.length, "complaint")}</Tag>}
-      </div>
-      <div className="job-row-meta">
-        <Status value={j.status === "done" ? "delivered" : j.status === "failed" ? "failed" : "Open"} />
-        <span className="num faint" title={`${usdExact(j.price)} paid, ${usdExact(j.spent)} to the team`}>
-          Paid {usd(j.price)} · team got {usd(j.spent)}
-        </span>
+    <Link to={`/studios/${j.id}`} className="card order-card">
+      <span className="order-thumb">{c ? <img src={c.url} alt="" loading="lazy" className={c.contain ? "contain" : ""} /> : <ResultIcon kind={j.studio} />}</span>
+      <div className="order-body">
+        <div className="order-top">
+          <strong>{titleCase(j.label)}</strong>
+          <span className="faint">
+            {studio?.name ?? teamName(j.studio)} · {ago(j.startedAt)}
+          </span>
+        </div>
+        <ol className={`order-steps${failed ? " failed" : ""}`} aria-label={failed ? "Failed" : `Step ${stage + 1} of 4: ${STAGES[stage]}`}>
+          {STAGES.map((st, i) => (
+            <li key={st} className={i < stage || (i === stage && j.status === "done") ? "done" : i === stage ? "now" : ""}>
+              {st}
+            </li>
+          ))}
+        </ol>
+        <div className="order-foot">
+          <span className="avatars">
+            {j.team.map((t) =>
+              t.winner ? <Avatar key={t.role} id={t.winner.agentId} role={role(t.winner.agentId)} size={26} title={`${t.name} by ${t.winner.name}`} /> : <span key={t.role} className="avatar pending" style={{ width: 26, height: 26 }} title={`${t.name}: hiring`} />,
+            )}
+          </span>
+          <span className="faint" style={{ fontSize: 14 }}>
+            {plural(j.team.filter((t) => t.winner).length, "specialist")}
+            {j.disputes.length > 0 && ` · ${plural(j.disputes.length, "complaint")}`}
+          </span>
+          <span className="order-money" title={`${usdExact(j.price)} paid, ${usdExact(j.spent)} to the specialists`}>
+            <span className="mini-split" aria-hidden="true">
+              <i style={{ width: `${share}%` }} />
+            </span>
+            Paid {usd(j.price)} · {Math.round(share)}% to specialists
+          </span>
+        </div>
       </div>
     </Link>
   );
