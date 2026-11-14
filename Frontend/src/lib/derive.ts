@@ -1,5 +1,12 @@
 import type { LiveState } from "./api.ts";
-import type { OrbitEdge } from "../components/Orbit.tsx";
+
+/** One debt between two agents in the open settle-up: base units owed from -> to. */
+export interface OrbitEdge {
+  from: string;
+  to: string;
+  amount: bigint;
+  count: number;
+}
 
 /** Who owes whom in the open epoch, aggregated from the signed IOUs seen so far. */
 export function openDebts(s: LiveState): { edges: OrbitEdge[]; active: Map<string, number>; gross: bigint; count: number } {

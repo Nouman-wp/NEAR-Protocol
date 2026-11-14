@@ -1,44 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { fleet, useLive } from "../lib/api.ts";
-import { openDebts } from "../lib/derive.ts";
 import { compact, pct, plural } from "../lib/format.ts";
 import { Sphere } from "../components/Sphere.tsx";
-import { Orbit } from "../components/Orbit.tsx";
+import { Story } from "../components/Story.tsx";
 import { Go, Reveal } from "../components/ui.tsx";
-
-const STEPS = [
-  {
-    title: "Agents bid in secret",
-    body: "Nobody sees other prices until bidding ends. The best bid wins.",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="5" y="10" width="14" height="10" rx="2" />
-        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-      </svg>
-    ),
-  },
-  {
-    title: "They put it on the tab",
-    body: "Every job is a signed promise to pay. Nothing is paid yet.",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M7 3h10v18l-2.5-1.5L12 21l-2.5-1.5L7 21Z" />
-        <path d="M10 8h4M10 12h4" />
-      </svg>
-    ),
-  },
-  {
-    title: "Yuki settles up on NEAR",
-    body: "Every few minutes it adds up the tab and pays everyone in one go. All of it goes through, or none of it does.",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" />
-        <path d="m8 12 3 3 5-6" />
-      </svg>
-    ),
-  },
-];
 
 /** Ten little debts between five friends become two payments. Illustrative, and labelled "Example". */
 function NightOut() {
@@ -95,7 +61,6 @@ interface AiStatus {
 export default function Landing() {
   const live = useLive();
   const s = live.stats;
-  const debts = openDebts(live);
   const [ai, setAi] = useState<AiStatus | null | undefined>(undefined);
   useEffect(() => {
     fleet<{ ai?: AiStatus }>("/control/studios")
@@ -146,25 +111,14 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="section" style={{ paddingTop: 0 }}>
+      <section className="section" style={{ paddingTop: 0 }} id="how">
         <div className="wrap">
           <Reveal className="section-head">
             <span className="eyebrow">How it works</span>
-            <h2 className="h2">Three steps</h2>
+            <h2 className="h2">In five small steps</h2>
+            <p className="lead">Real agents, real numbers from NEAR testnet. Click any step, or let it play.</p>
           </Reveal>
-          <div className="how3">
-            {STEPS.map((st, i) => (
-              <Reveal key={st.title} delay={i * 90}>
-                <div className="card" style={{ height: "100%" }}>
-                  <span className="icon">{st.icon}</span>
-                  <h3 className="h3">
-                    {i + 1}. {st.title}
-                  </h3>
-                  <p>{st.body}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+          <div className="card flush">{live.agents.length ? <Story mode="tour" /> : <div className="empty">Connecting to the live service…</div>}</div>
         </div>
       </section>
 
@@ -210,64 +164,24 @@ export default function Landing() {
 
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="wrap">
-          <Reveal className="explore">
-            <div className="card explore-list">
-              <h2 className="h2" style={{ margin: "0 0 12px" }}>
-                Take a look
-              </h2>
-              <Link className="explore-item" to="/rounds">
-                <h3 className="h3">Secret auctions</h3>
-                <span className="arrow-box">
-                  <Go />
-                </span>
-                <p>See who bid, who won and the winning price.</p>
-              </Link>
-              <Link className="explore-item" to="/epochs">
-                <h3 className="h3">Settling up</h3>
-                <span className="arrow-box">
-                  <Go />
-                </span>
-                <p>See how many tab entries became how few payments.</p>
-              </Link>
-              <Link className="explore-item" to="/agents">
-                <h3 className="h3">The agents</h3>
-                <span className="arrow-box">
-                  <Go />
-                </span>
-                <p>Every agent has its own NEAR account, money and trust score.</p>
-              </Link>
-              <Link className="explore-item" to="/verify">
-                <h3 className="h3">Check it yourself</h3>
-                <span className="arrow-box">
-                  <Go />
-                </span>
-                <p>Your browser reads the records from NEAR and checks every number.</p>
-              </Link>
-            </div>
-            <div className="explore-stage">
-              <Link className="btn sm" to="/floor">
-                Watch it live <Go />
-              </Link>
-              {live.agents.length > 0 ? (
-                <Orbit
-                  agents={live.agents}
-                  edges={debts.edges}
-                  active={debts.active}
-                  centre={
-                    debts.count > 0
-                      ? { label: "On the tab right now", value: plural(debts.count, "entry", "entries") }
-                      : best
-                        ? { label: `Last settle-up`, value: `${best.iouCount} → ${best.settlementTransfers}` }
-                        : { label: "Waiting for trades", value: plural(live.agents.length, "agent") }
-                  }
-                />
-              ) : (
-                <div className="empty" style={{ paddingTop: 220 }}>
-                  {live.connected ? "No agents yet. They sign up in their first minute." : "Connecting to the live service…"}
-                </div>
-              )}
-            </div>
+          <Reveal className="section-head">
+            <h2 className="h2">Take a look</h2>
           </Reveal>
+          <div className="look-grid">
+            {(
+              [
+                ["/floor", "Watch it live", "Run a 1-minute demo and see each step happen."],
+                ["/rounds", "Secret auctions", "See who bid, who won and the winning price."],
+                ["/epochs", "Settling up", "See how many tab entries became how few payments."],
+                ["/verify", "Check it yourself", "Your browser reads the records from NEAR and checks every number."],
+              ] as const
+            ).map(([to, title, text]) => (
+              <Link key={to} className="card click look-card" to={to}>
+                <h3 className="h3">{title}</h3>
+                <p className="muted">{text}</p>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
