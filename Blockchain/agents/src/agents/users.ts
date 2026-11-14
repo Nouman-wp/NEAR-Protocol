@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { randomBytes, bytesToHex, readSession, sessionSecret, type Session } from "@quorum/core";
-import { QuorumAgent } from "@quorum/sdk";
+import { randomBytes, bytesToHex, readSession, sessionSecret, type Session } from "@yuki/core";
+import { YukiAgent } from "@yuki/sdk";
 import type { Fleet } from "../fleet.ts";
 import { agentKey } from "../config.ts";
 import { STUDIOS, briefFor, type StudioKind } from "./studios.ts";
@@ -53,14 +53,14 @@ export class UserAgents {
     writeFileSync(this.file, JSON.stringify(this.records, null, 2));
   }
 
-  private connect(rec: UserAgentRecord): Promise<QuorumAgent> {
+  private connect(rec: UserAgentRecord): Promise<YukiAgent> {
     const f = this.fleet;
     const key = agentKey(f.cfg.seed, rec.slug);
-    return QuorumAgent.connect({ accountId: `${rec.slug}.${f.clearing.deployment.root}`, secretKey: key.secretKey, clearingUrl: f.cfg.clearingUrl, rpcUrl: f.cfg.rpcUrl, config: f.clearing, agentId: 0n });
+    return YukiAgent.connect({ accountId: `${rec.slug}.${f.clearing.deployment.root}`, secretKey: key.secretKey, clearingUrl: f.cfg.clearingUrl, rpcUrl: f.cfg.rpcUrl, config: f.clearing, agentId: 0n });
   }
 
-  private profile(agent: QuorumAgent, rec: UserAgentRecord): void {
-    agent.setProfile({ slug: rec.slug, name: rec.name, role: "User agent", description: `An agent operated by ${rec.owner}, launched from the Quorum dashboard.`, baseUrl: `${this.fleet.cfg.publicUrl}/users/${rec.slug}` });
+  private profile(agent: YukiAgent, rec: UserAgentRecord): void {
+    agent.setProfile({ slug: rec.slug, name: rec.name, role: "User agent", description: `An agent operated by ${rec.owner}, launched from the Yuki dashboard.`, baseUrl: `${this.fleet.cfg.publicUrl}/users/${rec.slug}` });
   }
 
   /** Bring back every user agent after a restart, so it keeps signing its settlements. */
@@ -100,7 +100,7 @@ export class UserAgents {
   }
 
   /** The hosted agent behind a slug, if it is a user agent. */
-  hosted(slug: string): QuorumAgent | null {
+  hosted(slug: string): YukiAgent | null {
     if (!this.records.some((r) => r.slug === slug)) return null;
     return this.fleet.agents.get(slug) ?? null;
   }

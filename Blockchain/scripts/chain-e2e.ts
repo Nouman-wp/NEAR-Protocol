@@ -19,9 +19,9 @@ import {
   signSettlement,
   type Deployment,
   type IOU,
-  type QuorumDomain,
+  type YukiDomain,
   type SettlementOrder,
-} from "@quorum/core";
+} from "@yuki/core";
 import { deploy } from "./deploy.ts";
 import { startSandbox } from "./sandbox.ts";
 import { near, net, rootAccount, subAccount } from "./net.ts";
@@ -44,7 +44,7 @@ async function main() {
     const n = net("local");
     const root = rootAccount(n);
     const clearer = subAccount(n, "clearer");
-    const domain: QuorumDomain = { network: "local", contract: d.contract };
+    const domain: YukiDomain = { network: "local", contract: d.contract };
     const tokenId = intentsTokenId(d.token);
     const view = <T>(method: string, args: unknown = {}) => n.rpc.view<T>(d.contract, method, args);
     /** Wait until the chain's own clock has passed `at`: block time can lag the wall clock. */

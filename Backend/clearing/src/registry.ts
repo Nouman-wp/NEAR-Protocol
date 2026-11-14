@@ -1,12 +1,12 @@
 import {
-  QUORUM_PRICING_EXTENSION,
+  YUKI_PRICING_EXTENSION,
   routeUrl,
   type A2AAgentCard,
   type AccountId,
   type AgentRegistration,
   type PublicKey,
   type ServiceListing,
-} from "@quorum/core";
+} from "@yuki/core";
 import type { Chain, VaultAccount } from "./chain.ts";
 import type { Db } from "./db.ts";
 import { log } from "./bus.ts";
@@ -214,13 +214,13 @@ interface FetchedCard {
  */
 async function fetchCard(uri: string, routes: readonly (readonly [string, string])[]): Promise<FetchedCard | null> {
   if (!/^https?:\/\//.test(uri)) return null;
-  const first = (await getJson(routeUrl(uri, routes))) as Partial<AgentRegistration & A2AAgentCard & { quorum?: Record<string, unknown> }>;
-  let card: Partial<A2AAgentCard & { quorum?: Record<string, unknown> }> = first;
-  if (first.type === "quorum-agent-registration-v1") {
+  const first = (await getJson(routeUrl(uri, routes))) as Partial<AgentRegistration & A2AAgentCard & { yuki?: Record<string, unknown> }>;
+  let card: Partial<A2AAgentCard & { yuki?: Record<string, unknown> }> = first;
+  if (first.type === "yuki-agent-registration-v1") {
     const a2a = first.endpoints?.find((e) => e.name.toLowerCase() === "a2a");
     if (a2a) card = (await getJson(routeUrl(a2a.endpoint, routes))) as typeof card;
   }
-  const ext = card.capabilities?.extensions?.find((e) => e.uri === QUORUM_PRICING_EXTENSION);
+  const ext = card.capabilities?.extensions?.find((e) => e.uri === YUKI_PRICING_EXTENSION);
   const prices = ext?.params?.prices ?? {};
   const services: ServiceListing[] = (card.skills ?? []).map((s) => ({
     id: s.id,
@@ -230,7 +230,7 @@ async function fetchCard(uri: string, routes: readonly (readonly [string, string
     unit: prices[s.id]?.unit ?? "call",
     tags: s.tags ?? [],
   }));
-  const k = (card.quorum ?? first.quorum ?? {}) as Record<string, unknown>;
+  const k = (card.yuki ?? first.yuki ?? {}) as Record<string, unknown>;
   return {
     slug: String(k.slug ?? card.name?.toLowerCase().replace(/[^a-z0-9]+/g, "-") ?? "agent"),
     name: card.name ?? first.name ?? "Agent",

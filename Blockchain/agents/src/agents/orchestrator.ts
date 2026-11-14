@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { formatUsd } from "@quorum/core";
-import { RefusedError, RoundVoidError, type QuorumAgent, type HireResult } from "@quorum/sdk";
+import { formatUsd } from "@yuki/core";
+import { RefusedError, RoundVoidError, type YukiAgent, type HireResult } from "@yuki/sdk";
 import type { Fleet } from "../fleet.ts";
 import { FACTCHECK_RESERVE, PRICES, type FactCheck } from "./workers.ts";
 import type { SearchHit } from "../work/wikipedia.ts";
@@ -52,7 +52,7 @@ export const TOPICS = [
   "Mumbai",
 ];
 
-export function installOrchestrator(fleet: Fleet, agent: QuorumAgent): void {
+export function installOrchestrator(fleet: Fleet, agent: YukiAgent): void {
   agent.sell<{ topic: string; languages?: string[] }, unknown>({
     id: "brief",
     name: "Research brief",

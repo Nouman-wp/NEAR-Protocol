@@ -8,8 +8,8 @@ import type {
   SettlementView,
   SignedIntent,
   TransferView,
-} from "@quorum/core";
-import { compression } from "@quorum/core";
+} from "@yuki/core";
+import { compression } from "@yuki/core";
 
 export interface JobRow {
   id: string;

@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { LiveEvent } from "@quorum/core";
+import type { LiveEvent } from "@yuki/core";
 
 /**
  * In-process event bus. Every state change the UI cares about is published here; the

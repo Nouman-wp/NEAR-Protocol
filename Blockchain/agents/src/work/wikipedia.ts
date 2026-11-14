@@ -15,7 +15,7 @@ export interface SearchResult {
   hits: SearchHit[];
 }
 
-const UA = "Quorum/0.1 (NEAR hackathon agent swarm; https://github.com/Nouman-wp/NEAR-Protocol)";
+const UA = "Yuki/0.1 (NEAR hackathon agent swarm; https://github.com/Nouman-wp/NEAR-Protocol)";
 const cache = new Map<string, { at: number; result: Promise<SearchResult> }>();
 const TTL = 30 * 60_000;
 let offlineUntil = 0;
@@ -29,7 +29,7 @@ export function wikiSearch(query: string, lang = "en", limit = 4): Promise<Searc
   const key = `${lang}:${query.toLowerCase().trim()}`;
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < TTL) return hit.result;
-  const result = (Date.now() < offlineUntil || process.env.QUORUM_OFFLINE === "1" ? Promise.resolve(offline(query, lang, limit)) : online(query, lang, limit)).catch(() => {
+  const result = (Date.now() < offlineUntil || process.env.YUKI_OFFLINE === "1" ? Promise.resolve(offline(query, lang, limit)) : online(query, lang, limit)).catch(() => {
     offlineUntil = Date.now() + 60_000;
     return offline(query, lang, limit);
   });

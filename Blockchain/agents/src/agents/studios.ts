@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { formatUsd } from "@quorum/core";
-import { RefusedError, type ChainRound, type HireResult, type QuorumAgent } from "@quorum/sdk";
+import { formatUsd } from "@yuki/core";
+import { RefusedError, type ChainRound, type HireResult, type YukiAgent } from "@yuki/sdk";
 import type { Fleet, FleetMember } from "../fleet.ts";
 import { seeded, strategy, type StrategyName } from "../strategies.ts";
 import { makeBrandSheet, makeLogo, makePalette, makeTypeScale, vibeOf, type DesignBrief, type Palette, type TypeScale } from "../work/design.ts";
@@ -210,14 +210,14 @@ export const studioMembers = (): FleetMember[] => [
     slug: s.slug,
     group: "studios",
     profile: { name: s.name, role: `Team lead · ${s.product.toLowerCase()}`, description: s.description, fleet: true },
-    install: (fleet: Fleet, agent: QuorumAgent) => installLead(fleet, agent, s),
+    install: (fleet: Fleet, agent: YukiAgent) => installLead(fleet, agent, s),
     buys: [{ key: "main", goal: `[standing] Hire the ${s.name.toLowerCase()}`, services: [...s.roles, "verdict"], budget: 20_000_000n, perJobCap: 10_000n, minRep: 500 }],
   })),
   ...FREELANCERS.map((f): FleetMember => ({
     slug: f.slug,
     group: "studios",
     profile: { name: f.name, role: f.role, description: f.description, fleet: true },
-    install: (fleet: Fleet, agent: QuorumAgent) => installFreelancer(fleet, agent, f),
+    install: (fleet: Fleet, agent: YukiAgent) => installFreelancer(fleet, agent, f),
     buys: [],
   })),
 ];
@@ -298,7 +298,7 @@ function hashSeed(s: string): number {
   return h >>> 0;
 }
 
-export function installFreelancer(fleet: Fleet, agent: QuorumAgent, f: Freelancer): void {
+export function installFreelancer(fleet: Fleet, agent: YukiAgent, f: Freelancer): void {
   for (const [service, [name, cost]] of Object.entries(f.skills)) {
     const role = ROLES[service]!;
     agent.sell<Record<string, unknown>, unknown>({
@@ -321,7 +321,7 @@ export function installFreelancer(fleet: Fleet, agent: QuorumAgent, f: Freelance
 
 // ------------------------------------------------------------------ leads
 
-export function installLead(fleet: Fleet, agent: QuorumAgent, studio: StudioDef): void {
+export function installLead(fleet: Fleet, agent: YukiAgent, studio: StudioDef): void {
   agent.sell<Record<string, unknown>, unknown>({
     id: studio.service,
     name: studio.product,

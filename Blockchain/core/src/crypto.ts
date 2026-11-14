@@ -9,7 +9,7 @@ import { base58, base64 } from "@scure/base";
  */
 
 export type Hex = `0x${string}`;
-/** A NEAR account id, e.g. `scout.quorum.testnet`. */
+/** A NEAR account id, e.g. `scout.yuki.testnet`. */
 export type AccountId = string;
 /** `ed25519:<base58 of 32 bytes>` */
 export type PublicKey = string;
@@ -191,7 +191,7 @@ export function isAccountId(v: unknown): v is AccountId {
 // ------------------------------------------------------------------ NEP-413
 
 /**
- * The 32 bytes a NEP-413 signer signs: sha256(tag ++ borsh(payload)). Quorum's own
+ * The 32 bytes a NEP-413 signer signs: sha256(tag ++ borsh(payload)). Yuki's own
  * messages use sha256(message) as the nonce, so the signed bytes follow from the message
  * and the recipient alone, and a contract can rebuild them without being handed a nonce.
  */

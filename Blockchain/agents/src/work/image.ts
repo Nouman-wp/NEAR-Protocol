@@ -29,7 +29,7 @@ export interface Source {
   synthetic: boolean;
 }
 
-const UA = "Quorum/0.1 (NEAR hackathon agent swarm; https://github.com/Nouman-wp/NEAR-Protocol)";
+const UA = "Yuki/0.1 (NEAR hackathon agent swarm; https://github.com/Nouman-wp/NEAR-Protocol)";
 const MAX_BYTES = 4_000_000;
 const WIKIMEDIA_HOSTS = ["upload.wikimedia.org", "thumb.wikimedia.org"];
 

@@ -28,13 +28,13 @@ import {
   ZERO_HASH,
   type IOU,
   type NettableIou,
-  type QuorumDomain,
+  type YukiDomain,
   type SettlementOrder,
 } from "../src/index.ts";
 
 const H1 = `0x${"11".repeat(32)}` as const;
 const H2 = `0x${"22".repeat(32)}` as const;
-const domain: QuorumDomain = { network: "local", contract: "clearing.quorum.test.near" };
+const domain: YukiDomain = { network: "local", contract: "clearing.quorum.test.near" };
 const iou: IOU = { buyer: 3n, seller: 7n, amount: 4_000n, token: "usdc.quorum.testnet", jobHash: H1, quoteHash: H2, epoch: 12n, nonce: 99n };
 
 describe("messages", () => {
@@ -182,8 +182,8 @@ describe("NEAR Intents settlement payload", () => {
     expect(parsed.signerId).toBe("a.quorum.testnet");
     expect(signed.payload.recipient).toBe("intents.quorum.testnet");
     expect(parsed.intents).toEqual([
-      { intent: "transfer", receiver_id: "b.quorum.testnet", tokens: { [intentsTokenId("usdc.quorum.testnet")]: "500" }, memo: "quorum epoch 4" },
-      { intent: "transfer", receiver_id: "c.quorum.testnet", tokens: { "nep141:usdc.quorum.testnet": "350" }, memo: "quorum epoch 4" },
+      { intent: "transfer", receiver_id: "b.quorum.testnet", tokens: { [intentsTokenId("usdc.quorum.testnet")]: "500" }, memo: "yuki epoch 4" },
+      { intent: "transfer", receiver_id: "c.quorum.testnet", tokens: { "nep141:usdc.quorum.testnet": "350" }, memo: "yuki epoch 4" },
     ]);
     expect(parsed.deadline).toBeGreaterThan(order.deadline!);
   });

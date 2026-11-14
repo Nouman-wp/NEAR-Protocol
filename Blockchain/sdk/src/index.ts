@@ -1,5 +1,5 @@
 export {
-  QuorumAgent,
+  YukiAgent,
   RefusedError,
   RoundVoidError,
   type AgentProfile,
@@ -13,5 +13,5 @@ export {
   type ServiceDef,
 } from "./agent.ts";
 export { Operator } from "./operator.ts";
-export { ClearingClient, QuorumApiError, type ClearingConfig, type SubmitResult } from "./client.ts";
+export { ClearingClient, YukiApiError, type ClearingConfig, type SubmitResult } from "./client.ts";
 export { serveAgents, end } from "./server.ts";

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import type { DisputeView, EpochView, JobView } from "@quorum/core";
+import type { DisputeView, EpochView, JobView } from "@yuki/core";
 import { useApi, useLive } from "../lib/api.ts";
 import { verifyEpochInBrowser, type Check } from "../lib/verify.ts";
 import { ago, plural, serviceName } from "../lib/format.ts";

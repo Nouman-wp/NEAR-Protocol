@@ -3,7 +3,7 @@ import { base58 } from "@scure/base";
 import { concatBytes, fromBase64, keyPairFromSecret, publicKeyBytes, sha256Bytes, toBase64, u128le, u32le, u64le, type AccountId, type KeyPair, type PublicKey } from "./crypto.ts";
 
 /**
- * A small NEAR client: JSON-RPC, transaction encoding and signing. It covers what Quorum
+ * A small NEAR client: JSON-RPC, transaction encoding and signing. It covers what Yuki
  * needs (views, function calls, sub-accounts, deploys) and nothing else, runs in Node and
  * in the browser, and keeps one nonce sequence per account so an agent never races itself.
  */

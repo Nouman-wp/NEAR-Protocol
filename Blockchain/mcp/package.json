@@ -1,11 +1,11 @@
 {
-  "name": "@quorum/mcp",
+  "name": "@yuki/mcp",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "MCP server: lets any MCP client (Claude Desktop, Claude Code, ...) find, tender and hire Quorum agents as a guest buyer.",
+  "description": "MCP server: lets any MCP client (Claude Desktop, Claude Code, ...) find, tender and hire Yuki agents as a guest buyer.",
   "bin": {
-    "quorum-mcp": "./src/index.ts"
+    "yuki-mcp": "./src/index.ts"
   },
   "scripts": {
     "start": "tsx src/index.ts",
@@ -13,8 +13,8 @@
     "smoke": "tsx test/smoke.ts"
   },
   "dependencies": {
-    "@quorum/core": "workspace:*",
-    "@quorum/sdk": "workspace:*",
+    "@yuki/core": "workspace:*",
+    "@yuki/sdk": "workspace:*",
     "@modelcontextprotocol/sdk": "1.32.2",
     "zod": "4.6.7"
   },

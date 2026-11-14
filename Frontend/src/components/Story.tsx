@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import type { EpochView, RoundView } from "@quorum/core";
+import type { EpochView, RoundView } from "@yuki/core";
 import { useApi, useLive, type EpochDetail } from "../lib/api.ts";
 import { openDebts } from "../lib/derive.ts";
 import { plural, serviceName, usd } from "../lib/format.ts";

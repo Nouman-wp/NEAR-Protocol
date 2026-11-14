@@ -18,7 +18,7 @@ const network = process.argv[2] ?? "testnet";
 const withTunnel = process.argv.includes("--tunnel");
 useNetworkEnv(network);
 const env = loadEnv();
-if (!env.QUORUM_NETWORK || env.QUORUM_NETWORK === "local") throw new Error(`.env.${network} is not a public network config: run \`pnpm wallets ${network}\``);
+if (!env.YUKI_NETWORK || env.YUKI_NETWORK === "local") throw new Error(`.env.${network} is not a public network config: run \`pnpm wallets ${network}\``);
 if (!readDeployment(network)) throw new Error(`Blockchain/deployments/${network}.json is missing: run \`pnpm deploy:${network}\` first`);
 
 const children: ReturnType<typeof run>[] = [];
@@ -40,7 +40,7 @@ children.push(run("fleet", binIn("Blockchain/agents", "tsx"), ["src/index.ts"], 
 startEdge({ port: edgePort, clearingPort: port, fleetPort });
 
 if (withTunnel) {
-  const exe = [join(homedir(), ".quorum", "bin", shell ? "cloudflared.exe" : "cloudflared"), "cloudflared"].find((p) => p === "cloudflared" || existsSync(p))!;
+  const exe = [join(homedir(), ".yuki", "bin", shell ? "cloudflared.exe" : "cloudflared"), "cloudflared"].find((p) => p === "cloudflared" || existsSync(p))!;
   const t = run("tunnel", exe, ["tunnel", "--no-autoupdate", "--url", `http://localhost:${edgePort}`]);
   children.push(t);
   const onData = (d: Buffer) => {
@@ -53,4 +53,4 @@ if (withTunnel) {
   t.stdout?.on("data", onData);
   t.stderr?.on("data", onData);
 }
-console.log(`\n  Quorum ${network} backend\n  API    http://localhost:${port}/v1/stats\n  Swarm  http://localhost:${fleetPort}/control/status\n  Edge   http://localhost:${edgePort}\n  Ctrl+C to stop.\n`);
+console.log(`\n  Yuki ${network} backend\n  API    http://localhost:${port}/v1/stats\n  Swarm  http://localhost:${fleetPort}/control/status\n  Edge   http://localhost:${edgePort}\n  Ctrl+C to stop.\n`);

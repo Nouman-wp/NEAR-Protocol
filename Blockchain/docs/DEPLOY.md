@@ -1,4 +1,4 @@
-# Deploying Quorum
+# Deploying Yuki
 
 Locally, nothing needs deploying by hand: `pnpm dev` and `pnpm sim` start a NEAR sandbox and deploy everything themselves. This guide covers NEAR testnet, and what changes for mainnet.
 
@@ -12,16 +12,16 @@ This writes `.env.testnet`, which is git-ignored. It holds:
 
 | Setting | What it is |
 |---|---|
-| `QUORUM_ROOT` | The root account, e.g. `quorum-1a2b3c.testnet`. The contracts and every agent are its sub-accounts, so it must be a **named** account |
-| `QUORUM_ROOT_KEY` | A fresh full-access key for the root account |
-| `QUORUM_SEED` | The master seed. The clearer's key and every agent's key are derived from it and the account name, so a restarted backend finds its accounts again. Keep it secret, and keep a copy |
+| `YUKI_ROOT` | The root account, e.g. `yuki-1a2b3c.testnet`. The contracts and every agent are its sub-accounts, so it must be a **named** account |
+| `YUKI_ROOT_KEY` | A fresh full-access key for the root account |
+| `YUKI_SEED` | The master seed. The clearer's key and every agent's key are derived from it and the account name, so a restarted backend finds its accounts again. Keep it secret, and keep a copy |
 | `ADMIN_TOKEN` | Protects the scenario runner |
 
 The root account must exist, hold the root key as a full-access key, and hold about **12 testnet NEAR**. There are three ways to get there:
 
 - **Faucet helper:** `pnpm wallets testnet --create` asks NEAR's testnet faucet helper to create the account with the key. It may be rate limited.
 - **Your own account with our key:** create the account in any NEAR wallet, then add the printed public key to it as a full-access key.
-- **Your own account and key:** use an account you already have, and put its own secret key in `QUORUM_ROOT_KEY`.
+- **Your own account and key:** use an account you already have, and put its own secret key in `YUKI_ROOT_KEY`.
 
 Then fund it from a testnet faucet such as https://near-faucet.io, and check:
 
@@ -65,25 +65,25 @@ This starts the clearing service (`:8787`), the swarm (`:8788`) and an edge prox
 - **Your own server:** any Ubuntu machine works.
 
 ```bash
-sudo bash Backend/deploy/setup.sh quorum-api.example.org
-# copy .env.testnet and Blockchain/deployments/testnet.json to /opt/quorum, then
-sudo systemctl enable --now quorum@testnet
+sudo bash Backend/deploy/setup.sh yuki-api.example.org
+# copy .env.testnet and Blockchain/deployments/testnet.json to /opt/yuki, then
+sudo systemctl enable --now yuki@testnet
 ```
 
-The setup script installs Node 24, pnpm and Caddy (which handles HTTPS), creates a `quorum` user and runs the backend under systemd.
+The setup script installs Node 24, pnpm and Caddy (which handles HTTPS), creates a `yuki` user and runs the backend under systemd.
 
 Set the public URLs in `.env.testnet`, because agent cards are registered on chain under `PUBLIC_FLEET_URL`:
 
 ```
-PUBLIC_API_URL=https://quorum-api.example.org
-PUBLIC_FLEET_URL=https://quorum-api.example.org
-PUBLIC_WEB_URL=https://quorum.example.org
+PUBLIC_API_URL=https://yuki-api.example.org
+PUBLIC_FLEET_URL=https://yuki-api.example.org
+PUBLIC_WEB_URL=https://yuki.example.org
 ```
 
 ## 4. Publish the website
 
 ```bash
-pnpm publish:web testnet --backend https://quorum-api.example.org
+pnpm publish:web testnet --backend https://yuki-api.example.org
 ```
 
 This builds the website and deploys it to Vercel (the Vercel CLI must be logged in, with `Frontend` linked to a project). Vercel proxies `/v1`, `/agents/<slug>`, `/guest(s)` and `/control` to the backend, so the site, the API and the agent cards share one domain. The live WebSocket feed connects to the backend directly.
@@ -92,7 +92,7 @@ This builds the website and deploys it to Vercel (the Vercel CLI must be logged 
 
 | Do this | You should see |
 |---|---|
-| `curl https://quorum-api.example.org/v1/health` | `ok: true`: the chain is reachable, the verifier answers, and the swarm is ready |
+| `curl https://yuki-api.example.org/v1/health` | `ok: true`: the chain is reachable, the verifier answers, and the swarm is ready |
 | Open the website, then Live floor | The swarm trading. Run a scenario with the `ADMIN_TOKEN` from `.env.testnet` |
 | Open Verify | "Everything matches", read from `rpc.testnet.fastnear.com` |
 | `https://testnet.nearblocks.io/address/clearing.<root>` | Every round, posting, finalisation and settlement transaction |
@@ -111,8 +111,8 @@ Every write is then mirrored. `node Blockchain/scripts/db-restore.mjs testnet` r
 The code paths are the same. What changes is the configuration:
 
 ```
-QUORUM_NETWORK=mainnet
-QUORUM_INTENTS_CONTRACT=intents.near
+YUKI_NETWORK=mainnet
+YUKI_INTENTS_CONTRACT=intents.near
 SETTLEMENT_TOKEN=17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1   # native USDC on NEAR
 ```
 

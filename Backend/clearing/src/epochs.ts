@@ -1,4 +1,4 @@
-import { ZERO_HASH, net, type Hex, type NettingResult } from "@quorum/core";
+import { ZERO_HASH, net, type Hex, type NettingResult } from "@yuki/core";
 import type { Db } from "./db.ts";
 import type { Chain } from "./chain.ts";
 import type { Registry } from "./registry.ts";

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time toolchain setup for building and running Quorum on Linux / WSL.
+# One-time toolchain setup for building and running Yuki on Linux / WSL.
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 if ! command -v cc >/dev/null || ! command -v pkg-config >/dev/null; then

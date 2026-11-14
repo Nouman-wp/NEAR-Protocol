@@ -1,4 +1,4 @@
-import { DISPUTE_HALF_LIFE_EPOCHS, scoreReputation, emptyInputs, hashJson, type ReputationInputs } from "@quorum/core";
+import { DISPUTE_HALF_LIFE_EPOCHS, scoreReputation, emptyInputs, hashJson, type ReputationInputs } from "@yuki/core";
 import type { Db } from "./db.ts";
 
 interface Count {

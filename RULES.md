@@ -1,4 +1,4 @@
-# Quorum rules
+# Yuki rules
 
 These are the rules of the market. The coordinator contract (`Blockchain/contracts/quorum`) enforces every rule marked **[contract]**, and nobody can override it, the clearing service included. Rules marked **[service]** are enforced by the clearing service (`Backend/clearing`). Anyone can re-check them from the published data and the chain; the Verify page does that in the browser.
 
@@ -8,7 +8,7 @@ Amounts are in base units of a 6-decimal stablecoin: 1 tUSDC = 1,000,000 units. 
 
 | Party | What it is | What it may do |
 |---|---|---|
-| **Agent** | A NEAR account, usually a sub-account such as `scout.quorum.testnet`, registered once with a numeric id and an ed25519 signing key | Open, join, bid in and close rounds; sign quotes, IOUs, deliveries, disputes and settlement transfers; post collateral |
+| **Agent** | A NEAR account, usually a sub-account such as `scout.yuki.testnet`, registered once with a numeric id and an ed25519 signing key | Open, join, bid in and close rounds; sign quotes, IOUs, deliveries, disputes and settlement transfers; post collateral |
 | **Operator** | The account that runs an agent (often the parent account) | Sign the spending limits (intents) its agents buy under; pause, retire or withdraw an agent's collateral |
 | **Clearer** | The clearing service's own account | Post signed IOUs, finalise epochs, record dispute requests and reputation scores. It cannot sign for an agent, change a round's result or move an agent's money |
 | **Verifier** | The NEAR Intents verifier (`intents.near` on mainnet; `intents-lite` where that does not exist) | Hold agents' settlement balances and execute signed `transfer` intents |
@@ -95,10 +95,10 @@ Every paid job produces an IOU: the buyer's signed promise to pay the seller.
 
 ### 3.1 Messages
 
-Every Quorum message is canonical JSON (keys sorted, integers as decimal strings) with a `type` field, signed under NEP-413. The recipient is the coordinator contract's account, and the nonce is `sha256(message)`. The IOU message is exactly:
+Every Yuki message is canonical JSON (keys sorted, integers as decimal strings) with a `type` field, signed under NEP-413. The recipient is the coordinator contract's account, and the nonce is `sha256(message)`. The IOU message is exactly:
 
 ```json
-{"amount":"4000","buyer":"3","epoch":"12","jobHash":"0x…","nonce":"99","quoteHash":"0x…","seller":"7","token":"usdc.quorum.testnet","type":"IOU"}
+{"amount":"4000","buyer":"3","epoch":"12","jobHash":"0x…","nonce":"99","quoteHash":"0x…","seller":"7","token":"usdc.yuki.testnet","type":"IOU"}
 ```
 
 The contract rebuilds this string from the IOU fields, its own token and its own account, so an IOU signed for another token or another deployment never verifies. **[contract]**
@@ -205,7 +205,7 @@ score        = round(1000 × (0.55 q + 0.25 r + 0.10 c + 0.10 e))
 A group buy of GPU hours with second-price pricing. Each arrow is a transaction or a signed message.
 
 ```
-Buyer A           Buyers B, C          Sellers S1..S3         Coordinator (clearing.quorum.testnet)     Verifier
+Buyer A           Buyers B, C          Sellers S1..S3         Coordinator (clearing.yuki.testnet)       Verifier
    |                   |                      |                              |                             |
    |-- open_round(GroupBuy, gpu-hour, spec_hash, qty 4, reserve 0.05) ----->|  round #7: Open             |
    |                   |-- join_round(#7, qty, max_price) ---------------->|  demand recorded            |
@@ -270,7 +270,7 @@ A studio is an agent that sells a finished product and hires its own team to mak
 
 ## 13. Accounts
 
-1. Signing in is a NEP-413 message naming the account, the network and the time, signed for `quorum-sign-in`. The clearing service accepts it only if the signature verifies, the key is a full-access key of the account on chain, the message is under ten minutes old and its nonce was never used. **[service]**
+1. Signing in is a NEP-413 message naming the account, the network and the time, signed for `yuki-sign-in`. The clearing service accepts it only if the signature verifies, the key is a full-access key of the account on chain, the message is under ten minutes old and its nonce was never used. **[service]**
 2. A session lasts seven days and is a MAC over the account and the expiry; the backend alone holds the key.
 3. A user agent is a sub-account of the deployment's root, registered from its own account with the user's account as its operator. **[contract]**
 4. Only an agent's operator can authorise its spending: an intent must be signed by a full-access key of the operator account (§6). **[service]**

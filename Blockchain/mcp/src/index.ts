@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Quorum MCP server. Gives any MCP client a Quorum buyer agent of its own:
+ * Yuki MCP server. Gives any MCP client a Yuki buyer agent of its own:
  *
  *   find_agent      search the registry by capability, price and reputation
  *   get_quote       ask an agent for a signed, binding quote
@@ -11,10 +11,10 @@
  *   check_balance   collateral, spending money inside the verifier, intent budget, open debts
  *   get_job         the evidence chain of a job
  *
- * Identity: QUORUM_ACCOUNT_ID + QUORUM_SECRET_KEY + QUORUM_INTENT_ID if you operate your own
+ * Identity: YUKI_ACCOUNT_ID + YUKI_SECRET_KEY + YUKI_INTENT_ID if you operate your own
  * agent, otherwise a guest session from the swarm: a fresh key, its own sub-account,
  * registered on chain, with 1 tUSDC of collateral, 1 tUSDC inside the verifier and a capped
- * intent. The guest is cached in ~/.quorum/guest-<network>.json so restarts reuse it.
+ * intent. The guest is cached in ~/.yuki/guest-<network>.json so restarts reuse it.
  *
  * stdout is the MCP channel: everything human-readable goes to stderr.
  */
@@ -24,13 +24,13 @@ import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { formatUnits, usd, type RoundView } from "@quorum/core";
-import { QuorumAgent, RefusedError, RoundVoidError } from "@quorum/sdk";
+import { formatUnits, usd, type RoundView } from "@yuki/core";
+import { YukiAgent, RefusedError, RoundVoidError } from "@yuki/sdk";
 
-const API = (process.env.QUORUM_API ?? "http://localhost:8787").replace(/\/+$/, "");
-const FLEET = (process.env.QUORUM_FLEET ?? "http://localhost:8788").replace(/\/+$/, "");
-const WEB = (process.env.QUORUM_WEB ?? "http://localhost:5173").replace(/\/+$/, "");
-const log = (...a: unknown[]) => console.error("[quorum-mcp]", ...a);
+const API = (process.env.YUKI_API ?? "http://localhost:8787").replace(/\/+$/, "");
+const FLEET = (process.env.YUKI_FLEET ?? "http://localhost:8788").replace(/\/+$/, "");
+const WEB = (process.env.YUKI_WEB ?? "http://localhost:5173").replace(/\/+$/, "");
+const log = (...a: unknown[]) => console.error("[yuki-mcp]", ...a);
 
 interface Session {
   accountId: string;
@@ -41,10 +41,10 @@ interface Session {
 
 async function session(network: string): Promise<Session> {
   const e = process.env;
-  if (e.QUORUM_ACCOUNT_ID && e.QUORUM_SECRET_KEY && e.QUORUM_INTENT_ID) {
-    return { accountId: e.QUORUM_ACCOUNT_ID, secretKey: e.QUORUM_SECRET_KEY, agentId: e.QUORUM_AGENT_ID ?? "", intentId: e.QUORUM_INTENT_ID };
+  if (e.YUKI_ACCOUNT_ID && e.YUKI_SECRET_KEY && e.YUKI_INTENT_ID) {
+    return { accountId: e.YUKI_ACCOUNT_ID, secretKey: e.YUKI_SECRET_KEY, agentId: e.YUKI_AGENT_ID ?? "", intentId: e.YUKI_INTENT_ID };
   }
-  const dir = join(homedir(), ".quorum");
+  const dir = join(homedir(), ".yuki");
   const file = join(dir, `guest-${network}.json`);
   if (existsSync(file)) {
     const s = JSON.parse(readFileSync(file, "utf8")) as Session & { api?: string };
@@ -110,7 +110,7 @@ async function main() {
   });
   const s = await retry("opening the session", () => session(cfg.network.key));
   const agent = await retry("connecting the agent", () =>
-    QuorumAgent.connect({ accountId: s.accountId, secretKey: s.secretKey, clearingUrl: API, agentId: s.agentId ? BigInt(s.agentId) : undefined }),
+    YukiAgent.connect({ accountId: s.accountId, secretKey: s.secretKey, clearingUrl: API, agentId: s.agentId ? BigInt(s.agentId) : undefined }),
   );
   log(`acting as agent #${agent.agentId} (${agent.accountId}) on ${cfg.network.name}`);
 
@@ -122,7 +122,7 @@ async function main() {
       .catch(() => undefined);
   }, 4_000);
 
-  const server = new McpServer({ name: "quorum", version: "0.1.0" });
+  const server = new McpServer({ name: "yuki", version: "0.1.0" });
 
   const resolve = async (who: string) => {
     const list = await agent.client.agents();
@@ -134,9 +134,9 @@ async function main() {
   server.registerTool(
     "find_agent",
     {
-      title: "Find Quorum agents",
+      title: "Find Yuki agents",
       description:
-        "Search the Quorum agent registry. Filter by capability (e.g. search, factcheck, translate, summarize, describe, brief, verdict, gpu-hour), maximum price in USD per call, and minimum reputation (0-100).",
+        "Search the Yuki agent registry. Filter by capability (e.g. search, factcheck, translate, summarize, describe, brief, verdict, gpu-hour), maximum price in USD per call, and minimum reputation (0-100).",
       inputSchema: {
         capability: z.string().optional().describe("service id or tag, e.g. 'brief' or 'factcheck'"),
         query: z.string().optional().describe("free text over names and descriptions"),
@@ -187,12 +187,12 @@ async function main() {
           jsonrpc: "2.0",
           id: 1,
           method: "message/send",
-          params: { message: { role: "user", messageId: String(Date.now()), parts: [{ kind: "data", data: { quorum: { action: "quote", buyer: agent.agentId.toString(), service, input: normalise(service, input) } } }] } },
+          params: { message: { role: "user", messageId: String(Date.now()), parts: [{ kind: "data", data: { yuki: { action: "quote", buyer: agent.agentId.toString(), service, input: normalise(service, input) } } }] } },
         }),
       });
-      const body = (await res.json()) as { result?: { parts?: { data?: { quorum?: { quote: Record<string, string> } } }[] }; error?: { message: string } };
+      const body = (await res.json()) as { result?: { parts?: { data?: { yuki?: { quote: Record<string, string> } } }[] }; error?: { message: string } };
       if (body.error) throw new Error(body.error.message);
-      const q = body.result?.parts?.[0]?.data?.quorum?.quote as { price: string; expiry: string; jobHash: string } | undefined;
+      const q = body.result?.parts?.[0]?.data?.yuki?.quote as { price: string; expiry: string; jobHash: string } | undefined;
       if (!q) throw new Error("no quote returned");
       return text(`${a.name} quotes ${money(q.price)} for ${service}, valid until ${new Date(Number(q.expiry) * 1000).toLocaleTimeString()}. Signed by the seller; hire_agent pays exactly this.`, {
         agent: a.name,
@@ -206,7 +206,7 @@ async function main() {
   server.registerTool(
     "hire_agent",
     {
-      title: "Hire a Quorum agent",
+      title: "Hire a Yuki agent",
       description:
         'Hire an agent for one job at its posted price. Gets a signed quote, signs an IOU under this session\'s spending intent, has the seller do the work and verifies its signed delivery. The debt is netted at the end of the epoch and settled through NEAR Intents. Example: agent "orchestrator", service "brief", input {"topic": "Chandrayaan-3"}.',
       inputSchema: {
@@ -246,7 +246,7 @@ async function main() {
   server.registerTool(
     "hire_studio",
     {
-      title: "Hire a Quorum team",
+      title: "Hire a Yuki team",
       description:
         "Hire a team of agents for a finished product. The team lead puts every role out to a sealed-bid tender on chain, the winning freelancer agents do the work, the lead checks it and delivers. Takes one to two minutes. Teams: design = Design Team (brand kit with AI-written copy: {name, vibe: warm|cool|earthy|neon|pastel|mono, tagline}), contracts = Smart Contract Team (NEAR contract: {name, template: escrow|token|voting, param}), backend = Backend Team (REST API: {resource, fields?, auth?}), photo = Photo Team (photo edit: {topic or imageUrl, look: film|noir|teal-orange|vintage|vivid}), video = Marketing Team (promo clip: {topic, shots, look}).",
       inputSchema: {

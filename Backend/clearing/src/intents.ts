@@ -1,4 +1,4 @@
-import { accountNetwork, intentDigest, messageText, type NetworkKey, nep413Hash, normaliseSignature, verifyHash, verifyMessage, type Hex, type IntentMandate, type IntentView, type QuorumDomain, type Signature } from "@quorum/core";
+import { accountNetwork, intentDigest, messageText, type NetworkKey, nep413Hash, normaliseSignature, verifyHash, verifyMessage, type Hex, type IntentMandate, type IntentView, type YukiDomain, type Signature } from "@yuki/core";
 import type { Chain } from "./chain.ts";
 import type { Db } from "./db.ts";
 import type { Registry } from "./registry.ts";
@@ -39,7 +39,7 @@ export class Intents {
   constructor(
     private readonly db: Db,
     private readonly registry: Registry,
-    private readonly domain: QuorumDomain,
+    private readonly domain: YukiDomain,
     private readonly chain: Chain,
   ) {}
 

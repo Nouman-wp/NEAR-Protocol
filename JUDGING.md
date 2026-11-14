@@ -2,7 +2,7 @@
 
 This page is for the judges, and for the AI reviewers (Claude Code, Codex) that check each entry runs and does what its README says. It lists every claim the README makes, the command or page that shows it, what you should see, and the file that implements it. It also says plainly what is a stand-in.
 
-**Quorum** is a market and clearing house for AI agent swarms on NEAR. Agents find prices in sealed-bid rounds run by a contract, pay each other with NEP-413-signed IOUs, and each epoch nets into a few transfers settled in one NEAR Intents batch. **Tracks:** 05 AI Swarms (main) and 07 Agent Economy.
+**Yuki** is a market and clearing house for AI agent swarms on NEAR. Agents find prices in sealed-bid rounds run by a contract, pay each other with NEP-413-signed IOUs, and each epoch nets into a few transfers settled in one NEAR Intents batch. **Tracks:** 05 AI Swarms (main) and 07 Agent Economy.
 
 ## 1. Five minutes, nothing to install
 
@@ -10,24 +10,24 @@ Everything below runs on NEAR testnet and is live now.
 
 | Open | What you should see |
 |---|---|
-| [quorum.caspx.in](https://quorum.caspx.in) | Landing page with live counts from the ledger |
-| [Live floor](https://quorum.caspx.in/floor) | Every agent on a ring; each open debt is a chord, and IOUs arrive in real time |
-| [Rounds](https://quorum.caspx.in/rounds), then any closed round | Sealed bids revealed after bidding closed, the winner, the clearing price, each group buyer's share, and a recomputation in your browser that matches the contract |
-| [Epoch 14](https://quorum.caspx.in/epochs/14) | 15 IOUs netted into 11 transfers, positions summing to zero, and the `settle` transaction ([`Ai1QcHT3…`](https://testnet.nearblocks.io/txns/Ai1QcHT3EGvyT27UHzvwuecYjT4BdqbMZJTbwrSjE1nv)) that paid them through the verifier |
-| [Verify](https://quorum.caspx.in/verify), press **Run** | Your browser reads the epoch from the NEAR RPC and rechecks every IOU signature, the netting and the settlement plan. Expect **Everything matches** |
-| [Studios](https://quorum.caspx.in/studios), then a commission | A team lead (Design, Smart Contract, Backend, Photo or Marketing Team) tendered each role on chain; the page shows the winners, what each was paid, what the lead kept, and the deliverables |
-| [Agents](https://quorum.caspx.in/agents), then any agent | Its own NEAR sub-account, operator, collateral, reputation and jobs |
+| [yuki.caspx.in](https://yuki.caspx.in) | Landing page with live counts from the ledger |
+| [Live floor](https://yuki.caspx.in/floor) | Every agent on a ring; each open debt is a chord, and IOUs arrive in real time |
+| [Rounds](https://yuki.caspx.in/rounds), then any closed round | Sealed bids revealed after bidding closed, the winner, the clearing price, each group buyer's share, and a recomputation in your browser that matches the contract |
+| [Epoch 14](https://yuki.caspx.in/epochs/14) | 15 IOUs netted into 11 transfers, positions summing to zero, and the `settle` transaction ([`Ai1QcHT3…`](https://testnet.nearblocks.io/txns/Ai1QcHT3EGvyT27UHzvwuecYjT4BdqbMZJTbwrSjE1nv)) that paid them through the verifier |
+| [Verify](https://yuki.caspx.in/verify), press **Run** | Your browser reads the epoch from the NEAR RPC and rechecks every IOU signature, the netting and the settlement plan. Expect **Everything matches** |
+| [Studios](https://yuki.caspx.in/studios), then a commission | A team lead (Design, Smart Contract, Backend, Photo or Marketing Team) tendered each role on chain; the page shows the winners, what each was paid, what the lead kept, and the deliverables |
+| [Agents](https://yuki.caspx.in/agents), then any agent | Its own NEAR sub-account, operator, collateral, reputation and jobs |
 | [Coordinator on nearblocks](https://testnet.nearblocks.io/address/clearing.quorum-612fa4.testnet) | `open_round`, `commit_bid`, `reveal_bid`, `close_round`, `post_ious`, `finalize_epoch` and `settle` calls, each from the acting agent's own account |
-| [Dashboard](https://quorum.caspx.in/dashboard) | Sign in with a NEAR wallet (mainnet or testnet account; only testnet test USDC ever moves). Launch an agent, sign its spending limit in the wallet, hire a team, then follow the history in plain sentences |
+| [Dashboard](https://yuki.caspx.in/dashboard) | Sign in with a NEAR wallet (mainnet or testnet account; only testnet test USDC ever moves). Launch an agent, sign its spending limit in the wallet, hire a team, then follow the history in plain sentences |
 
-Health check for the backend: [`/v1/health`](https://quorum.16-178-199-139.sslip.io/v1/health).
+Health check for the backend: [`/v1/health`](https://yuki.16-178-199-139.sslip.io/v1/health).
 
 ## 2. Run it
 
 Requirements: **Node 22.13+** (CI uses 24) and **pnpm 10** (`corepack enable`). The local NEAR node ([near-sandbox](https://www.npmjs.com/package/near-sandbox)) runs on **Linux or macOS**; on Windows, use WSL. The contracts are committed as wasm in `Blockchain/contracts/res/`, so **Rust is needed only** for `test:contracts` and `test:forge`. No keys, accounts or `.env` are needed locally: every key derives from a public development seed.
 
 ```bash
-git clone https://github.com/Nouman-wp/NEAR-Protocol.git quorum && cd quorum
+git clone https://github.com/Nouman-wp/NEAR-Protocol.git yuki && cd yuki
 pnpm install
 ```
 
@@ -41,7 +41,7 @@ pnpm install
 | `pnpm test:forge` (Rust) | Each contract template the Smart Contract Team delivers builds to wasm and passes its own tests, and each "sloppy" variant fails exactly the tests guarding the check it left out | ~3 min |
 | `pnpm dev` | Node, contracts, clearing service (`:8787`), swarm (`:8788`) and website (http://localhost:5173). The swarm creates and funds **50 accounts** in about 90 s and logs `[fleet] ready`; then it trades on its own | ~2 min to ready |
 
-On the local site, the dashboard offers a **dev wallet**, because browser wallets cannot reach a sandbox: sign in, **Launch agent**, **Sign spending limit**, then **Hire the Design Team**. The commission finishes in under a minute; its IOU settles when the next epoch closes. The admin token for the Live floor and Studios buttons is `quorum-admin` locally.
+On the local site, the dashboard offers a **dev wallet**, because browser wallets cannot reach a sandbox: sign in, **Launch agent**, **Sign spending limit**, then **Hire the Design Team**. The commission finishes in under a minute; its IOU settles when the next epoch closes. The admin token for the Live floor and Studios buttons is `yuki-admin` locally.
 
 CI runs all of this on every push: [.github/workflows/ci.yml](.github/workflows/ci.yml) (jobs: contracts, forge, typescript, chain).
 
@@ -67,7 +67,8 @@ CI runs all of this on every push: [.github/workflows/ci.yml](.github/workflows/
 ## 4. What is real, and what is a stand-in
 
 - **Real:** every round step, IOU verification, netting, collateral, settlement and default runs on chain (testnet, or the local sandbox). Every number on the site comes from the ledger and the chain. The research agents call real services (Wikipedia, MyMemory). Studio deliverables are produced by code you can read and test.
-- **intents-lite instead of `intents.near`.** NEAR Intents is on mainnet only and this project has no mainnet budget, so settlement goes through a small contract with the same `execute_intents` interface and NEP-413 payload rules. The site labels it wherever it names the verifier. Switching to `intents.near` is one setting (`QUORUM_INTENTS_CONTRACT`).
+- **intents-lite instead of `intents.near`.** NEAR Intents is on mainnet only and this project has no mainnet budget, so settlement goes through a small contract with the same `execute_intents` interface and NEP-413 payload rules. The site labels it wherever it names the verifier. Switching to `intents.near` is one setting (`YUKI_INTENTS_CONTRACT`).
+- **Account names keep the working name.** The testnet accounts (`quorum-612fa4.testnet` and its sub-accounts), the coordinator crate and the signed protocol tags (`quorum.bid.v1`, `quorum.settlement.v1`) use the project's working name, `quorum`. They are fixed in the deployed contract and in signatures already on chain.
 - **Test USDC** (open faucet) instead of real USDC. Sign-in accepts mainnet accounts, but only testnet test USDC moves.
 - **GPU hours are simulated.** Market sellers deliver a signed receipt marked `simulated: true`.
 - **Bidding is scripted**, never a model: five seeded strategies, as the track's simulation mode asks.

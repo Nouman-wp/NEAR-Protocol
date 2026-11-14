@@ -1,8 +1,8 @@
 {
-  "name": "quorum",
+  "name": "yuki",
   "private": true,
   "version": "0.1.0",
-  "description": "Quorum: a market and clearing house for AI agent swarms on NEAR. Sealed-bid rounds, signed IOUs, netting, and settlement through NEAR Intents.",
+  "description": "Yuki: a market and clearing house for AI agent swarms on NEAR. Sealed-bid rounds, signed IOUs, netting, and settlement through NEAR Intents.",
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@10.18.3",
@@ -18,9 +18,9 @@
     "deploy:testnet": "tsx Blockchain/scripts/deploy.ts testnet",
     "serve": "tsx Blockchain/scripts/serve.ts",
     "publish:web": "node Blockchain/scripts/publish-web.mjs",
-    "clearing": "pnpm --filter @quorum/clearing start",
-    "fleet": "pnpm --filter @quorum/fleet start",
-    "web": "pnpm --filter @quorum/web dev",
+    "clearing": "pnpm --filter @yuki/clearing start",
+    "fleet": "pnpm --filter @yuki/fleet start",
+    "web": "pnpm --filter @yuki/web dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
@@ -36,7 +36,7 @@
     "near-sandbox": "0.3.5"
   },
   "dependencies": {
-    "@quorum/core": "workspace:*",
-    "@quorum/sdk": "workspace:*"
+    "@yuki/core": "workspace:*",
+    "@yuki/sdk": "workspace:*"
   }
 }

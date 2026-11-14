@@ -13,11 +13,11 @@ import {
   type Hex,
   type IOU,
   type JobSpec,
-  type QuorumDomain,
+  type YukiDomain,
   type Quote,
   type Signature,
   type Verdict,
-} from "@quorum/core";
+} from "@yuki/core";
 import type { Db } from "./db.ts";
 import type { Registry } from "./registry.ts";
 import type { Intents } from "./intents.ts";
@@ -69,7 +69,7 @@ export class Ledger {
     private readonly intents: Intents,
     private readonly rep: ReputationBook,
     private readonly chain: Chain,
-    private readonly domain: QuorumDomain,
+    private readonly domain: YukiDomain,
     private readonly token: AccountId,
     private readonly opts: { disputeWindowSeconds: number; publicUrl: string },
     private readonly intake: () => IntakeEpoch,

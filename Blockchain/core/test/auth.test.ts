@@ -25,7 +25,7 @@ describe("sign in with a NEAR wallet", () => {
   it("accepts a wallet signature with or without the callback URL in the payload", () => {
     const base = { message, recipient: AUTH_RECIPIENT, nonce: toBase64(nonce), publicKey: key.publicKey };
     expect(verifyWalletSignature({ ...base, signature: walletSign(key.secretKey, message, AUTH_RECIPIENT, nonce) })).toBe(true);
-    const cb = "https://quorum.example/dashboard";
+    const cb = "https://yuki.example/dashboard";
     expect(verifyWalletSignature({ ...base, callbackUrl: cb, signature: walletSign(key.secretKey, message, AUTH_RECIPIENT, nonce, cb) })).toBe(true);
   });
 
@@ -37,7 +37,7 @@ describe("sign in with a NEAR wallet", () => {
     expect(verifyWalletSignature({ ...base, signature: walletSign(key.secretKey, message, "evil.near", nonce) })).toBe(false);
   });
 
-  it("normalises a base64 wallet signature to a Quorum signature", () => {
+  it("normalises a base64 wallet signature to a Yuki signature", () => {
     const sig = walletSign(key.secretKey, message, AUTH_RECIPIENT, nonce);
     expect(normaliseSignature(sig).startsWith("ed25519:")).toBe(true);
     expect(normaliseSignature(normaliseSignature(sig))).toBe(normaliseSignature(sig));

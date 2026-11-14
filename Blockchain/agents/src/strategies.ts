@@ -1,5 +1,5 @@
-import type { RoundView } from "@quorum/core";
-import type { BidStrategy } from "@quorum/sdk";
+import type { RoundView } from "@yuki/core";
+import type { BidStrategy } from "@yuki/sdk";
 
 /**
  * Scripted bidding strategies. No model is called anywhere: a bid is a few lines of

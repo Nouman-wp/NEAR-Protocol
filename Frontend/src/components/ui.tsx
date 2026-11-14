@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import type { AgentSummary } from "@quorum/core";
+import type { AgentSummary } from "@yuki/core";
 import { clock, explorerAccount, explorerTx, short, statusName, usd, usdExact } from "../lib/format.ts";
 import { useLive } from "../lib/api.ts";
 import { Avatar, hue } from "./Avatar.tsx";

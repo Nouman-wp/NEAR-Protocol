@@ -1,7 +1,7 @@
 // Keys and an account for a public network.
 //
 //   pnpm wallets testnet                         new keys in .env.testnet, then create the account
-//   pnpm wallets testnet --name quorum-demo      choose the account name (quorum-demo.testnet)
+//   pnpm wallets testnet --name yuki-demo      choose the account name (yuki-demo.testnet)
 //   pnpm wallets testnet --check                 show the account, its balance and what deploying needs
 //
 // Writes .env.testnet with a fresh master seed (every agent's key follows from it) and a
@@ -13,7 +13,7 @@
 // printed public key to it (see docs/DEPLOY.md). Keys never leave this machine.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { NETWORKS, NearRpc, ONE_NEAR, bytesToHex, keyPairFromSecret, randomBytes, randomKeyPair } from "@quorum/core";
+import { NETWORKS, NearRpc, ONE_NEAR, bytesToHex, keyPairFromSecret, randomBytes, randomKeyPair } from "@yuki/core";
 import { ROOT } from "./lib.mjs";
 
 const network = process.argv[2] ?? "testnet";
@@ -42,8 +42,8 @@ const fmt = (yocto: bigint) => (Number(yocto / (ONE_NEAR / 1000n)) / 1000).toFix
 
 async function check(env: Record<string, string>) {
   const rpc = new NearRpc(env.NEAR_RPC_URL || NETWORKS[network as "testnet"].rpcUrl);
-  const root = env.QUORUM_ROOT!;
-  const key = keyPairFromSecret(env.QUORUM_ROOT_KEY!).publicKey;
+  const root = env.YUKI_ROOT!;
+  const key = keyPairFromSecret(env.YUKI_ROOT_KEY!).publicKey;
   const account = await rpc.account(root);
   if (!account) {
     console.log(`\n  ${root} does not exist on ${network} yet.`);
@@ -78,36 +78,36 @@ async function createWithFaucet(accountId: string, publicKey: string): Promise<b
 
 async function main() {
   let env = readEnv();
-  if (!env.QUORUM_SEED || !env.QUORUM_ROOT_KEY || !env.QUORUM_ROOT) {
-    const name = (arg("name") ?? `quorum-${bytesToHex(randomBytes(3)).slice(2)}`).replace(new RegExp(`\\${suffix}$`), "");
+  if (!env.YUKI_SEED || !env.YUKI_ROOT_KEY || !env.YUKI_ROOT) {
+    const name = (arg("name") ?? `yuki-${bytesToHex(randomBytes(3)).slice(2)}`).replace(new RegExp(`\\${suffix}$`), "");
     const root = randomKeyPair();
     env = {
-      QUORUM_NETWORK: network,
-      QUORUM_ROOT: `${name}${suffix}`,
-      QUORUM_ROOT_KEY: root.secretKey,
-      QUORUM_SEED: bytesToHex(randomBytes(32)).slice(2),
+      YUKI_NETWORK: network,
+      YUKI_ROOT: `${name}${suffix}`,
+      YUKI_ROOT_KEY: root.secretKey,
+      YUKI_SEED: bytesToHex(randomBytes(32)).slice(2),
       ADMIN_TOKEN: bytesToHex(randomBytes(16)).slice(2),
       ...env,
     };
     writeFileSync(
       file,
       [
-        `# Quorum ${network} configuration, written by \`pnpm wallets ${network}\`. Real keys: never commit this file.`,
-        `QUORUM_NETWORK=${network}`,
+        `# Yuki ${network} configuration, written by \`pnpm wallets ${network}\`. Real keys: never commit this file.`,
+        `YUKI_NETWORK=${network}`,
         `# the named account that owns the contracts and every agent (they are its sub-accounts)`,
-        `QUORUM_ROOT=${env.QUORUM_ROOT}`,
-        `QUORUM_ROOT_KEY=${env.QUORUM_ROOT_KEY}`,
+        `YUKI_ROOT=${env.YUKI_ROOT}`,
+        `YUKI_ROOT_KEY=${env.YUKI_ROOT_KEY}`,
         `# every agent's and the clearer's key is derived from this seed`,
-        `QUORUM_SEED=${env.QUORUM_SEED}`,
+        `YUKI_SEED=${env.YUKI_SEED}`,
         `ADMIN_TOKEN=${env.ADMIN_TOKEN}`,
         `# NEAR_RPC_URL=${NETWORKS[network as "testnet" | "mainnet"].rpcUrl}`,
         `EPOCH_INTAKE_SECONDS=75`,
         `EPOCH_CHALLENGE_SECONDS=18`,
         `SETTLEMENT_WINDOW=300`,
         `# public URLs, once the backend and the website are hosted`,
-        `# PUBLIC_API_URL=https://quorum-api.example.org`,
-        `# PUBLIC_FLEET_URL=https://quorum-api.example.org`,
-        `# PUBLIC_WEB_URL=https://quorum.example.org`,
+        `# PUBLIC_API_URL=https://yuki-api.example.org`,
+        `# PUBLIC_FLEET_URL=https://yuki-api.example.org`,
+        `# PUBLIC_WEB_URL=https://yuki.example.org`,
         `# smaller market on a public network: fewer accounts to fund`,
         `SIM_BUYERS=12`,
         `SIM_SELLERS=4`,
@@ -122,16 +122,16 @@ async function main() {
     console.log(`  wrote ${file}`);
   } else console.log(`  using ${file}`);
 
-  const publicKey = keyPairFromSecret(env.QUORUM_ROOT_KEY!).publicKey;
-  console.log(`  root account  ${env.QUORUM_ROOT}`);
+  const publicKey = keyPairFromSecret(env.YUKI_ROOT_KEY!).publicKey;
+  console.log(`  root account  ${env.YUKI_ROOT}`);
   console.log(`  root key      ${publicKey}`);
 
   if (has("create") && network === "testnet") {
     const rpc = new NearRpc(NETWORKS.testnet.rpcUrl);
-    if (await rpc.account(env.QUORUM_ROOT!)) console.log(`  ${env.QUORUM_ROOT} already exists`);
+    if (await rpc.account(env.YUKI_ROOT!)) console.log(`  ${env.YUKI_ROOT} already exists`);
     else {
-      console.log(`  asking the testnet faucet helper to create ${env.QUORUM_ROOT}…`);
-      if (await createWithFaucet(env.QUORUM_ROOT!, publicKey)) console.log("  created");
+      console.log(`  asking the testnet faucet helper to create ${env.YUKI_ROOT}…`);
+      if (await createWithFaucet(env.YUKI_ROOT!, publicKey)) console.log("  created");
       else console.log("  the helper did not create it: use the manual route below");
     }
   }
@@ -146,8 +146,8 @@ async function main() {
         "",
         "  To make the account ready, either:",
         `    a) pnpm wallets ${network} --create        ask the testnet faucet helper to create it (testnet only)`,
-        `    b) create ${env.QUORUM_ROOT} in any NEAR wallet, then add the root key above to it as a full-access key,`,
-        `       or put that account's own secret key in QUORUM_ROOT_KEY in ${file}`,
+        `    b) create ${env.YUKI_ROOT} in any NEAR wallet, then add the root key above to it as a full-access key,`,
+        `       or put that account's own secret key in YUKI_ROOT_KEY in ${file}`,
         `  Then fund it with about ${NEEDED} NEAR (testnet faucets: https://near-faucet.io) and run: pnpm deploy:${network}`,
         "",
       ].join("\n"),

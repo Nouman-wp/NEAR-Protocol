@@ -1,4 +1,4 @@
-import type { HeadlineStats } from "@quorum/core";
+import type { HeadlineStats } from "@yuki/core";
 import type { Db } from "./db.ts";
 import type { Chain } from "./chain.ts";
 import type { EpochEngine } from "./epochs.ts";

@@ -1,4 +1,4 @@
-import { iouDigest, net, parseSignedIntent, verifyMessage, type Hex, type IOU, type QuorumDomain, type SignedIntent } from "@quorum/core";
+import { iouDigest, net, parseSignedIntent, verifyMessage, type Hex, type IOU, type YukiDomain, type SignedIntent } from "@yuki/core";
 import type { Db } from "./db.ts";
 import type { Chain } from "./chain.ts";
 import type { Registry } from "./registry.ts";
@@ -17,7 +17,7 @@ export interface Check {
  * per-agent positions compared with what the coordinator contract stored. The debtors'
  * signed NEAR Intents payloads are checked against the plan line by line.
  */
-export async function verifyEpoch(db: Db, chain: Chain, registry: Registry, domain: QuorumDomain, epochId: number) {
+export async function verifyEpoch(db: Db, chain: Chain, registry: Registry, domain: YukiDomain, epochId: number) {
   const checks: Check[] = [];
   const ious = db.all<IouRow>("SELECT * FROM ious WHERE posted_epoch = ? AND status = 'netted' ORDER BY epoch, buyer, nonce_num", epochId);
   const carried = ious.filter((i) => i.epoch < epochId);

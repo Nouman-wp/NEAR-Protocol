@@ -1,13 +1,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { LOCAL_DEV_SEED, ONE_NEAR, accountKey, type KeyPair } from "@quorum/core";
+import { LOCAL_DEV_SEED, ONE_NEAR, accountKey, type KeyPair } from "@yuki/core";
 
 const here = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = resolve(here, "../../..");
 
 function loadDotEnv(): void {
-  const file = resolve(REPO_ROOT, process.env.QUORUM_ENV_FILE ?? ".env");
+  const file = resolve(REPO_ROOT, process.env.YUKI_ENV_FILE ?? ".env");
   if (!existsSync(file)) return;
   for (const line of readFileSync(file, "utf8").split(/\r?\n/)) {
     const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
@@ -60,12 +60,12 @@ export interface FleetConfig {
 export function loadFleetConfig(): FleetConfig {
   loadDotEnv();
   const e = process.env;
-  const network = e.QUORUM_NETWORK ?? "local";
+  const network = e.YUKI_NETWORK ?? "local";
   const local = network === "local";
-  const seed = e.QUORUM_SEED ?? (local ? LOCAL_DEV_SEED : "");
-  if (!seed) throw new Error(`QUORUM_SEED must be set on ${network}`);
-  const rootSecretKey = e.QUORUM_ROOT_KEY ?? (local ? accountKey(seed, "root").secretKey : "");
-  if (!rootSecretKey) throw new Error(`QUORUM_ROOT_KEY must be set on ${network}`);
+  const seed = e.YUKI_SEED ?? (local ? LOCAL_DEV_SEED : "");
+  if (!seed) throw new Error(`YUKI_SEED must be set on ${network}`);
+  const rootSecretKey = e.YUKI_ROOT_KEY ?? (local ? accountKey(seed, "root").secretKey : "");
+  if (!rootSecretKey) throw new Error(`YUKI_ROOT_KEY must be set on ${network}`);
   const units = (v: string | undefined, d: string) => BigInt(Math.round(Number(v ?? d) * 1e6));
   const ms = (v: string | undefined, d: number) => Math.round(Number(v ?? d) * 1000);
   const modes = (e.FLEET_MODE ?? "research,market,studios").split(",").map((s) => s.trim());
@@ -77,7 +77,7 @@ export function loadFleetConfig(): FleetConfig {
     rpcUrl: e.NEAR_RPC_URL || undefined,
     seed,
     rootSecretKey,
-    adminToken: e.ADMIN_TOKEN ?? "quorum-admin",
+    adminToken: e.ADMIN_TOKEN ?? "yuki-admin",
     research: modes.includes("research"),
     market: modes.includes("market"),
     studios: modes.includes("studios"),

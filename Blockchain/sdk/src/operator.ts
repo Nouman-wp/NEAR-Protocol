@@ -11,7 +11,7 @@ import {
   type PublicKey,
   type Signature,
   type TxResult,
-} from "@quorum/core";
+} from "@yuki/core";
 import type { ClearingClient, ClearingConfig } from "./client.ts";
 
 /**

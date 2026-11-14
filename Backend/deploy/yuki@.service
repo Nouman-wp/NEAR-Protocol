@@ -1,13 +1,13 @@
-# Quorum backend for one network: clearing service, agent swarm and edge proxy (Blockchain/scripts/serve.ts).
-#   sudo systemctl enable --now quorum@testnet
+# Yuki backend for one network: clearing service, agent swarm and edge proxy (Blockchain/scripts/serve.ts).
+#   sudo systemctl enable --now yuki@testnet
 [Unit]
-Description=Quorum backend (%i)
+Description=Yuki backend (%i)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-User=quorum
-WorkingDirectory=/opt/quorum
+User=yuki
+WorkingDirectory=/opt/yuki
 ExecStart=/usr/bin/env corepack pnpm serve %i
 Restart=always
 RestartSec=10

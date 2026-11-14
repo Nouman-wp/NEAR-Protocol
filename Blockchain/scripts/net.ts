@@ -1,7 +1,7 @@
 // Network, key and deployment helpers shared by the deploy, dev and simulation scripts.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { LOCAL_DEV_SEED, NETWORKS, NearAccount, NearRpc, accountKey, type Deployment, type KeyPair, type NetworkKey } from "@quorum/core";
+import { LOCAL_DEV_SEED, NETWORKS, NearAccount, NearRpc, accountKey, type Deployment, type KeyPair, type NetworkKey } from "@yuki/core";
 import { ROOT, loadEnv } from "./lib.mjs";
 
 /** The account and key every near-sandbox node starts with. Public, local only. */
@@ -24,13 +24,13 @@ export interface Net {
 
 export function net(name?: string): Net {
   const env = { ...loadEnv(), ...process.env } as Record<string, string>;
-  const key = (name ?? env.QUORUM_NETWORK ?? "local") as NetworkKey;
+  const key = (name ?? env.YUKI_NETWORK ?? "local") as NetworkKey;
   if (!NETWORKS[key]) throw new Error(`unknown network "${key}": use local, testnet or mainnet`);
   const rpcUrl = env.NEAR_RPC_URL || NETWORKS[key].rpcUrl;
-  const seed = key === "local" ? (env.QUORUM_SEED ?? LOCAL_SEED) : env.QUORUM_SEED;
-  if (!seed) throw new Error("QUORUM_SEED is not set: run `pnpm wallets <network>` first");
-  const root = env.QUORUM_ROOT ?? (key === "local" ? "quorum.sandbox" : "");
-  if (!root) throw new Error("QUORUM_ROOT is not set: it is the account that will own the contracts and the agents");
+  const seed = key === "local" ? (env.YUKI_SEED ?? LOCAL_SEED) : env.YUKI_SEED;
+  if (!seed) throw new Error("YUKI_SEED is not set: run `pnpm wallets <network>` first");
+  const root = env.YUKI_ROOT ?? (key === "local" ? "yuki.sandbox" : "");
+  if (!root) throw new Error("YUKI_ROOT is not set: it is the account that will own the contracts and the agents");
   return { key, rpcUrl, rpc: new NearRpc(rpcUrl), root, seed, env };
 }
 
@@ -40,8 +40,8 @@ export function keyFor(n: Net, name: string): KeyPair {
 }
 
 export function rootAccount(n: Net): NearAccount {
-  const secret = n.env.QUORUM_ROOT_KEY ?? (n.key === "local" ? keyFor(n, "root").secretKey : "");
-  if (!secret) throw new Error("QUORUM_ROOT_KEY is not set");
+  const secret = n.env.YUKI_ROOT_KEY ?? (n.key === "local" ? keyFor(n, "root").secretKey : "");
+  if (!secret) throw new Error("YUKI_ROOT_KEY is not set");
   return new NearAccount(n.rpc, n.root, secret);
 }
 

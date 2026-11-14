@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { deriveKeyPair, signSettlement, type SignedIntent } from "@quorum/core";
+import { deriveKeyPair, signSettlement, type SignedIntent } from "@yuki/core";
 import { Db } from "../src/db.ts";
 import { SettlementError, Settlements } from "../src/settlements.ts";
 import type { Chain } from "../src/chain.ts";
@@ -22,7 +22,7 @@ interface Opts {
 }
 
 function setup(o: Opts = {}) {
-  const db = new Db(mkdtempSync(join(tmpdir(), "quorum-stl-")));
+  const db = new Db(mkdtempSync(join(tmpdir(), "yuki-stl-")));
   const writes: { method: string; args: { signed?: SignedIntent[]; agent_id?: number } }[] = [];
   const sealed = new Set<number>();
   const chain = {

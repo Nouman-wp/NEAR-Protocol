@@ -2,14 +2,14 @@ import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { LOCAL_DEV_SEED, NETWORKS, accountKey, keyPairFromSecret, type Deployment, type NetworkKey } from "@quorum/core";
+import { LOCAL_DEV_SEED, NETWORKS, accountKey, keyPairFromSecret, type Deployment, type NetworkKey } from "@yuki/core";
 
 const here = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = resolve(here, "../../..");
 
-/** The env file in use: QUORUM_ENV_FILE (e.g. .env.testnet) or .env. */
+/** The env file in use: YUKI_ENV_FILE (e.g. .env.testnet) or .env. */
 export function envFile(): string {
-  return resolve(REPO_ROOT, process.env.QUORUM_ENV_FILE ?? ".env");
+  return resolve(REPO_ROOT, process.env.YUKI_ENV_FILE ?? ".env");
 }
 
 /** Minimal .env loader so the service runs with plain `pnpm clearing`. Real env wins. */
@@ -25,10 +25,10 @@ export function loadDotEnv(file = envFile()): void {
 }
 
 const schema = z.object({
-  QUORUM_NETWORK: z.enum(["local", "testnet", "mainnet"]).default("local"),
+  YUKI_NETWORK: z.enum(["local", "testnet", "mainnet"]).default("local"),
   NEAR_RPC_URL: z.string().optional(),
   /** master seed every account key is derived from; optional on a local sandbox */
-  QUORUM_SEED: z.string().min(16).optional(),
+  YUKI_SEED: z.string().min(16).optional(),
   /** overrides the derived key of the clearer account */
   CLEARER_SECRET_KEY: z.string().optional(),
   PORT: z.coerce.number().default(8787),
@@ -59,7 +59,7 @@ const schema = z.object({
   FLEET_PORT: z.coerce.number().default(8788),
   /** the fleet's public base; cards under it are fetched from FLEET_CONTROL_URL directly */
   PUBLIC_FLEET_URL: z.string().optional(),
-  ADMIN_TOKEN: z.string().min(8).default("quorum-admin"),
+  ADMIN_TOKEN: z.string().min(8).default("yuki-admin"),
   CORS_ORIGIN: z.string().default("*"),
   /** optional Supabase mirror of this database: project URL and its secret key (server side only) */
   SUPABASE_URL: z.string().optional(),
@@ -87,18 +87,18 @@ export function loadConfig(): Config {
     throw new Error(`Invalid clearing service configuration:\n${issues}`);
   }
   const env = parsed.data;
-  const network = env.QUORUM_NETWORK as NetworkKey;
+  const network = env.YUKI_NETWORK as NetworkKey;
   const deployment = loadDeployment(network);
-  const seed = env.QUORUM_SEED ?? (network === "local" ? LOCAL_DEV_SEED : undefined);
+  const seed = env.YUKI_SEED ?? (network === "local" ? LOCAL_DEV_SEED : undefined);
   const clearerSecretKey = env.CLEARER_SECRET_KEY ?? (seed ? accountKey(seed, "clearer").secretKey : undefined);
-  if (!clearerSecretKey) throw new Error("Set QUORUM_SEED (or CLEARER_SECRET_KEY): the clearing service signs as the clearer account");
+  if (!clearerSecretKey) throw new Error("Set YUKI_SEED (or CLEARER_SECRET_KEY): the clearing service signs as the clearer account");
   const have = keyPairFromSecret(clearerSecretKey).publicKey;
   if (have !== deployment.clearerKey) {
-    throw new Error(`The clearer key in this environment (${have}) is not the one ${deployment.clearer} was created with (${deployment.clearerKey}). Check QUORUM_SEED.`);
+    throw new Error(`The clearer key in this environment (${have}) is not the one ${deployment.clearer} was created with (${deployment.clearerKey}). Check YUKI_SEED.`);
   }
   return {
     ...env,
-    sessionSeed: seed ?? env.ADMIN_TOKEN ?? "quorum-local",
+    sessionSeed: seed ?? env.ADMIN_TOKEN ?? "yuki-local",
     FLEET_CONTROL_URL: (env.FLEET_CONTROL_URL ?? `http://localhost:${env.FLEET_PORT}`).replace(/\/+$/, ""),
     network,
     rpcUrl: env.NEAR_RPC_URL || NETWORKS[network].rpcUrl,

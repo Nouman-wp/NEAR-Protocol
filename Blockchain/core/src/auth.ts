@@ -10,21 +10,21 @@ import { fromBase64, isAccountId, isPublicKey, nep413Hash, toBase64, verifyHash,
  * session token: the account and an expiry, MACed with a secret only the backend holds.
  */
 
-export const AUTH_RECIPIENT = "quorum-sign-in";
+export const AUTH_RECIPIENT = "yuki-sign-in";
 const utf8 = new TextEncoder();
 
 export function loginMessage(accountId: AccountId, network: string, issuedAt: number): string {
-  return `Sign in to Quorum\n\nAccount: ${accountId}\nNetwork: ${network}\nIssued: ${new Date(issuedAt).toISOString()}`;
+  return `Sign in to Yuki\n\nAccount: ${accountId}\nNetwork: ${network}\nIssued: ${new Date(issuedAt).toISOString()}`;
 }
 
 export function parseLoginMessage(message: string): { accountId: string; network: string; issuedAt: number } | null {
-  const m = message.match(/^Sign in to Quorum\n\nAccount: ([a-z0-9._-]+)\nNetwork: ([a-z]+)\nIssued: (\S+)$/);
+  const m = message.match(/^Sign in to Yuki\n\nAccount: ([a-z0-9._-]+)\nNetwork: ([a-z]+)\nIssued: (\S+)$/);
   if (!m) return null;
   const issuedAt = Date.parse(m[3]!);
   return Number.isFinite(issuedAt) ? { accountId: m[1]!, network: m[2]!, issuedAt } : null;
 }
 
-/** A wallet's base64 signature as a Quorum signature string; a Quorum signature passes through. */
+/** A wallet's base64 signature as a Yuki signature string; a Yuki signature passes through. */
 export function normaliseSignature(signature: string): Signature {
   if (signature.startsWith("ed25519:")) return signature;
   return `ed25519:${base58.encode(fromBase64(signature))}`;

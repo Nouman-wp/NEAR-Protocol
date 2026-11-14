@@ -1,4 +1,4 @@
-import { formatUsd, hashJson, type Hex, type IOU, type JobSpec, type RoundView } from "@quorum/core";
+import { formatUsd, hashJson, type Hex, type IOU, type JobSpec, type RoundView } from "@yuki/core";
 import type { Db } from "./db.ts";
 import type { Chain, ChainRound } from "./chain.ts";
 import { bus, log } from "./bus.ts";

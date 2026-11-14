@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { TEMPLATES, sloppy, writeContract, writeTests, type ContractCode, type Template } from "../agents/src/work/contracts.ts";
 
-const root = process.env.FORGE_DIR ?? join(tmpdir(), "quorum-forge-check");
+const root = process.env.FORGE_DIR ?? join(tmpdir(), "yuki-forge-check");
 const briefs: Record<Template, string> = { escrow: "Chai Point Escrow", token: "Chai Point Rewards", voting: "Chai Point Council" };
 
 interface Crate {

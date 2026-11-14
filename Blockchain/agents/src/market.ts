@@ -1,5 +1,5 @@
-import { formatUnits } from "@quorum/core";
-import type { QuorumAgent } from "@quorum/sdk";
+import { formatUnits } from "@yuki/core";
+import type { YukiAgent } from "@yuki/sdk";
 import type { Fleet, FleetMember } from "./fleet.ts";
 import { STRATEGY_NOTES, seeded, strategy, type StrategyName } from "./strategies.ts";
 
@@ -59,7 +59,7 @@ export function marketMembers(buyers: number, sellers: number, seed: number): Fl
         role: "GPU seller",
         description: `Sells simulated GPU hours in sealed-bid rounds. Scripted strategy "${s.strategy}": ${STRATEGY_NOTES[s.strategy]}`,
         fleet: true,
-        organization: "Quorum market simulation",
+        organization: "Yuki market simulation",
       },
       install: (fleet, agent) => installSeller(fleet, agent, s, seed + 101 * (i + 1)),
       buys: [],
@@ -74,7 +74,7 @@ export function marketMembers(buyers: number, sellers: number, seed: number): Fl
         role: "Buyer agent",
         description: "Stands for one user who needs GPU hours. Pools its demand with other buyers and pays only its share of the winning bid.",
         fleet: true,
-        organization: "Quorum market simulation",
+        organization: "Yuki market simulation",
       },
       install: () => undefined,
       buys: [{ key: "main", goal: "[standing] Buy GPU hours in group-buy rounds", services: [GPU_SERVICE], budget: USD(200), perJobCap: USD(1), minRep: 0 }],
@@ -83,7 +83,7 @@ export function marketMembers(buyers: number, sellers: number, seed: number): Fl
   return out;
 }
 
-function installSeller(fleet: Fleet, agent: QuorumAgent, s: (typeof SELLERS)[number], seed: number): void {
+function installSeller(fleet: Fleet, agent: YukiAgent, s: (typeof SELLERS)[number], seed: number): void {
   let leases = 0;
   agent.sell<{ hours: number }, unknown>({
     id: GPU_SERVICE,
@@ -118,7 +118,7 @@ export class Market {
     this.rand = seeded(fleet.cfg.simSeed);
   }
 
-  get buyers(): QuorumAgent[] {
+  get buyers(): YukiAgent[] {
     return [...this.fleet.agents.entries()].filter(([slug]) => slug.startsWith("buyer-")).map(([, a]) => a);
   }
 

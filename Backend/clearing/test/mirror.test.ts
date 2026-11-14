@@ -8,7 +8,7 @@ import { installMirror, removeMirror, SupabaseMirror } from "../src/mirror.ts";
 const URL = "https://project.supabase.co";
 
 function fresh() {
-  return new Db(mkdtempSync(join(tmpdir(), "quorum-mirror-")));
+  return new Db(mkdtempSync(join(tmpdir(), "yuki-mirror-")));
 }
 
 function addAgent(db: Db, id: number, name = `Agent ${id}`) {
@@ -61,17 +61,17 @@ describe("Supabase mirror", () => {
     const db = fresh();
     addAgent(db, 1);
     addAgent(db, 2);
-    new SupabaseMirror(db, { url: URL, key: "sb_secret_x", deployment: "quorum-test", fetch: fakeSupabase().fetch });
+    new SupabaseMirror(db, { url: URL, key: "sb_secret_x", deployment: "yuki-test", fetch: fakeSupabase().fetch });
     const first = pending(db);
     expect(first).toBeGreaterThanOrEqual(2);
-    new SupabaseMirror(db, { url: URL, key: "sb_secret_x", deployment: "quorum-test", fetch: fakeSupabase().fetch });
+    new SupabaseMirror(db, { url: URL, key: "sb_secret_x", deployment: "yuki-test", fetch: fakeSupabase().fetch });
     expect(pending(db)).toBe(first);
   });
 
   it("upserts the current rows, tagged with the deployment, and empties the queue", async () => {
     const db = fresh();
     const api = fakeSupabase();
-    const m = new SupabaseMirror(db, { url: `${URL}/`, key: "sb_secret_x", deployment: "quorum-test", fetch: api.fetch });
+    const m = new SupabaseMirror(db, { url: `${URL}/`, key: "sb_secret_x", deployment: "yuki-test", fetch: api.fetch });
     addAgent(db, 7, "Lens");
     db.run("UPDATE agents SET name = 'Lens II' WHERE agent_id = 7");
     await m.flush();
@@ -83,14 +83,14 @@ describe("Supabase mirror", () => {
     expect(agents.headers.prefer).toContain("resolution=merge-duplicates");
     // two queued changes, one row: the latest state
     expect(agents.rows).toHaveLength(1);
-    expect(agents.rows[0]).toMatchObject({ deployment: "quorum-test", agent_id: 7, name: "Lens II" });
+    expect(agents.rows[0]).toMatchObject({ deployment: "yuki-test", agent_id: 7, name: "Lens II" });
     expect(m.status()).toMatchObject({ enabled: true, pending: 0, lastError: null });
   });
 
   it("sends the legacy service_role JWT as a bearer token too", async () => {
     const db = fresh();
     const api = fakeSupabase();
-    const m = new SupabaseMirror(db, { url: URL, key: "eyJhbGciOi.legacy.jwt", deployment: "quorum-test", fetch: api.fetch });
+    const m = new SupabaseMirror(db, { url: URL, key: "eyJhbGciOi.legacy.jwt", deployment: "yuki-test", fetch: api.fetch });
     addAgent(db, 4);
     await m.flush();
     const agents = api.calls.find((c) => c.url.includes("/rest/v1/agents?"))!;
@@ -101,7 +101,7 @@ describe("Supabase mirror", () => {
   it("keeps the queue when Supabase is down and catches up later", async () => {
     const db = fresh();
     const api = fakeSupabase(true);
-    const m = new SupabaseMirror(db, { url: URL, key: "sb_secret_x", deployment: "quorum-test", fetch: api.fetch });
+    const m = new SupabaseMirror(db, { url: URL, key: "sb_secret_x", deployment: "yuki-test", fetch: api.fetch });
     addAgent(db, 3);
     const before = pending(db);
     await m.flush();
@@ -117,7 +117,7 @@ describe("Supabase mirror", () => {
 
   it("removes its triggers and queue when switched off", () => {
     const db = fresh();
-    new SupabaseMirror(db, { url: URL, key: "sb_secret_x", deployment: "quorum-test", fetch: fakeSupabase().fetch });
+    new SupabaseMirror(db, { url: URL, key: "sb_secret_x", deployment: "yuki-test", fetch: fakeSupabase().fetch });
     removeMirror(db);
     addAgent(db, 9);
     expect(db.all("SELECT name FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'mirror_%'")).toEqual([]);

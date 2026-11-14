@@ -48,7 +48,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r typecheck
       - run: pnpm -r test
-      - run: pnpm --filter @quorum/web build
+      - run: pnpm --filter @yuki/web build
 
   chain:
     # the contracts and the services against a real NEAR node (near-sandbox)

@@ -1,9 +1,9 @@
 {
-  "name": "@quorum/clearing",
+  "name": "@yuki/clearing",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Quorum clearing service: sealed-bid rounds, IOU intake, epochs, netting, NEAR Intents settlement, disputes, reputation, live API.",
+  "description": "Yuki clearing service: sealed-bid rounds, IOU intake, epochs, netting, NEAR Intents settlement, disputes, reputation, live API.",
   "scripts": {
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
@@ -13,7 +13,7 @@
   "dependencies": {
     "@fastify/cors": "11.3.1",
     "@fastify/websocket": "11.3.4",
-    "@quorum/core": "workspace:*",
+    "@yuki/core": "workspace:*",
     "fastify": "5.12.7",
     "zod": "4.6.7"
   },

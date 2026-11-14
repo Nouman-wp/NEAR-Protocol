@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { AUTH_RECIPIENT, NearRpc, signInNetworks, loginMessage, messageText, nep413Hash, randomBytes, randomKeyPair, sha256Bytes, signHash, toBase64, type IntentMandate } from "@quorum/core";
+import { AUTH_RECIPIENT, NearRpc, signInNetworks, loginMessage, messageText, nep413Hash, randomBytes, randomKeyPair, sha256Bytes, signHash, toBase64, type IntentMandate } from "@yuki/core";
 import { API, FLEET, api } from "./api.ts";
 
 /**
@@ -33,9 +33,9 @@ interface State {
   walletNetwork: WalletNetwork;
 }
 
-const SESSION_KEY = "quorum-session";
-const NET_KEY = "quorum-wallet-network";
-const DEV_KEY = "quorum-dev-wallet";
+const SESSION_KEY = "yuki-session";
+const NET_KEY = "yuki-wallet-network";
+const DEV_KEY = "yuki-dev-wallet";
 const listeners = new Set<() => void>();
 
 const read = <T>(key: string): T | null => {

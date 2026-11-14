@@ -11,12 +11,14 @@ import type {
   RoundView,
   SettlementView,
   TransferView,
-} from "@quorum/core";
+} from "@yuki/core";
 
-export const API = (import.meta.env.VITE_QUORUM_API as string).replace(/\/+$/, "");
-export const FLEET = (import.meta.env.VITE_QUORUM_FLEET as string).replace(/\/+$/, "");
+/** A base URL from the build; "/" (the hosted build) means this page's own origin, which proxies the API. */
+const base = (v: string) => v.replace(/\/+$/, "") || location.origin;
+export const API = base(import.meta.env.VITE_YUKI_API as string);
+export const FLEET = base(import.meta.env.VITE_YUKI_FLEET as string);
 /** The live feed's own origin, for hosts that proxy REST but not WebSockets (Vercel). */
-const LIVE = ((import.meta.env.VITE_QUORUM_WS as string) || API.replace(/^http/, "ws")).replace(/\/+$/, "");
+const LIVE = ((import.meta.env.VITE_YUKI_WS as string) || API.replace(/^http/, "ws")).replace(/\/+$/, "");
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API}${path}`, {

@@ -41,7 +41,7 @@ export interface Deployment {
   contract: AccountId;
   /** NEP-141 settlement token */
   token: AccountId;
-  /** true for Quorum's own test USDC with an open faucet */
+  /** true for Yuki's own test USDC with an open faucet */
   mockToken: boolean;
   /** the verifier that executes settlement intents */
   intents: AccountId;

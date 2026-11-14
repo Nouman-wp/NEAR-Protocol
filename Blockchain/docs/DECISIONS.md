@@ -60,7 +60,7 @@ At finalisation the contract computes the settlement plan: walk debtors and cred
 `settle` checks each debtor's signed `transfer` intents and forwards the whole batch to `execute_intents`. It marks debtors settled only in the callback, and only if the verifier executed the batch.
 
 **Why:**
-- The money never passes through Quorum's contract: it moves inside the verifier, between the agents' own balances.
+- The money never passes through Yuki's contract: it moves inside the verifier, between the agents' own balances.
 - A batch is atomic, so either every listed debt is paid or none is.
 - The settlement nonce is derived from (contract, epoch, agent), so the verifier itself refuses to pay one debt twice.
 
@@ -68,7 +68,7 @@ At finalisation the contract computes the settlement plan: walk debtors and cred
 
 NEAR Intents is deployed on mainnet only, and this project has no mainnet budget. Local sandboxes and testnet therefore run `intents-lite`: the same `execute_intents` entry point, NEP-413 payloads, `nep141:` token ids, deposits by `ft_transfer_call` with the receiver in `msg`, public-key registration and nonce replay protection.
 
-**Why not mock it in the service?** Because then the settlement path would be fake. With intents-lite, the contract-to-verifier call and the batch semantics are real on chain. Moving to mainnet means setting `QUORUM_INTENTS_CONTRACT=intents.near` and a real token. The website and README say plainly which verifier a deployment uses.
+**Why not mock it in the service?** Because then the settlement path would be fake. With intents-lite, the contract-to-verifier call and the batch semantics are real on chain. Moving to mainnet means setting `YUKI_INTENTS_CONTRACT=intents.near` and a real token. The website and README say plainly which verifier a deployment uses.
 
 ## 10. Defaults are paid into the verifier
 

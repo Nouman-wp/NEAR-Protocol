@@ -305,7 +305,7 @@ export interface RoundView {
   closeTx: string | null;
 }
 
-/** A2A agent card (subset of the A2A spec) with Quorum's pricing extension. */
+/** A2A agent card (subset of the A2A spec) with Yuki's pricing extension. */
 export interface A2AAgentCard {
   protocolVersion: string;
   name: string;
@@ -317,16 +317,16 @@ export interface A2AAgentCard {
   capabilities: {
     streaming: boolean;
     pushNotifications: boolean;
-    extensions: { uri: string; description: string; required: boolean; params: QuorumPricingExtension }[];
+    extensions: { uri: string; description: string; required: boolean; params: YukiPricingExtension }[];
   };
   defaultInputModes: string[];
   defaultOutputModes: string[];
   skills: { id: string; name: string; description: string; tags: string[]; examples?: string[] }[];
 }
 
-export const QUORUM_PRICING_EXTENSION = "https://github.com/Nouman-wp/NEAR-Protocol/blob/main/docs/pricing-extension.md";
+export const YUKI_PRICING_EXTENSION = "https://github.com/Nouman-wp/NEAR-Protocol/blob/main/docs/pricing-extension.md";
 
-export interface QuorumPricingExtension {
+export interface YukiPricingExtension {
   agentId: string;
   account: AccountId;
   network: string;
@@ -338,7 +338,7 @@ export interface QuorumPricingExtension {
 
 /** The registration document an agent's on-chain `uri` points at. */
 export interface AgentRegistration {
-  type: "quorum-agent-registration-v1";
+  type: "yuki-agent-registration-v1";
   name: string;
   description: string;
   image: string;

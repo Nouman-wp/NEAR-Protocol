@@ -1,4 +1,4 @@
-import { NETWORKS, NearAccount, implicitAccountId, NearError, NearRpc, TGAS, intentsTokenId, type AccountId, type Deployment, type Hex, type NetworkKey, type PublicKey, type TxResult } from "@quorum/core";
+import { NETWORKS, NearAccount, implicitAccountId, NearError, NearRpc, TGAS, intentsTokenId, type AccountId, type Deployment, type Hex, type NetworkKey, type PublicKey, type TxResult } from "@yuki/core";
 import { log } from "./bus.ts";
 
 export interface VaultAccount {

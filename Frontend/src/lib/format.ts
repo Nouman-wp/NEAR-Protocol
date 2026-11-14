@@ -1,4 +1,4 @@
-import { formatUnits } from "@quorum/core";
+import { formatUnits } from "@yuki/core";
 
 /**
  * Money in base units, rounded for reading: "$12.30", "$0.88", "$0.00144", "$0".

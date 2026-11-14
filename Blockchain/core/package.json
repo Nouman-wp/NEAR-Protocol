@@ -1,9 +1,9 @@
 {
-  "name": "@quorum/core",
+  "name": "@yuki/core",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Quorum protocol primitives: NEP-413 messages, netting, settlement plans, sealed bids, reputation, network config.",
+  "description": "Yuki protocol primitives: NEP-413 messages, netting, settlement plans, sealed bids, reputation, network config.",
   "exports": {
     ".": "./src/index.ts"
   },

@@ -134,7 +134,7 @@ export function signSettlement(order: SettlementOrder, secretKey: string, public
       intent: "transfer" as const,
       receiver_id: t.receiver,
       tokens: { [tokenId]: t.amount },
-      memo: `quorum epoch ${order.epoch}`,
+      memo: `yuki epoch ${order.epoch}`,
     })),
     // long enough to outlive a slow epoch, short enough that a stale payload dies
     deadline: Math.max(now, order.deadline ?? now) + 6 * 3_600_000,

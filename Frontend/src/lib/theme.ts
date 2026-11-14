@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 
 /** Light is the default; the choice is remembered per browser. index.html applies it before first paint. */
 export type Theme = "light" | "dark";
-const KEY = "quorum-theme";
+const KEY = "yuki-theme";
 const listeners = new Set<() => void>();
 
 export function currentTheme(): Theme {

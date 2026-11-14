@@ -19,7 +19,7 @@ export function translate(text: string, from: string, to: string): Promise<Trans
   const key = hash32(`${from}>${to}:${text}`);
   const hit = cache.get(key);
   if (hit) return hit;
-  const p = (Date.now() < offlineUntil || process.env.QUORUM_OFFLINE === "1" ? Promise.reject(new Error("offline")) : viaMyMemory(text, from, to)).catch(() => {
+  const p = (Date.now() < offlineUntil || process.env.YUKI_OFFLINE === "1" ? Promise.reject(new Error("offline")) : viaMyMemory(text, from, to)).catch(() => {
     offlineUntil = Date.now() + 120_000;
     return { translation: to === "hi" ? glossaryHindi(text) : text, engine: "offline-glossary" as const };
   });

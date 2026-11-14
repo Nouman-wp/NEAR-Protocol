@@ -7,18 +7,18 @@ import type {
   Hex,
   IntentView,
   JobView,
-  QuorumDomain,
+  YukiDomain,
   RoundView,
   SettlementOrder,
   SettlementView,
   SignedIntent,
   VerifierKind,
-} from "@quorum/core";
+} from "@yuki/core";
 
 export interface ClearingConfig {
   network: { key: string; name: string; explorer: string | null; rpc: string };
   deployment: Deployment;
-  domain: QuorumDomain;
+  domain: YukiDomain;
   epochs: { intakeSeconds: number; challengeSeconds: number; disputeWindowSeconds: number; arbitrationTimeoutSeconds: number; settlementWindowSeconds: number };
   intents: { account: string; kind: VerifierKind; token: string; note: string };
   clearer: string;
@@ -28,7 +28,7 @@ export type SubmitResult =
   | { ok: true; jobId: string; iouDigest: Hex; epoch: number; disputeWindowSeconds: number }
   | { ok: false; reason: string; currentEpoch?: number };
 
-export class QuorumApiError extends Error {
+export class YukiApiError extends Error {
   readonly status: number;
   constructor(message: string, status: number) {
     super(message);
@@ -59,7 +59,7 @@ export class ClearingClient {
     });
     const text = await res.text();
     const json = text ? JSON.parse(text) : null;
-    if (!res.ok) throw new QuorumApiError((json as { error?: string })?.error ?? `HTTP ${res.status}`, res.status);
+    if (!res.ok) throw new YukiApiError((json as { error?: string })?.error ?? `HTTP ${res.status}`, res.status);
     return json as T;
   }
 

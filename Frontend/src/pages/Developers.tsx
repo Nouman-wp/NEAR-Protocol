@@ -2,10 +2,10 @@ import { API, FLEET, useApi, useLive } from "../lib/api.ts";
 import { Account, Arrow, Copy, PageHead, Tag } from "../components/ui.tsx";
 import { REPO } from "../components/chrome.tsx";
 
-const SDK = `import { QuorumAgent, serveAgents } from "@quorum/sdk";
+const SDK = `import { YukiAgent, serveAgents } from "@yuki/sdk";
 
 // one NEAR account, one key: the agent id is looked up from the coordinator contract
-const agent = await QuorumAgent.connect({ accountId: "echo.you.testnet", secretKey, clearingUrl });
+const agent = await YukiAgent.connect({ accountId: "echo.you.testnet", secretKey, clearingUrl });
 
 // sell: a priced service with a handler; quotes are signed (NEP-413) and binding
 agent
@@ -69,7 +69,7 @@ export default function Developers() {
   const live = useLive();
   const d = live.stats?.deployment;
   const { data: health } = useApi<{ ok: boolean; chain: { healthy: boolean; lastBlock: string; clearerBalance: string | null; lastError: string | null }; intents: { healthy: boolean; note: string; kind: string }; clearing: { uptimeSeconds: number; stuckEpochs: unknown[] }; fleet: { reachable?: boolean; ready?: boolean; agents?: unknown[] }; mirror: { enabled?: boolean } }>("/v1/health", 6_000);
-  const mcp = JSON.stringify({ mcpServers: { quorum: { command: "npx", args: ["tsx", "/path/to/NEAR-Protocol/Blockchain/mcp/src/index.ts"], env: { QUORUM_API: API, QUORUM_FLEET: FLEET, QUORUM_WEB: location.origin } } } }, null, 2);
+  const mcp = JSON.stringify({ mcpServers: { yuki: { command: "npx", args: ["tsx", "/path/to/NEAR-Protocol/Blockchain/mcp/src/index.ts"], env: { YUKI_API: API, YUKI_FLEET: FLEET, YUKI_WEB: location.origin } } } }, null, 2);
   return (
     <main className="page">
       <div className="wrap">
@@ -182,7 +182,7 @@ export default function Developers() {
               <p className="muted" style={{ marginBottom: 16, fontSize: 15 }}>
                 One command starts a local NEAR node, deploys the contracts, gives 20 buyers and 5 sellers their own accounts and runs a group-buying market with scripted strategies (no model calls). It checks itself against the chain and exits 0 only if everything matched.
               </p>
-              <CodeBlock text={`git clone ${REPO}.git quorum\ncd quorum\npnpm install\npnpm sim`} />
+              <CodeBlock text={`git clone ${REPO}.git yuki\ncd yuki\npnpm install\npnpm sim`} />
             </div>
           </div>
           <div className="stack">
@@ -191,7 +191,7 @@ export default function Developers() {
                 Contracts
               </h2>
               <dl className="kv">
-                <dt>quorum</dt>
+                <dt>yuki</dt>
                 <dd>Registry, sealed-bid rounds, IOU verification and netting, settlement checks, collateral, reputation.</dd>
                 <dt>intents-lite</dt>
                 <dd>A stand-in for intents.near where it does not exist: same execute_intents, same NEP-413 payloads.</dd>

@@ -1,18 +1,18 @@
-// Deploy Quorum's contracts under one root account. Safe to run again: accounts that
+// Deploy Yuki's contracts under one root account. Safe to run again: accounts that
 // exist are kept, and a contract is redeployed only when its code changed.
 //
 //   tsx Blockchain/scripts/deploy.ts local      near-sandbox on 127.0.0.1:3030
-//   tsx Blockchain/scripts/deploy.ts testnet    needs QUORUM_ROOT, QUORUM_ROOT_KEY and QUORUM_SEED in .env.testnet
+//   tsx Blockchain/scripts/deploy.ts testnet    needs YUKI_ROOT, YUKI_ROOT_KEY and YUKI_SEED in .env.testnet
 //
 // Layout under the root account R:
 //   clearing.R   the coordinator contract
 //   usdc.R       test USDC (skipped when SETTLEMENT_TOKEN names a real token)
-//   intents.R    intents-lite, a stand-in for intents.near (skipped when QUORUM_INTENTS_CONTRACT is set)
+//   intents.R    intents-lite, a stand-in for intents.near (skipped when YUKI_INTENTS_CONTRACT is set)
 //   clearer.R    the clearing service's account
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { NEAR_INTENTS_ACCOUNT, NearAccount, TGAS, bytesToHex, sha256Bytes, toBase58, type Deployment } from "@quorum/core";
+import { NEAR_INTENTS_ACCOUNT, NearAccount, TGAS, bytesToHex, sha256Bytes, toBase58, type Deployment } from "@yuki/core";
 import { ROOT, useNetworkEnv } from "./lib.mjs";
 import { SANDBOX_ROOT, keyFor, near, net, readDeployment, rootAccount, subAccount, writeDeployment, type Net } from "./net.ts";
 
@@ -63,9 +63,9 @@ export async function deploy(network = "local"): Promise<Deployment> {
   // storage costs about 1 NEAR per 100 kB of contract code, plus room for state
   const fund = (localAmount: number, publicAmount: number) => near(local ? localAmount : publicAmount);
   const realToken = n.env.SETTLEMENT_TOKEN || "";
-  const realIntents = n.env.QUORUM_INTENTS_CONTRACT || "";
+  const realIntents = n.env.YUKI_INTENTS_CONTRACT || "";
   if (n.key === "mainnet" && (!realToken || !realIntents)) {
-    throw new Error("on mainnet set SETTLEMENT_TOKEN (a real NEP-141 token) and QUORUM_INTENTS_CONTRACT=intents.near: the test token and intents-lite are for sandboxes and testnet only");
+    throw new Error("on mainnet set SETTLEMENT_TOKEN (a real NEP-141 token) and YUKI_INTENTS_CONTRACT=intents.near: the test token and intents-lite are for sandboxes and testnet only");
   }
 
   const clearer = await ensureSub(n, root, "clearer", fund(50, 1.2));

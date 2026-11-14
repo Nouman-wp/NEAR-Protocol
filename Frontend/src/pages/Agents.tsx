@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
-import type { AgentSummary, DisputeView, IntentView, JobView, PositionView, RoundView, SettlementView, TransferView } from "@quorum/core";
+import type { AgentSummary, DisputeView, IntentView, JobView, PositionView, RoundView, SettlementView, TransferView } from "@yuki/core";
 import { API, useApi, useLive } from "../lib/api.ts";
 import { ago, plural, serviceName, standalone, trust, usd } from "../lib/format.ts";
 import { NearAccount } from "../components/Near.tsx";

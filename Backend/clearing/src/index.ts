@@ -1,4 +1,4 @@
-import type { QuorumDomain } from "@quorum/core";
+import type { YukiDomain } from "@yuki/core";
 import { ledgerName, loadConfig } from "./config.ts";
 import { Db } from "./db.ts";
 import { Chain } from "./chain.ts";
@@ -25,7 +25,7 @@ async function main(): Promise<void> {
 
   // one database per deployment, so a redeploy never mixes ledgers
   const db = new Db(cfg.DATA_DIR, `${ledgerName(cfg)}.sqlite`);
-  const domain: QuorumDomain = { network: cfg.network, contract: cfg.deployment.contract };
+  const domain: YukiDomain = { network: cfg.network, contract: cfg.deployment.contract };
 
   const registry = new Registry(db, chain);
   if (cfg.PUBLIC_FLEET_URL && cfg.PUBLIC_FLEET_URL !== cfg.FLEET_CONTROL_URL) {
@@ -113,7 +113,7 @@ async function main(): Promise<void> {
   log(
     "info",
     "clearing",
-    `Quorum clearing service on :${cfg.PORT} | ${chain.networkName} | coordinator ${cfg.deployment.contract} | verifier ${cfg.deployment.intents} (${cfg.deployment.intentsKind})${intentsHealthy ? "" : " (unreachable)"} | mirror ${mirror ? cfg.SUPABASE_URL : "off"}`,
+    `Yuki clearing service on :${cfg.PORT} | ${chain.networkName} | coordinator ${cfg.deployment.contract} | verifier ${cfg.deployment.intents} (${cfg.deployment.intentsKind})${intentsHealthy ? "" : " (unreachable)"} | mirror ${mirror ? cfg.SUPABASE_URL : "off"}`,
   );
 
   const shutdown = async () => {

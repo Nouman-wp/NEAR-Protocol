@@ -6,7 +6,7 @@ import { Db } from "../src/db.ts";
 import { ReputationBook } from "../src/reputation.ts";
 
 function ledger() {
-  const db = new Db(mkdtempSync(join(tmpdir(), "quorum-rep-")));
+  const db = new Db(mkdtempSync(join(tmpdir(), "yuki-rep-")));
   const epoch = (id: number) => db.run("INSERT INTO epochs(id, phase, starts_at, intake_ends_at, challenge_ends_at) VALUES (?,?,?,?,?)", id, "sealed", 0, 0, 0);
   const job = (id: string, seller: number, epochId: number) =>
     db.run(

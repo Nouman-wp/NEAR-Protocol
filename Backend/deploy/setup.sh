@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
 # Prepare a fresh Ubuntu server (Oracle Cloud Always Free, AWS EC2, Google Cloud e2-micro, any VPS) to run
-# the Quorum backend: Node 24, the repository in /opt/quorum, a systemd unit per network and
+# the Yuki backend: Node 24, the repository in /opt/yuki, a systemd unit per network and
 # Caddy for HTTPS. Safe to run again (it also pulls the latest code).
 #
-#   sudo bash Backend/deploy/setup.sh <domain>          e.g. quorum-api.example.org
+#   sudo bash Backend/deploy/setup.sh <domain>          e.g. yuki-api.example.org
 #
-# On a server that already runs other sites, set QUORUM_EDGE_PORT to a free port (and EDGE_PORT,
-# PORT, FLEET_PORT in the env file to match). Caddy keeps every site it already serves: Quorum's
+# On a server that already runs other sites, set YUKI_EDGE_PORT to a free port (and EDGE_PORT,
+# PORT, FLEET_PORT in the env file to match). Caddy keeps every site it already serves: Yuki's
 # is added as an import, never by replacing the Caddyfile.
 #
 # Then copy the env file(s) and the ledger over, and start the backend (see docs/DEPLOY.md).
 set -euo pipefail
 
 DOMAIN="${1:-}"
-REPO="${QUORUM_REPO:-https://github.com/Nouman-wp/NEAR-Protocol.git}"
-DIR=/opt/quorum
-EDGE_PORT="${QUORUM_EDGE_PORT:-8790}"
+REPO="${YUKI_REPO:-https://github.com/Nouman-wp/NEAR-Protocol.git}"
+DIR=/opt/yuki
+EDGE_PORT="${YUKI_EDGE_PORT:-8790}"
 [ "$(id -u)" -eq 0 ] || { echo "run with sudo"; exit 1; }
 
 echo "── packages"
@@ -44,24 +44,24 @@ if [ "$(awk '/MemTotal/ {print $2}' /proc/meminfo)" -lt 2000000 ] && ! swapon --
 fi
 
 echo "── code in $DIR"
-id quorum >/dev/null 2>&1 || useradd --system --create-home --home-dir /home/quorum --shell /usr/sbin/nologin quorum
+id yuki >/dev/null 2>&1 || useradd --system --create-home --home-dir /home/yuki --shell /usr/sbin/nologin yuki
 if [ -d "$DIR/.git" ]; then
-  sudo -u quorum git -C "$DIR" pull --ff-only
+  sudo -u yuki git -C "$DIR" pull --ff-only
 else
   git clone "$REPO" "$DIR"
 fi
 mkdir -p "$DIR/.data"
-chown -R quorum:quorum "$DIR"
-sudo -u quorum -H bash -c "cd $DIR && corepack pnpm install --frozen-lockfile"
+chown -R yuki:yuki "$DIR"
+sudo -u yuki -H bash -c "cd $DIR && corepack pnpm install --frozen-lockfile"
 for f in "$DIR"/.env.testnet; do
   if [ -f "$f" ]; then
-    chown quorum:quorum "$f"
+    chown yuki:yuki "$f"
     chmod 600 "$f"
   fi
 done
 
 echo "── systemd"
-install -m 644 "$DIR/Backend/deploy/quorum@.service" /etc/systemd/system/quorum@.service
+install -m 644 "$DIR/Backend/deploy/yuki@.service" /etc/systemd/system/yuki@.service
 systemctl daemon-reload
 
 echo "── firewall"
@@ -73,10 +73,10 @@ fi
 
 if [ -n "$DOMAIN" ]; then
   echo "── Caddy for https://$DOMAIN -> 127.0.0.1:$EDGE_PORT"
-  sed -e "s/QUORUM_DOMAIN/$DOMAIN/" -e "s/127.0.0.1:8790/127.0.0.1:$EDGE_PORT/" "$DIR/Backend/deploy/Caddyfile" > /etc/caddy/quorum.caddy
+  sed -e "s/YUKI_DOMAIN/$DOMAIN/" -e "s/127.0.0.1:8790/127.0.0.1:$EDGE_PORT/" "$DIR/Backend/deploy/Caddyfile" > /etc/caddy/yuki.caddy
   touch /etc/caddy/Caddyfile
-  grep -qxF 'import /etc/caddy/quorum.caddy' /etc/caddy/Caddyfile || printf '
-import /etc/caddy/quorum.caddy
+  grep -qxF 'import /etc/caddy/yuki.caddy' /etc/caddy/Caddyfile || printf '
+import /etc/caddy/yuki.caddy
 ' >> /etc/caddy/Caddyfile
   caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
   systemctl reload caddy || systemctl restart caddy
@@ -89,8 +89,8 @@ Done. Next:
        scp .env.testnet <user>@<server>:/tmp/  &&  ssh <user>@<server> 'sudo mv /tmp/.env.testnet $DIR/'
      then run this script again to lock their permissions.
   2. Bring the ledger: stop the backend on the PC and copy .data/quorum-testnet-*.sqlite*
-     to $DIR/.data/ (or, with the Supabase mirror, run: sudo -u quorum node $DIR/Blockchain/scripts/db-restore.mjs testnet).
-  3. Start it:      sudo systemctl enable --now quorum@testnet
-     Logs:          journalctl -u quorum@testnet -f
+     to $DIR/.data/ (or, with the Supabase mirror, run: sudo -u yuki node $DIR/Blockchain/scripts/db-restore.mjs testnet).
+  3. Start it:      sudo systemctl enable --now yuki@testnet
+     Logs:          journalctl -u yuki@testnet -f
   4. On your PC:    node Blockchain/scripts/publish-web.mjs testnet --backend https://${DOMAIN:-<domain>}
 EOF

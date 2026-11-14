@@ -1,6 +1,6 @@
 // End-to-end smoke test: spawn the MCP server over stdio like Claude Desktop would, then
 // list tools, find an agent, hire it, tender a job in a sealed-bid round and check the balance.
-// Run with the stack up (`pnpm dev`): pnpm --filter @quorum/mcp smoke
+// Run with the stack up (`pnpm dev`): pnpm --filter @yuki/mcp smoke
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { fileURLToPath } from "node:url";
@@ -13,7 +13,7 @@ const transport = new StdioClientTransport({
   env: { ...process.env } as Record<string, string>,
   stderr: "inherit",
 });
-const client = new Client({ name: "quorum-smoke", version: "0.0.1" });
+const client = new Client({ name: "yuki-smoke", version: "0.0.1" });
 await client.connect(transport);
 
 const tools = await client.listTools();

@@ -1,17 +1,17 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import type { QuorumAgent } from "./agent.ts";
+import type { YukiAgent } from "./agent.ts";
 
 /**
  * Serve one or more agents over HTTP. Each agent is mounted at `/agents/<slug>`:
  *
- *   GET  /agents/<slug>/.well-known/agent-card.json   A2A agent card (+ Quorum pricing)
+ *   GET  /agents/<slug>/.well-known/agent-card.json   A2A agent card (+ Yuki pricing)
  *   GET  /agents/<slug>/registration.json             the file the on-chain uri points at
  *   POST /agents/<slug>/a2a                           A2A JSON-RPC (message/send)
  *
  * `extra` handles any other path (the fleet uses it for its control API).
  */
 export function serveAgents(
-  agents: QuorumAgent[],
+  agents: YukiAgent[],
   opts: { port: number; host?: string; extra?: (req: IncomingMessage, res: ServerResponse, body: unknown) => Promise<boolean> },
 ): Promise<Server> {
   const bySlug = new Map(agents.map((a) => [a.profile!.slug, a]));

@@ -6,9 +6,9 @@ import { spawn } from "node:child_process";
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
-/** The env file in use: QUORUM_ENV_FILE (e.g. .env.testnet) or .env. */
+/** The env file in use: YUKI_ENV_FILE (e.g. .env.testnet) or .env. */
 export function envPath() {
-  return join(ROOT, process.env.QUORUM_ENV_FILE ?? ".env");
+  return join(ROOT, process.env.YUKI_ENV_FILE ?? ".env");
 }
 
 export function loadEnv() {
@@ -22,11 +22,11 @@ export function loadEnv() {
   return env;
 }
 
-/** `testnet` -> .env.testnet, `mainnet` -> .env.mainnet; sets QUORUM_ENV_FILE for child processes too. */
+/** `testnet` -> .env.testnet, `mainnet` -> .env.mainnet; sets YUKI_ENV_FILE for child processes too. */
 export function useNetworkEnv(name) {
   if (!name || name === "local") return;
   const file = name.startsWith(".env") ? name : `.env.${name}`;
-  process.env.QUORUM_ENV_FILE = file;
+  process.env.YUKI_ENV_FILE = file;
   return file;
 }
 

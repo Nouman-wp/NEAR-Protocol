@@ -1,8 +1,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { ONE_NEAR, formatUnits, randomKeyPair, type AgentSummary as Summary } from "@quorum/core";
-import { ClearingClient, QuorumAgent, Operator, RoundVoidError, end, serveAgents, type AgentProfile, type ChainRound, type ClearingConfig, type HireResult } from "@quorum/sdk";
+import { ONE_NEAR, formatUnits, randomKeyPair, type AgentSummary as Summary } from "@yuki/core";
+import { ClearingClient, YukiAgent, Operator, RoundVoidError, end, serveAgents, type AgentProfile, type ChainRound, type ClearingConfig, type HireResult } from "@yuki/sdk";
 import { agentKey, type FleetConfig } from "./config.ts";
 import { installArbiter } from "./agents/arbiter.ts";
 import { installOrchestrator, runBrief, TOPICS, type BriefRecord } from "./agents/orchestrator.ts";
@@ -18,7 +18,7 @@ export interface FleetMember {
   slug: string;
   group: "research" | "market" | "studios";
   profile: Omit<AgentProfile, "baseUrl" | "slug">;
-  install: (fleet: Fleet, agent: QuorumAgent) => void;
+  install: (fleet: Fleet, agent: YukiAgent) => void;
   /** standing intents: what this agent may buy on its own, signed by its operator */
   buys: { key: string; goal: string; services: string[]; budget: bigint; perJobCap: bigint; minRep: number }[];
 }
@@ -112,7 +112,7 @@ export interface FleetState {
  */
 export class Fleet {
   readonly cfg: FleetConfig;
-  readonly agents = new Map<string, QuorumAgent>();
+  readonly agents = new Map<string, YukiAgent>();
   readonly standing = new Map<string, string>();
   readonly briefs: BriefRecord[] = [];
   readonly studioJobs: StudioJob[] = [];
@@ -181,7 +181,7 @@ export class Fleet {
     // 1. agents with keys and cards, served before registration so the cards resolve
     for (const m of this.members) {
       const key = agentKey(this.cfg.seed, m.slug);
-      const agent = await QuorumAgent.connect({ accountId: `${m.slug}.${root}`, secretKey: key.secretKey, clearingUrl: this.cfg.clearingUrl, rpcUrl: this.cfg.rpcUrl, config: this.clearing, agentId: 0n });
+      const agent = await YukiAgent.connect({ accountId: `${m.slug}.${root}`, secretKey: key.secretKey, clearingUrl: this.cfg.clearingUrl, rpcUrl: this.cfg.rpcUrl, config: this.clearing, agentId: 0n });
       agent.setProfile({ ...m.profile, slug: m.slug, baseUrl: `${this.cfg.publicUrl}/agents/${m.slug}` });
       // fellow agents are served from this process: no round trip through the public URL
       agent.routes = [[`${this.cfg.publicUrl}/agents/`, `http://127.0.0.1:${this.cfg.port}/agents/`]];
@@ -303,7 +303,7 @@ export class Fleet {
   }
 
   /** Collateral, spending money inside the verifier and gas for a user's agent, paid by the operator. */
-  async fundUserAgent(agent: QuorumAgent, collateral: bigint, spending: bigint): Promise<void> {
+  async fundUserAgent(agent: YukiAgent, collateral: bigint, spending: bigint): Promise<void> {
     await this.withMoneyLock(async () => {
       await this.ensureTokens(collateral + spending);
       await this.operator.topUpCollateral(agent.agentId, collateral);
@@ -683,7 +683,7 @@ export class Fleet {
     const name = `guest-${key.publicKey.slice(8, 16).toLowerCase().replace(/[^a-z0-9]/g, "0")}`;
     const account = await this.operator.ensureSubAccount(name, key.publicKey, this.cfg.nearTarget);
     this.guests.set(name, { name, account });
-    const agent = await QuorumAgent.connect({ accountId: account, secretKey: key.secretKey, clearingUrl: this.cfg.clearingUrl, rpcUrl: this.cfg.rpcUrl, config: this.clearing, agentId: 0n });
+    const agent = await YukiAgent.connect({ accountId: account, secretKey: key.secretKey, clearingUrl: this.cfg.clearingUrl, rpcUrl: this.cfg.rpcUrl, config: this.clearing, agentId: 0n });
     const agentId = await agent.register(`${this.cfg.publicUrl}/guests/${name}/registration.json`, this.operator.accountId);
     await this.ensureTokens(USD(5));
     await this.operator.deposit(agentId, USD(1));
@@ -714,14 +714,14 @@ export class Fleet {
     if (p.startsWith("/guests/") && p.endsWith("/registration.json")) {
       const name = p.split("/")[2] ?? "";
       end(res, 200, {
-        type: "quorum-agent-registration-v1",
+        type: "yuki-agent-registration-v1",
         name: `Guest ${name.slice(6)}`,
         description: "A guest buyer agent onboarded from an MCP client.",
         image: "",
         endpoints: [{ name: "nearAccount", endpoint: `near:${this.cfg.network}:${name}.${this.clearing.deployment.root}` }],
         registrations: [],
         supportedTrust: ["reputation"],
-        quorum: { slug: name, role: "Guest buyer" },
+        yuki: { slug: name, role: "Guest buyer" },
       });
       return true;
     }
@@ -910,7 +910,7 @@ function guestIntent(buyer: bigint) {
   const now = BigInt(Math.floor(Date.now() / 1000));
   return {
     buyer,
-    goal: "Guest session: hire Quorum agents from an MCP client",
+    goal: "Guest session: hire Yuki agents from an MCP client",
     budget: USD(1),
     perJobCap: USD(0.06),
     minSellerReputation: 600,

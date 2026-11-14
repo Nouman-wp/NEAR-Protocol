@@ -1,12 +1,12 @@
 import { bytesToHex, canonicalJson, nep413Hash, signHash, verifyHash, type AccountId, type Hex, type PublicKey, type Signature } from "./crypto.ts";
 
 /**
- * Every Quorum message is canonical JSON signed under NEP-413, with the coordinator
+ * Every Yuki message is canonical JSON signed under NEP-413, with the coordinator
  * contract's account as the recipient. A signature made for one deployment is therefore
  * useless on any other. The IOU message is byte for byte what the contract rebuilds and
  * verifies on chain (`iou_message` in Blockchain/contracts/quorum/src/epochs.rs).
  */
-export interface QuorumDomain {
+export interface YukiDomain {
   /** "local", "testnet" or "mainnet" */
   network: string;
   /** The coordinator contract. It is the NEP-413 recipient of every message. */
@@ -112,22 +112,22 @@ export function messageText<K extends MessageKind>(kind: K, message: MessageOf[K
 }
 
 /** The NEP-413 hash of a message: what the signer signs and what identifies the message. */
-export function messageDigest<K extends MessageKind>(domain: QuorumDomain, kind: K, message: MessageOf[K]): Hex {
+export function messageDigest<K extends MessageKind>(domain: YukiDomain, kind: K, message: MessageOf[K]): Hex {
   return bytesToHex(nep413Hash(messageText(kind, message), domain.contract));
 }
 
-export function signMessage<K extends MessageKind>(domain: QuorumDomain, kind: K, message: MessageOf[K], secretKey: string): Signature {
+export function signMessage<K extends MessageKind>(domain: YukiDomain, kind: K, message: MessageOf[K], secretKey: string): Signature {
   return signHash(messageDigest(domain, kind, message), secretKey);
 }
 
-export function verifyMessage<K extends MessageKind>(domain: QuorumDomain, kind: K, message: MessageOf[K], signature: Signature, publicKey: PublicKey): boolean {
+export function verifyMessage<K extends MessageKind>(domain: YukiDomain, kind: K, message: MessageOf[K], signature: Signature, publicKey: PublicKey): boolean {
   return verifyHash(messageDigest(domain, kind, message), signature, publicKey);
 }
 
-export const iouDigest = (d: QuorumDomain, m: IOU): Hex => messageDigest(d, "IOU", m);
-export const quoteDigest = (d: QuorumDomain, m: Quote): Hex => messageDigest(d, "Quote", m);
-export const deliveryDigest = (d: QuorumDomain, m: Delivery): Hex => messageDigest(d, "Delivery", m);
-export const intentDigest = (d: QuorumDomain, m: IntentMandate): Hex => messageDigest(d, "IntentMandate", m);
-export const revocationDigest = (d: QuorumDomain, m: IntentRevocation): Hex => messageDigest(d, "IntentRevocation", m);
-export const disputeDigest = (d: QuorumDomain, m: Dispute): Hex => messageDigest(d, "Dispute", m);
-export const verdictDigest = (d: QuorumDomain, m: Verdict): Hex => messageDigest(d, "Verdict", m);
+export const iouDigest = (d: YukiDomain, m: IOU): Hex => messageDigest(d, "IOU", m);
+export const quoteDigest = (d: YukiDomain, m: Quote): Hex => messageDigest(d, "Quote", m);
+export const deliveryDigest = (d: YukiDomain, m: Delivery): Hex => messageDigest(d, "Delivery", m);
+export const intentDigest = (d: YukiDomain, m: IntentMandate): Hex => messageDigest(d, "IntentMandate", m);
+export const revocationDigest = (d: YukiDomain, m: IntentRevocation): Hex => messageDigest(d, "IntentRevocation", m);
+export const disputeDigest = (d: YukiDomain, m: Dispute): Hex => messageDigest(d, "Dispute", m);
+export const verdictDigest = (d: YukiDomain, m: Verdict): Hex => messageDigest(d, "Verdict", m);

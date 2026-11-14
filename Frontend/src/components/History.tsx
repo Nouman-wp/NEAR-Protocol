@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import type { AgentSummary, JobView, SettlementView, TransferView } from "@quorum/core";
+import type { AgentSummary, JobView, SettlementView, TransferView } from "@yuki/core";
 import { usd } from "../lib/format.ts";
 import { AgentChip, Empty, Tag, Tx } from "./ui.tsx";
 

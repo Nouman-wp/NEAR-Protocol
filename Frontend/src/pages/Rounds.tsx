@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
-import { clearRound, type JobView, type RoundView } from "@quorum/core";
+import { clearRound, type JobView, type RoundView } from "@yuki/core";
 import { agentName, useApi, useLive } from "../lib/api.ts";
 import { pct, plural, serviceName, usd, when } from "../lib/format.ts";
 import { OnNear } from "../components/Near.tsx";

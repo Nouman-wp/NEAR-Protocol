@@ -15,7 +15,7 @@ const env: Record<string, string> = {
   EPOCH_INTAKE_SECONDS: "45",
   EPOCH_CHALLENGE_SECONDS: "12",
   DISPUTE_WINDOW_SECONDS: "8",
-  ADMIN_TOKEN: "quorum-admin",
+  ADMIN_TOKEN: "yuki-admin",
   ...fileEnv,
 };
 
@@ -36,11 +36,11 @@ async function main() {
   console.log(
     [
       "",
-      "  Quorum is starting. The swarm needs about a minute to create and fund its accounts.",
+      "  Yuki is starting. The swarm needs about a minute to create and fund its accounts.",
       "  Website   http://localhost:5173",
       `  API       ${stack.api}/v1/stats`,
       `  Swarm     ${stack.fleet}/control/status`,
-      "  Scenarios open the Live floor and use the scenario runner (admin token: quorum-admin)",
+      "  Scenarios open the Live floor and use the scenario runner (admin token: yuki-admin)",
       "  Ctrl+C to stop.",
       "",
     ].join("\n"),

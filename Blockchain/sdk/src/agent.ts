@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import {
   NearAccount,
   NearRpc,
-  QUORUM_PRICING_EXTENSION,
+  YUKI_PRICING_EXTENSION,
   TGAS,
   bidCommitment,
   bytesToHex,
@@ -30,14 +30,14 @@ import {
   type MessageOf,
   type Pricing,
   type PublicKey,
-  type QuorumDomain,
+  type YukiDomain,
   type Quote,
   type RoundKind,
   type RoundView,
   type ServiceListing,
   type Signature,
   type TxResult,
-} from "@quorum/core";
+} from "@yuki/core";
 import { ClearingClient, type ClearingConfig } from "./client.ts";
 
 export interface JobContext {
@@ -45,7 +45,7 @@ export interface JobContext {
   buyer: string;
   service: string;
   spec: JobSpec;
-  agent: QuorumAgent;
+  agent: YukiAgent;
 }
 
 export interface ServiceDef<I = unknown, O = unknown> {
@@ -164,16 +164,16 @@ const strs = <T extends object>(o: T): Str<T> =>
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
- * A Quorum agent: one NEAR account, one signing key, one on-chain identity, any number of
+ * A Yuki agent: one NEAR account, one signing key, one on-chain identity, any number of
  * services sold, and the ability to hire other agents. Money moves by signed IOUs cleared
  * through the coordinator contract, prices are found in sealed-bid rounds the agent joins
  * from its own account, and net debts settle as NEAR Intents transfers it signs itself.
  */
-export class QuorumAgent {
+export class YukiAgent {
   readonly near: NearAccount;
   readonly client: ClearingClient;
   readonly cfg: ClearingConfig;
-  readonly domain: QuorumDomain;
+  readonly domain: YukiDomain;
   agentId: bigint;
   profile: AgentProfile | null = null;
   private services = new Map<string, ServiceDef<never, unknown>>();
@@ -197,11 +197,11 @@ export class QuorumAgent {
   }
 
   /** Connect to a clearing service. The agent id is looked up from the coordinator contract. */
-  static async connect(opts: { accountId: AccountId; secretKey: string; clearingUrl: string; rpcUrl?: string; agentId?: bigint; config?: ClearingConfig }): Promise<QuorumAgent> {
+  static async connect(opts: { accountId: AccountId; secretKey: string; clearingUrl: string; rpcUrl?: string; agentId?: bigint; config?: ClearingConfig }): Promise<YukiAgent> {
     const client = new ClearingClient(opts.clearingUrl);
     const cfg = opts.config ?? (await client.config());
     const near = new NearAccount(new NearRpc(opts.rpcUrl ?? cfg.network.rpc), opts.accountId, opts.secretKey);
-    const agent = new QuorumAgent({ near, client, cfg, agentId: opts.agentId ?? 0n });
+    const agent = new YukiAgent({ near, client, cfg, agentId: opts.agentId ?? 0n });
     if (!opts.agentId) agent.agentId = await agent.lookupAgentId();
     return agent;
   }
@@ -300,8 +300,8 @@ export class QuorumAgent {
     return s ? priceUnits(s.price) : undefined;
   }
 
-  /** A2A agent card with Quorum's pricing extension. */
-  card(): A2AAgentCard & { quorum: Record<string, unknown> } {
+  /** A2A agent card with Yuki's pricing extension. */
+  card(): A2AAgentCard & { yuki: Record<string, unknown> } {
     const p = this.requireProfile();
     const prices: Record<string, { price: string; unit: string }> = {};
     for (const s of this.listings()) prices[s.id] = { price: s.price, unit: s.unit };
@@ -312,14 +312,14 @@ export class QuorumAgent {
       url: `${p.baseUrl}/a2a`,
       preferredTransport: "JSONRPC",
       version: "1.0.0",
-      provider: { organization: p.organization ?? "Quorum", url: p.baseUrl },
+      provider: { organization: p.organization ?? "Yuki", url: p.baseUrl },
       capabilities: {
         streaming: false,
         pushNotifications: false,
         extensions: [
           {
-            uri: QUORUM_PRICING_EXTENSION,
-            description: "Per-call prices in stablecoin base units; payment by signed IOU cleared on Quorum and settled through NEAR Intents.",
+            uri: YUKI_PRICING_EXTENSION,
+            description: "Per-call prices in stablecoin base units; payment by signed IOU cleared on Yuki and settled through NEAR Intents.",
             required: true,
             params: {
               agentId: this.agentId.toString(),
@@ -336,15 +336,15 @@ export class QuorumAgent {
       defaultInputModes: ["application/json", "text/plain"],
       defaultOutputModes: ["application/json"],
       skills: [...this.services.values()].map((s) => ({ id: s.id, name: s.name, description: s.description, tags: s.tags ?? [], examples: s.examples })),
-      quorum: { slug: p.slug, role: p.role, validator: !!p.validator, fleet: !!p.fleet },
+      yuki: { slug: p.slug, role: p.role, validator: !!p.validator, fleet: !!p.fleet },
     };
   }
 
   /** The registration file the agent's on-chain `uri` points at. */
-  registration(): AgentRegistration & { quorum: Record<string, unknown> } {
+  registration(): AgentRegistration & { yuki: Record<string, unknown> } {
     const p = this.requireProfile();
     return {
-      type: "quorum-agent-registration-v1",
+      type: "yuki-agent-registration-v1",
       name: p.name,
       description: p.description,
       image: p.image ?? "",
@@ -354,7 +354,7 @@ export class QuorumAgent {
       ],
       registrations: this.agentId ? [{ agentId: Number(this.agentId), account: this.accountId, contract: this.contract }] : [],
       supportedTrust: ["reputation", "crypto-economic", "validation"],
-      quorum: { slug: p.slug, role: p.role, validator: !!p.validator, fleet: !!p.fleet },
+      yuki: { slug: p.slug, role: p.role, validator: !!p.validator, fleet: !!p.fleet },
     };
   }
 
@@ -419,14 +419,14 @@ export class QuorumAgent {
     return { result, delivery: strs(delivery), deliverySignature: signature };
   }
 
-  /** A2A JSON-RPC entry point (`message/send` with a Quorum data part). */
+  /** A2A JSON-RPC entry point (`message/send` with a Yuki data part). */
   async handleA2A(body: { jsonrpc?: string; id?: unknown; method?: string; params?: { message?: { parts?: { kind: string; data?: unknown }[] } } }) {
     const id = body.id ?? null;
     try {
       if (body.method !== "message/send") return { jsonrpc: "2.0", id, error: { code: -32601, message: "method not found" } };
       const part = body.params?.message?.parts?.find((p) => p.kind === "data");
-      const k = (part?.data as { quorum?: { action: string } & Record<string, unknown> } | undefined)?.quorum;
-      if (!k) return { jsonrpc: "2.0", id, error: { code: -32602, message: "expected a data part with a `quorum` object" } };
+      const k = (part?.data as { yuki?: { action: string } & Record<string, unknown> } | undefined)?.yuki;
+      if (!k) return { jsonrpc: "2.0", id, error: { code: -32602, message: "expected a data part with a `yuki` object" } };
       let out: unknown;
       if (k.action === "quote") out = await this.quote(k as never);
       else if (k.action === "execute") out = await this.execute(k as never);
@@ -435,7 +435,7 @@ export class QuorumAgent {
       return {
         jsonrpc: "2.0",
         id,
-        result: { kind: "message", role: "agent", messageId: randomUUID(), parts: [{ kind: "data", data: { quorum: out } }] },
+        result: { kind: "message", role: "agent", messageId: randomUUID(), parts: [{ kind: "data", data: { yuki: out } }] },
       };
     } catch (err) {
       return { jsonrpc: "2.0", id, error: { code: -32000, message: (err as Error).message } };
@@ -595,7 +595,7 @@ export class QuorumAgent {
   /** Quote + IOU: the job is cleared and the seller is guaranteed payment. */
   async buy(seller: AgentSummary, service: string, input: unknown, opts: BuyOptions): Promise<PreparedJob> {
     const q = (await this.callSeller(seller, { action: "quote", buyer: this.agentId.toString(), service, input, ...(opts.round !== undefined ? { round: opts.round } : {}) })) as Awaited<
-      ReturnType<QuorumAgent["quote"]>
+      ReturnType<YukiAgent["quote"]>
     >;
     const quote: Quote = {
       seller: BigInt(q.quote.seller),
@@ -797,7 +797,7 @@ export class QuorumAgent {
     return this.lastNonce;
   }
 
-  private async callSeller(seller: AgentSummary, quorum: Record<string, unknown>): Promise<unknown> {
+  private async callSeller(seller: AgentSummary, yuki: Record<string, unknown>): Promise<unknown> {
     const url = routeUrl(seller.endpoint, this.routes);
     if (!url) throw new Error(`agent #${seller.agentId} has no endpoint`);
     const res = await fetch(url, {
@@ -807,15 +807,15 @@ export class QuorumAgent {
         jsonrpc: "2.0",
         id: randomUUID(),
         method: "message/send",
-        params: { message: { role: "user", messageId: randomUUID(), parts: [{ kind: "data", data: { quorum } }] } },
+        params: { message: { role: "user", messageId: randomUUID(), parts: [{ kind: "data", data: { yuki } }] } },
       }),
       // executing a job can take minutes (a studio forms a team in sealed-bid rounds first)
-      signal: AbortSignal.timeout(quorum.action === "execute" ? 300_000 : 60_000),
+      signal: AbortSignal.timeout(yuki.action === "execute" ? 300_000 : 60_000),
     });
-    const body = (await res.json()) as { result?: { parts?: { kind: string; data?: { quorum?: unknown } }[] }; error?: { message: string } };
+    const body = (await res.json()) as { result?: { parts?: { kind: string; data?: { yuki?: unknown } }[] }; error?: { message: string } };
     if (body.error) throw new Error(`${seller.name}: ${body.error.message}`);
     const part = body.result?.parts?.find((p) => p.kind === "data");
-    return part?.data?.quorum;
+    return part?.data?.yuki;
   }
 
   private requireProfile(): AgentProfile {

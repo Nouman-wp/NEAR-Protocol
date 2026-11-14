@@ -1,7 +1,7 @@
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
 import websocket from "@fastify/websocket";
-import { AUTH_RECIPIENT, formatUnits, signInNetworks, type NetworkKey, issueSession, parseLoginMessage, readSession, sessionSecret, verifyWalletSignature, type AgentSummary, type Hex, type IntentMandate, type LiveEvent, type QuorumDomain, type Signature, type SignedIntent, type WalletSignature } from "@quorum/core";
+import { AUTH_RECIPIENT, formatUnits, signInNetworks, type NetworkKey, issueSession, parseLoginMessage, readSession, sessionSecret, verifyWalletSignature, type AgentSummary, type Hex, type IntentMandate, type LiveEvent, type YukiDomain, type Signature, type SignedIntent, type WalletSignature } from "@yuki/core";
 import type { Config } from "./config.ts";
 import type { Db } from "./db.ts";
 import type { Chain } from "./chain.ts";
@@ -46,7 +46,7 @@ export interface Ctx {
   rounds: RoundBook;
   /** Supabase copy of the database, when SUPABASE_URL is set */
   mirror?: SupabaseMirror;
-  domain: QuorumDomain;
+  domain: YukiDomain;
   /** can the verifier contract be reached? */
   intentsHealthy: () => boolean;
 }
@@ -86,7 +86,7 @@ export async function buildApi(ctx: Ctx): Promise<FastifyInstance> {
 
   // ---------------------------------------------------------------- meta
 
-  app.get("/", async () => ({ name: "Quorum clearing service", docs: "/v1/config", live: "/v1/live" }));
+  app.get("/", async () => ({ name: "Yuki clearing service", docs: "/v1/config", live: "/v1/live" }));
 
   app.get("/v1/config", async () => ({
     network: { key: chain.key, name: chain.networkName, explorer: chain.explorer, rpc: cfg.rpcUrl },
@@ -315,7 +315,7 @@ export async function buildApi(ctx: Ctx): Promise<FastifyInstance> {
     const debts = db.all<SettlementRow>("SELECT * FROM settlements WHERE epoch = ?", id);
     const plan = settlements.transfers(id);
     const lines = [
-      `# Quorum epoch ${id} audit export, ${chain.networkName}, coordinator ${chain.d.contract}, verifier ${chain.d.intents}`,
+      `# Yuki epoch ${id} audit export, ${chain.networkName}, coordinator ${chain.d.contract}, verifier ${chain.d.intents}`,
       "section,iou_digest,job_id,service,buyer,seller,amount_units,amount_usd,status,nonce,signature",
       ...rows.map((r) => ["iou", r.digest, r.job_id, r.service, r.buyer, r.seller, r.amount, formatUnits(BigInt(r.amount), 6), r.status, r.nonce, r.signature].join(",")),
       "section,settlement_id,agent,amount_units,status,intent_hash,settle_tx",
@@ -323,7 +323,7 @@ export async function buildApi(ctx: Ctx): Promise<FastifyInstance> {
       "section,seq,from_agent,to_agent,amount_units,status,tx",
       ...plan.map((t) => ["transfer", t.seq, t.from_agent, t.to_agent, t.amount, t.status, t.tx ?? ""].join(",")),
     ];
-    reply.header("content-type", "text/csv").header("content-disposition", `attachment; filename="quorum-epoch-${id}.csv"`);
+    reply.header("content-type", "text/csv").header("content-disposition", `attachment; filename="yuki-epoch-${id}.csv"`);
     return lines.join("\n");
   });
 
@@ -333,7 +333,7 @@ export async function buildApi(ctx: Ctx): Promise<FastifyInstance> {
     const debts = db.all<SettlementRow>("SELECT * FROM settlements WHERE agent_id = ? ORDER BY epoch", n);
     const moved = db.all<TransferRow>("SELECT * FROM transfers WHERE from_agent = ? OR to_agent = ? ORDER BY epoch, seq", n, n);
     const lines = [
-      `# Quorum compliance export for agent #${n} (${registry.get(n)?.name ?? ""}, ${registry.get(n)?.account ?? ""}), ${chain.networkName}`,
+      `# Yuki compliance export for agent #${n} (${registry.get(n)?.name ?? ""}, ${registry.get(n)?.account ?? ""}), ${chain.networkName}`,
       "section,id,epoch,side,counterparty,service,amount_units,status,created_at",
       ...jobs.map((j) => ["job", j.id, j.epoch, j.buyer === n ? "bought" : "sold", j.buyer === n ? j.seller : j.buyer, j.service, j.price, j.status, new Date(j.created_at).toISOString()].join(",")),
       "section,id,epoch,amount_units,status,intent_hash,settle_tx",
@@ -341,7 +341,7 @@ export async function buildApi(ctx: Ctx): Promise<FastifyInstance> {
       "section,epoch,direction,counterparty,amount_units,status,tx",
       ...moved.map((t) => ["transfer", t.epoch, t.from_agent === n ? "paid" : "received", t.from_agent === n ? t.to_agent : t.from_agent, t.amount, t.status, t.tx ?? ""].join(",")),
     ];
-    reply.header("content-type", "text/csv").header("content-disposition", `attachment; filename="quorum-agent-${n}.csv"`);
+    reply.header("content-type", "text/csv").header("content-disposition", `attachment; filename="yuki-agent-${n}.csv"`);
     return lines.join("\n");
   });
 
@@ -614,7 +614,7 @@ export async function buildApi(ctx: Ctx): Promise<FastifyInstance> {
   app.post("/v1/auth/login", async (req, reply) => {
     const b = req.body as Partial<WalletSignature> & { accountId?: string };
     const parsed = parseLoginMessage(String(b.message ?? ""));
-    if (!parsed || parsed.accountId !== b.accountId) return reply.status(400).send({ error: "not a Quorum sign-in message for this account" });
+    if (!parsed || parsed.accountId !== b.accountId) return reply.status(400).send({ error: "not a Yuki sign-in message for this account" });
     const networks = signInNetworks(chain.key);
     if (!(networks as string[]).includes(parsed.network)) return reply.status(400).send({ error: `sign in with a ${networks.join(" or ")} account; the message names ${parsed.network}` });
     const network = parsed.network as NetworkKey;

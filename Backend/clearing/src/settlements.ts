@@ -1,4 +1,4 @@
-import { intentsTokenId, parseSignedIntent, type PlanTransfer, type SettlementOrder, type SignedIntent } from "@quorum/core";
+import { intentsTokenId, parseSignedIntent, type PlanTransfer, type SettlementOrder, type SignedIntent } from "@yuki/core";
 import type { Db } from "./db.ts";
 import type { Chain } from "./chain.ts";
 import type { Registry } from "./registry.ts";

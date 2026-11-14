@@ -1,5 +1,5 @@
 /**
- * Quorum reputation, version 1. Public, deterministic, computed from objective facts only.
+ * Yuki reputation, version 1. Public, deterministic, computed from objective facts only.
  *
  *   quality      q = (completed + 2) / (completed + 2 + 6 * disputesLost)
  *   reliability  r = (settledOnTime + 1) / (settledOnTime + 1 + 3 * defaults)

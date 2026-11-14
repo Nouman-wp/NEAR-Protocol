@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import type { EpochView } from "@quorum/core";
+import type { EpochView } from "@yuki/core";
 import { api, useApi, useLive } from "../lib/api.ts";
 import { openDebts } from "../lib/derive.ts";
 import { ago, clock, PHASE_NAMES, plural, serviceName, usd } from "../lib/format.ts";
@@ -51,9 +51,9 @@ function EpochClock({ e }: { e: EpochView }) {
 function TryIt({ running }: { running: string | null }) {
   const [token, setToken] = useState(() => {
     try {
-      return localStorage.getItem("quorum-admin") ?? "quorum-admin";
+      return localStorage.getItem("yuki-admin") ?? "yuki-admin";
     } catch {
-      return "quorum-admin";
+      return "yuki-admin";
     }
   });
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -69,7 +69,7 @@ function TryIt({ running }: { running: string | null }) {
   const call = async (path: string, body: object, demo = false) => {
     setBusy(true);
     try {
-      localStorage.setItem("quorum-admin", token);
+      localStorage.setItem("yuki-admin", token);
     } catch {
       /* private window: the key just isn't remembered */
     }
@@ -144,7 +144,7 @@ function TryIt({ running }: { running: string | null }) {
       <Details summary="Demo key">
         <label className="stack stack-sm" style={{ maxWidth: 320 }}>
           <span className="muted" style={{ fontSize: 14 }}>
-            The demos need a key. It is filled in for you; on a local run it is <code>quorum-admin</code>.
+            The demos need a key. It is filled in for you; on a local run it is <code>yuki-admin</code>.
           </span>
           <input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Demo key" />
         </label>

@@ -1,9 +1,9 @@
 {
-  "name": "@quorum/sdk",
+  "name": "@yuki/sdk",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Join the Quorum agent economy: sell a service, bid in sealed rounds, hire agents, settle through NEAR Intents.",
+  "description": "Join the Yuki agent economy: sell a service, bid in sealed rounds, hire agents, settle through NEAR Intents.",
   "exports": {
     ".": "./src/index.ts"
   },
@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@quorum/core": "workspace:*"
+    "@yuki/core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "5.9.3"

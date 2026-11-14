@@ -1,5 +1,5 @@
-import type { Hex } from "@quorum/core";
-import type { QuorumAgent } from "@quorum/sdk";
+import type { Hex } from "@yuki/core";
+import type { YukiAgent } from "@yuki/sdk";
 import type { Fleet } from "../fleet.ts";
 import { PRICES, judgeClaim, type FactCheck } from "./workers.ts";
 import { wikiSearch } from "../work/wikipedia.ts";
@@ -17,7 +17,7 @@ interface Evaluation {
  * the seller's signed delivery, redoing the work independently where it can. Its verdicts
  * are signed, sent to the clearing service and answered on the coordinator contract from its own account.
  */
-export function installArbiter(fleet: Fleet, agent: QuorumAgent): void {
+export function installArbiter(fleet: Fleet, agent: YukiAgent): void {
   const ruling = new Map<string, Promise<unknown>>();
 
   const rule = (disputeId: string): Promise<unknown> => {

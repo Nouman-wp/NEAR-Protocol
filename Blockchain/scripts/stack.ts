@@ -24,10 +24,10 @@ export async function startLocalStack(opts: StackOptions = {}): Promise<Stack> {
   const node = await startSandbox();
   console.log(`chain   │ NEAR sandbox at ${node.rpcUrl}${node.started ? "" : " (already running)"}`);
   process.env.NEAR_RPC_URL = node.rpcUrl;
-  process.env.QUORUM_NETWORK = "local";
+  process.env.YUKI_NETWORK = "local";
   await deploy("local");
 
-  const env: Record<string, string> = { QUORUM_NETWORK: "local", NEAR_RPC_URL: node.rpcUrl, ...opts.env };
+  const env: Record<string, string> = { YUKI_NETWORK: "local", NEAR_RPC_URL: node.rpcUrl, ...opts.env };
   const port = env.PORT ?? process.env.PORT ?? "8787";
   const fleetPort = env.FLEET_PORT ?? process.env.FLEET_PORT ?? "8788";
   const api = `http://localhost:${port}`;

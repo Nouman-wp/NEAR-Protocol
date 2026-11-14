@@ -10,7 +10,7 @@
 //
 //   pnpm publish:web testnet                                   backend = .data/tunnel-testnet.url
 //   node Blockchain/scripts/publish-web.mjs testnet --backend https://x   any public backend URL
-//   node Blockchain/scripts/publish-web.mjs testnet --site https://quorum-xi.vercel.app
+//   node Blockchain/scripts/publish-web.mjs testnet --site https://yuki-xi.vercel.app
 //
 // Needs the Vercel CLI, logged in, and Frontend/ linked to a project (`vercel link`).
 import { execFileSync, spawnSync } from "node:child_process";
@@ -36,9 +36,10 @@ const sh = (cmd, args, opts = {}) => execFileSync(cmd, args, { cwd: web, stdio: 
 // 1. build: REST through the site's own origin, the live feed straight to the backend
 const env = {
   ...process.env,
-  VITE_QUORUM_API: site || backend,
-  VITE_QUORUM_FLEET: site || backend,
-  VITE_QUORUM_WS: backend.replace(/^http/, "ws"),
+  // "/" = the page's own origin, so every domain on the project (and its vercel.app alias) works
+  VITE_YUKI_API: site ? "/" : backend,
+  VITE_YUKI_FLEET: site ? "/" : backend,
+  VITE_YUKI_WS: backend.replace(/^http/, "ws"),
 };
 console.log(`building for ${site || "(site URL not known yet)"} -> backend ${backend}`);
 execFileSync(shell ? "pnpm.cmd" : "pnpm", ["run", "build"], { cwd: web, env, stdio: "inherit", shell });

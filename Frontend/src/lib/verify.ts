@@ -14,9 +14,9 @@ import {
   type IOU,
   type IouView,
   type JobSpec,
-  type QuorumDomain,
+  type YukiDomain,
   type Quote,
-} from "@quorum/core";
+} from "@yuki/core";
 import { api, type EpochDetail } from "./api.ts";
 import { usdExact } from "./format.ts";
 
@@ -41,7 +41,7 @@ export function verifyJob(j: {
   delivery: { message: Rec | null; signature: string | null; resultHash: string | null } | null;
   job: { jobHash: string; result: unknown };
   parties: { buyer: { publicKey: string } | null; seller: { publicKey: string } | null };
-  verify: { domain: QuorumDomain };
+  verify: { domain: YukiDomain };
 }): Record<"spec" | "quote" | "iou" | "delivery", Check | null> {
   const d = j.verify.domain;
   const quote = toQuote(j.quote.message);
@@ -85,7 +85,7 @@ interface ChainEpoch {
  * dishonest service cannot make this pass.
  */
 export async function verifyEpochInBrowser(epochId: number, onStep: (c: Check) => void): Promise<{ ok: boolean; rpc: string; contract: string; receipt: string | null }> {
-  const cfg = await api<{ network: { rpc: string }; deployment: { contract: string; token: string }; domain: QuorumDomain }>("/v1/config");
+  const cfg = await api<{ network: { rpc: string }; deployment: { contract: string; token: string }; domain: YukiDomain }>("/v1/config");
   const rpc = new NearRpc(cfg.network.rpc);
   const rpcName = () => rpc.url;
   const contract = cfg.deployment.contract;

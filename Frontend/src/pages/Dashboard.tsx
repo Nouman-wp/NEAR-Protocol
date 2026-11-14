@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { NETWORKS, NearRpc, type AgentSummary, type IntentView, type JobView, type SettlementView, type TransferView } from "@quorum/core";
+import { NETWORKS, NearRpc, type AgentSummary, type IntentView, type JobView, type SettlementView, type TransferView } from "@yuki/core";
 import { authed, authoriseSpending, connectWallet, network, setWalletNetwork, signInWithDevWallet, signInWithWallet, signOut, useAccount, walletsSupported } from "../lib/account.ts";
 import { agentName, useLive } from "../lib/api.ts";
 import { ago, plural, teamName, titleCase, trust, TEAMS, usd } from "../lib/format.ts";

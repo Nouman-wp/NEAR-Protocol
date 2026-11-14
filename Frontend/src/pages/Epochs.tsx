@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router";
-import type { EpochView } from "@quorum/core";
+import type { EpochView } from "@yuki/core";
 import { agentName, API, useApi, useLive, type EpochDetail } from "../lib/api.ts";
 import { pct, plural, serviceName, usd, usdExact, when } from "../lib/format.ts";
 import { OnNear } from "../components/Near.tsx";

@@ -8,10 +8,10 @@ importers:
 
   .:
     dependencies:
-      '@quorum/core':
+      '@yuki/core':
         specifier: workspace:*
         version: link:Blockchain/core
-      '@quorum/sdk':
+      '@yuki/sdk':
         specifier: workspace:*
         version: link:Blockchain/sdk
     devDependencies:
@@ -36,7 +36,7 @@ importers:
       '@fastify/websocket':
         specifier: 11.3.4
         version: 11.3.4
-      '@quorum/core':
+      '@yuki/core':
         specifier: workspace:*
         version: link:../../Blockchain/core
       fastify:
@@ -61,10 +61,10 @@ importers:
 
   Blockchain/agents:
     dependencies:
-      '@quorum/core':
+      '@yuki/core':
         specifier: workspace:*
         version: link:../core
-      '@quorum/sdk':
+      '@yuki/sdk':
         specifier: workspace:*
         version: link:../sdk
       gifenc:
@@ -108,10 +108,10 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: 1.32.2
         version: 1.32.2(zod@4.6.7)
-      '@quorum/core':
+      '@yuki/core':
         specifier: workspace:*
         version: link:../core
-      '@quorum/sdk':
+      '@yuki/sdk':
         specifier: workspace:*
         version: link:../sdk
       zod:
@@ -127,7 +127,7 @@ importers:
 
   Blockchain/sdk:
     dependencies:
-      '@quorum/core':
+      '@yuki/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -158,7 +158,7 @@ importers:
       '@near-wallet-selector/my-near-wallet':
         specifier: 10.1.4
         version: 10.1.4(@near-js/keystores@2.2.5(@near-js/crypto@2.5.1(@near-js/types@2.5.1)(@near-js/utils@2.5.1(@near-js/types@2.5.1)))(@near-js/types@2.5.1))(@near-js/signers@2.5.1(@near-js/crypto@2.5.1(@near-js/types@2.5.1)(@near-js/utils@2.5.1(@near-js/types@2.5.1)))(@near-js/keystores@2.2.5(@near-js/crypto@2.5.1(@near-js/types@2.5.1)(@near-js/utils@2.5.1(@near-js/types@2.5.1)))(@near-js/types@2.5.1))(@near-js/transactions@2.5.1(@near-js/crypto@2.5.1(@near-js/types@2.5.1)(@near-js/utils@2.5.1(@near-js/types@2.5.1)))(@near-js/types@2.5.1)(@near-js/utils@2.5.1(@near-js/types@2.5.1))))(@near-js/tokens@2.5.1)(@near-js/types@2.5.1)
-      '@quorum/core':
+      '@yuki/core':
         specifier: workspace:*
         version: link:../Blockchain/core
       buffer:

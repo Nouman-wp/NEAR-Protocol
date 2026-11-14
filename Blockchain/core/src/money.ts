@@ -1,5 +1,5 @@
 /**
- * Money is always an integer number of token base units (bigint). Quorum settles in a
+ * Money is always an integer number of token base units (bigint). Yuki settles in a
  * 6-decimal stablecoin, so 1 USDC = 1_000_000 units and the smallest price is 0.000001.
  * Nothing in the clearing path divides, so no rounding rule is ever needed; display
  * formatting is the only place decimals appear.

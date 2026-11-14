@@ -1,13 +1,13 @@
-# HTTPS (and the live WebSocket feed) for the Quorum backend. Caddy gets the certificate itself.
-# setup.sh writes this to /etc/caddy/quorum.caddy with QUORUM_DOMAIN (and the port) replaced,
+# HTTPS (and the live WebSocket feed) for the Yuki backend. Caddy gets the certificate itself.
+# setup.sh writes this to /etc/caddy/yuki.caddy with YUKI_DOMAIN (and the port) replaced,
 # and imports it from /etc/caddy/Caddyfile, so other sites on the server keep working.
-QUORUM_DOMAIN {
+YUKI_DOMAIN {
 	encode gzip
 	reverse_proxy 127.0.0.1:8790
 }
 
 # Mainnet on the same server (EDGE_PORT=8800 in .env.mainnet), on its own domain:
-# quorum-mainnet.example.org {
+# yuki-mainnet.example.org {
 # 	encode gzip
 # 	reverse_proxy 127.0.0.1:8800
 # }

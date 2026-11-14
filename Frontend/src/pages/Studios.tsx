@@ -133,9 +133,9 @@ export function plainLog(text: string): string {
 function OrderForm({ studios, kind, setKind }: { studios: StudioInfo[]; kind: string; setKind: (k: string) => void }) {
   const [token, setToken] = useState(() => {
     try {
-      return localStorage.getItem("quorum-admin") ?? "quorum-admin";
+      return localStorage.getItem("yuki-admin") ?? "yuki-admin";
     } catch {
-      return "quorum-admin";
+      return "yuki-admin";
     }
   });
   const [text, setText] = useState("");
@@ -147,7 +147,7 @@ function OrderForm({ studios, kind, setKind }: { studios: StudioInfo[]; kind: st
   const post = async (path: string, body: unknown) => {
     setSending(true);
     try {
-      localStorage.setItem("quorum-admin", token);
+      localStorage.setItem("yuki-admin", token);
     } catch {
       /* private window: the key just isn't remembered */
     }
@@ -198,7 +198,7 @@ function OrderForm({ studios, kind, setKind }: { studios: StudioInfo[]; kind: st
       <Details summary="Demo key">
         <label className="stack stack-sm" style={{ maxWidth: 320 }}>
           <span className="muted" style={{ fontSize: 14 }}>
-            Orders need a key. It is filled in for you; on a local run it is <code>quorum-admin</code>.
+            Orders need a key. It is filled in for you; on a local run it is <code>yuki-admin</code>.
           </span>
           <input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Demo key" />
         </label>

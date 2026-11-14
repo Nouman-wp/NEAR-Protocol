@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
-import type { DisputeView, EpochView, IouView, JobSpec, JobView, PositionView, QuorumDomain, RoundView, SettlementView, TransferView } from "@quorum/core";
+import type { DisputeView, EpochView, IouView, JobSpec, JobView, PositionView, YukiDomain, RoundView, SettlementView, TransferView } from "@yuki/core";
 import { useApi } from "../lib/api.ts";
 import { verifyJob, type Check } from "../lib/verify.ts";
 import { plural, serviceName, signedUsd, usd, when } from "../lib/format.ts";
@@ -21,7 +21,7 @@ interface JobDetail {
   parties: { buyer: { publicKey: string; account: string } | null; seller: { publicKey: string; account: string } | null };
   parent: JobView | null;
   children: JobView[];
-  verify: { domain: QuorumDomain };
+  verify: { domain: YukiDomain };
 }
 
 function Step({ title, check, pending, children }: { title: string; check?: Check | null; pending?: boolean; children: ReactNode }) {

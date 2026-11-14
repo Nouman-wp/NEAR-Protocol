@@ -9,7 +9,7 @@
 // sub-account, runs the rounds (open, join, sealed commit, reveal, close, all on chain),
 // lets the epochs net and settle through the NEAR Intents verifier, checks the result
 // against the chain, prints a report and exits 0 only if every check passed.
-import { formatUnits } from "@quorum/core";
+import { formatUnits } from "@yuki/core";
 import { startLocalStack, waitForSwarm } from "./stack.ts";
 
 const arg = (name: string, fallback: number) => {
@@ -21,7 +21,7 @@ const BUYERS = arg("buyers", 20);
 const SELLERS = arg("sellers", 5);
 const SEED = arg("seed", 42);
 const VERBOSE = process.argv.includes("--verbose");
-const ADMIN = "quorum-sim-admin";
+const ADMIN = "yuki-sim-admin";
 
 const say = (m: string) => console.log(`\x1b[32msim\x1b[0m     │ ${m}`);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

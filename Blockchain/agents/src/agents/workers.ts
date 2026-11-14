@@ -1,4 +1,4 @@
-import type { QuorumAgent } from "@quorum/sdk";
+import type { YukiAgent } from "@yuki/sdk";
 import type { Fleet } from "../fleet.ts";
 import { wikiSearch, type SearchHit } from "../work/wikipedia.ts";
 import { translate } from "../work/translate.ts";
@@ -21,7 +21,7 @@ export const PRICES = {
 
 // ------------------------------------------------------------------ Scout
 
-export function installScout(fleet: Fleet, agent: QuorumAgent): void {
+export function installScout(fleet: Fleet, agent: YukiAgent): void {
   agent.sell<{ query: string; lang?: string }, unknown>({
     id: "search",
     name: "Knowledge search",
@@ -105,7 +105,7 @@ async function checkAll(input: FactCheckInput, one: (claim: string) => Promise<F
   return one(String(input.claim).slice(0, 400));
 }
 
-function installHonestChecker(fleet: Fleet, agent: QuorumAgent, slug: string, listed: bigint): void {
+function installHonestChecker(fleet: Fleet, agent: YukiAgent, slug: string, listed: bigint): void {
   agent.sell<FactCheckInput, FactCheckOutput>({
     id: "factcheck",
     name: "Fact check",
@@ -128,20 +128,20 @@ function installHonestChecker(fleet: Fleet, agent: QuorumAgent, slug: string, li
 }
 
 /** Verifier: bids its cost plus a fixed margin, whatever the others do. */
-export function installVerifier(fleet: Fleet, agent: QuorumAgent): void {
+export function installVerifier(fleet: Fleet, agent: YukiAgent): void {
   installHonestChecker(fleet, agent, "verifier", PRICES.factcheck);
   agent.bidOn("factcheck", strategy("cost-plus", { cost: 1_500n, history: () => fleet.priceHistory("factcheck"), rand: seeded(11) }));
 }
 
 /** Sentinel: follows past clearing prices and bids just under them. */
-export function installSentinel(fleet: Fleet, agent: QuorumAgent): void {
+export function installSentinel(fleet: Fleet, agent: YukiAgent): void {
   installHonestChecker(fleet, agent, "sentinel", 2_200n);
   agent.bidOn("factcheck", strategy("adaptive", { cost: 1_400n, history: () => fleet.priceHistory("factcheck"), rand: seeded(12) }));
 }
 
 // ------------------------------------------------------------------ Rogue
 
-export function installRogue(fleet: Fleet, agent: QuorumAgent): void {
+export function installRogue(fleet: Fleet, agent: YukiAgent): void {
   agent.sell<FactCheckInput, FactCheckOutput>({
     id: "factcheck",
     name: "Fact check (budget)",
@@ -174,7 +174,7 @@ export function installRogue(fleet: Fleet, agent: QuorumAgent): void {
 
 // ------------------------------------------------------------------ Polyglot
 
-export function installPolyglot(fleet: Fleet, agent: QuorumAgent): void {
+export function installPolyglot(fleet: Fleet, agent: YukiAgent): void {
   agent.sell<{ text: string; to: string; from?: string }, unknown>({
     id: "translate",
     name: "Translation",
@@ -203,7 +203,7 @@ export function installPolyglot(fleet: Fleet, agent: QuorumAgent): void {
 
 // ------------------------------------------------------------------ Scribe
 
-export function installScribe(fleet: Fleet, agent: QuorumAgent): void {
+export function installScribe(fleet: Fleet, agent: YukiAgent): void {
   agent.sell<{ title: string; text: string; figure?: Series; maxSentences?: number }, unknown>({
     id: "summarize",
     name: "Summary",
@@ -248,7 +248,7 @@ async function abstractive(title: string, text: string, maxSentences: number) {
 
 // ------------------------------------------------------------------ Lens
 
-export function installLens(fleet: Fleet, agent: QuorumAgent): void {
+export function installLens(fleet: Fleet, agent: YukiAgent): void {
   agent.sell<Series & { caption?: string }, unknown>({
     id: "describe",
     name: "Chart description",

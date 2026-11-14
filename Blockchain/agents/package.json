@@ -1,9 +1,9 @@
 {
-  "name": "@quorum/fleet",
+  "name": "@yuki/fleet",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Quorum's live agent swarm: research agents that hire each other through sealed-bid tenders, the group-buy simulation with scripted buyers and sellers, and the scenario runner.",
+  "description": "Yuki's live agent swarm: research agents that hire each other through sealed-bid tenders, the group-buy simulation with scripted buyers and sellers, and the scenario runner.",
   "scripts": {
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
@@ -11,8 +11,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@quorum/core": "workspace:*",
-    "@quorum/sdk": "workspace:*",
+    "@yuki/core": "workspace:*",
+    "@yuki/sdk": "workspace:*",
     "gifenc": "1.0.3",
     "jpeg-js": "0.4.4"
   },

@@ -10,9 +10,9 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     envDir: root,
     define: {
-      "import.meta.env.VITE_QUORUM_API": JSON.stringify(env.VITE_QUORUM_API ?? "http://localhost:8787"),
-      "import.meta.env.VITE_QUORUM_FLEET": JSON.stringify(env.VITE_QUORUM_FLEET ?? "http://localhost:8788"),
-      "import.meta.env.VITE_QUORUM_WS": JSON.stringify(env.VITE_QUORUM_WS ?? ""),
+      "import.meta.env.VITE_YUKI_API": JSON.stringify(env.VITE_YUKI_API ?? "http://localhost:8787"),
+      "import.meta.env.VITE_YUKI_FLEET": JSON.stringify(env.VITE_YUKI_FLEET ?? "http://localhost:8788"),
+      "import.meta.env.VITE_YUKI_WS": JSON.stringify(env.VITE_YUKI_WS ?? ""),
     },
     server: { port: 5173, host: true },
     build: { target: "es2022", chunkSizeWarningLimit: 1500 },
